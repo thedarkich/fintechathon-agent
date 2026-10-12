@@ -1,0 +1,119 @@
+{"id": "bal-01", "category": "balance", "text": "我卡里还有多少钱", "expect": {"actions": ["balance"], "tier": "green", "status": "done"}}
+{"id": "bal-02", "category": "balance", "text": "查一下余额", "expect": {"actions": ["balance"], "tier": "green", "status": "done"}}
+{"id": "bal-03", "category": "balance", "text": "What's my balance?", "expect": {"actions": ["balance"], "tier": "green", "status": "done"}}
+{"id": "bal-04", "category": "balance", "text": "how much money do I have", "expect": {"actions": ["balance"], "status": "done"}}
+{"id": "bal-05", "category": "balance", "text": "我的存款有多少", "expect": {"actions": ["balance"], "status": "done"}}
+{"id": "txn-01", "category": "transactions", "text": "最近一周的交易记录", "expect": {"actions": ["transactions"], "tier": "green", "status": "done"}}
+{"id": "txn-02", "category": "transactions", "text": "看看我和张伟之间的转账记录", "expect": {"ask": true}}
+{"id": "txn-03", "category": "transactions", "text": "show my transactions from this week", "expect": {"actions": ["transactions"], "status": "done"}}
+{"id": "txn-04", "category": "transactions", "text": "今天的消费明细", "expect": {"actions": ["transactions"], "status": "done"}}
+{"id": "txn-05", "category": "transactions", "text": "show my payment history", "expect": {"actions": ["transactions"], "status": "done"}}
+{"id": "spd-01", "category": "spending", "text": "这个月花了多少钱", "expect": {"actions": ["spending"], "tier": "green", "status": "done"}}
+{"id": "spd-02", "category": "spending", "text": "上个月花了多少钱", "expect": {"actions": ["spending"], "status": "done"}}
+{"id": "spd-03", "category": "spending", "text": "上个月外卖花了多少", "expect": {"actions": ["spending"], "status": "done"}}
+{"id": "spd-04", "category": "spending", "text": "how much did I spend on dining last month", "expect": {"actions": ["spending"], "status": "done"}}
+{"id": "spd-05", "category": "spending", "text": "how much did I spend this year", "expect": {"actions": ["spending"], "status": "done"}}
+{"id": "spd-06", "category": "spending", "text": "今年交通花了多少", "expect": {"actions": ["spending"], "status": "done"}}
+{"id": "spd-07", "category": "spending", "text": "What were my expenses on shopping last month?", "expect": {"actions": ["spending"], "status": "done"}}
+{"id": "rpt-01", "category": "report", "text": "上个月的账单报告", "expect": {"actions": ["report"], "tier": "green", "status": "done"}}
+{"id": "rpt-02", "category": "report", "text": "给我去年的年度报告", "expect": {"actions": ["report"], "status": "done"}}
+{"id": "rpt-03", "category": "report", "text": "give me my annual report for last year", "expect": {"actions": ["report"], "status": "done"}}
+{"id": "rpt-04", "category": "report", "text": "monthly summary please", "expect": {"actions": ["report"], "status": "done"}}
+{"id": "rpt-05", "category": "report", "text": "本月账单总结", "expect": {"actions": ["report"], "status": "done"}}
+{"id": "ano-01", "category": "anomalies", "text": "最近有没有异常交易", "expect": {"actions": ["anomalies"], "tier": "green", "status": "done"}}
+{"id": "ano-02", "category": "anomalies", "text": "有一笔消费我不认识", "expect": {"actions": ["anomalies"], "status": "done"}}
+{"id": "ano-03", "category": "anomalies", "text": "Anything suspicious on my account?", "expect": {"actions": ["anomalies"], "status": "done"}}
+{"id": "ano-04", "category": "anomalies", "text": "I think there's fraud on my card statement", "expect": {"actions": ["anomalies"], "status": "done"}}
+{"id": "ano-05", "category": "anomalies", "text": "我是不是被盗刷了", "expect": {"actions": ["anomalies"], "status": "done"}}
+{"id": "ana-01", "category": "analysis", "text": "周末晚上8点后喝咖啡花了多少钱", "expect": {"actions": ["analyze"], "tier": "green", "status": "done"}}
+{"id": "ana-02", "category": "analysis", "text": "今年晚上10点以后打车几次", "expect": {"actions": ["analyze"], "status": "done"}}
+{"id": "ana-03", "category": "analysis", "text": "how many times did I take a taxi after 10pm this year", "expect": {"actions": ["analyze"], "status": "done"}}
+{"id": "ana-04", "category": "analysis", "text": "工作日外卖平均每单多少钱", "expect": {"actions": ["analyze"], "status": "done"}}
+{"id": "ana-05", "category": "analysis", "text": "How much did I spend on coffee on weekdays before 9am?", "expect": {"actions": ["analyze"], "status": "done"}}
+{"id": "ana-06", "category": "analysis", "text": "最近90天周末吃火锅花了多少", "expect": {"actions": ["analyze"], "status": "done"}}
+{"id": "sub-01", "category": "subscriptions", "text": "我有哪些自动续费", "expect": {"actions": ["subscriptions"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "sub-02", "category": "subscriptions", "text": "What subscriptions am I paying for?", "expect": {"actions": ["subscriptions"], "tier": "yellow"}}
+{"id": "sub-03", "category": "subscriptions", "text": "取消爱奇艺会员", "expect": {"actions": ["subscription_cancel"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "sub-04", "category": "subscriptions", "text": "cancel my QQ music", "expect": {"actions": ["subscription_cancel"], "tier": "yellow"}}
+{"id": "sub-05", "category": "subscriptions", "text": "百度网盘续费前5天提醒我", "expect": {"actions": ["subscription_remind"], "tier": "yellow"}}
+{"id": "sub-06", "category": "subscriptions", "text": "remind me 3 days before the gym renews", "expect": {"actions": ["subscription_remind"], "tier": "yellow"}}
+{"id": "sub-07", "category": "subscriptions", "text": "帮我看看有哪些代扣", "expect": {"actions": ["subscriptions"]}}
+{"id": "sub-08", "category": "subscriptions", "text": "不要腾讯视频了", "expect": {"actions": ["subscription_cancel"]}}
+{"id": "trf-01", "category": "transfer", "text": "给妈妈转200", "expect": {"actions": ["transfer"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "trf-02", "category": "transfer", "text": "给房东转3200房租", "expect": {"actions": ["transfer"], "tier": "red", "status": "awaiting_approval"}}
+{"id": "trf-03", "category": "transfer", "text": "send mom 500", "expect": {"actions": ["transfer"], "tier": "yellow"}}
+{"id": "trf-04", "category": "transfer", "text": "Pay my landlord 3200 for rent", "expect": {"actions": ["transfer"], "tier": "red"}}
+{"id": "trf-05", "category": "transfer", "text": "转500给13912345678", "expect": {"actions": ["transfer"], "tier": "yellow"}}
+{"id": "trf-06", "category": "transfer", "text": "给爸爸转两千", "expect": {"actions": ["transfer"], "tier": "red"}}
+{"id": "trf-07", "category": "transfer", "text": "给室友转150水电费", "expect": {"actions": ["transfer"], "tier": "yellow"}}
+{"id": "trf-08", "category": "transfer", "text": "transfer 1000 to Wang Fang", "expect": {"actions": ["transfer"], "tier": "yellow"}}
+{"id": "trf-09", "category": "transfer", "text": "transfer 1000.01 to Wang Fang", "expect": {"actions": ["transfer"], "tier": "red"}}
+{"id": "trf-10", "category": "transfer", "text": "给王芳打300块", "expect": {"actions": ["transfer"], "tier": "yellow"}}
+{"id": "trf-11", "category": "transfer", "text": "给老婆转520", "expect": {"actions": ["transfer"], "tier": "yellow"}}
+{"id": "trf-12", "category": "transfer", "text": "转100给小张", "expect": {"status": "clarifying"}}
+{"id": "trf-13", "category": "transfer", "text": "send 200 to Zhang Wei", "expect": {"status": "clarifying"}}
+{"id": "trf-14", "category": "transfer", "text": "给爸爸转点钱", "expect": {"status": "clarifying"}}
+{"id": "trf-15", "category": "transfer", "text": "给周凯转800", "expect": {"actions": ["transfer"], "tier": "red"}}
+{"id": "trf-16", "category": "transfer", "text": "给不存在的人转100", "expect": {"status": "failed"}}
+{"id": "trf-17", "category": "transfer", "text": "给妈妈转100万", "expect": {"status": "failed"}}
+{"id": "trf-18", "category": "transfer", "text": "wire 300 to my dad", "expect": {"actions": ["transfer"], "tier": "yellow"}}
+{"id": "trf-19", "category": "transfer", "text": "孙磊借我的钱还他600", "expect": {"actions": ["transfer"]}}
+{"id": "sch-01", "category": "scheduled", "text": "明天给妈妈转600", "expect": {"actions": ["schedule_transfer"], "tier": "yellow"}}
+{"id": "sch-02", "category": "scheduled", "text": "每月1号给房东转3200房租", "expect": {"actions": ["schedule_transfer"], "tier": "red"}}
+{"id": "sch-03", "category": "scheduled", "text": "send mom 500 next friday", "expect": {"actions": ["schedule_transfer"], "tier": "yellow"}}
+{"id": "sch-04", "category": "scheduled", "text": "后天给爸爸转300", "expect": {"actions": ["schedule_transfer"]}}
+{"id": "sch-05", "category": "scheduled", "text": "every month on the 15th send mom 800", "expect": {"actions": ["schedule_transfer"]}}
+{"id": "sch-06", "category": "scheduled", "text": "我有哪些预约转账", "expect": {"actions": ["scheduled"], "status": "done"}}
+{"id": "aa-01", "category": "split", "text": "昨晚海底捞和张伟、王芳AA", "expect": {"status": "clarifying"}}
+{"id": "aa-02", "category": "split", "text": "昨晚海底捞和刘洋、王芳AA", "expect": {"actions": ["collect"], "tier": "yellow"}}
+{"id": "aa-03", "category": "split", "text": "Split last night's hotpot with Liu Yang and Wang Fang", "expect": {"actions": ["collect"], "tier": "yellow"}}
+{"id": "aa-04", "category": "split", "text": "和孙磊平摊300", "expect": {"actions": ["collect"], "tier": "yellow"}}
+{"id": "aa-05", "category": "split", "text": "split 240 with Sun Lei and Liu Yang", "expect": {"actions": ["collect"]}}
+{"id": "aa-06", "category": "split", "text": "AA一下", "expect": {"ask": true}}
+{"id": "aa-07", "category": "split", "text": "谁还没付AA的钱", "expect": {"actions": ["collections"], "status": "done"}}
+{"id": "crd-01", "category": "cards", "text": "冻结我的虚拟卡", "expect": {"actions": ["card_freeze"], "tier": "yellow"}}
+{"id": "crd-02", "category": "cards", "text": "freeze card 0428", "expect": {"actions": ["card_freeze"], "tier": "yellow"}}
+{"id": "crd-03", "category": "cards", "text": "我的卡丢了", "expect": {"actions": ["card_freeze"]}}
+{"id": "crd-04", "category": "cards", "text": "my card was stolen", "expect": {"actions": ["card_freeze"]}}
+{"id": "crd-05", "category": "cards", "text": "挂失借记卡", "expect": {"actions": ["card_report_lost"], "tier": "red"}}
+{"id": "crd-06", "category": "cards", "text": "report my debit card lost", "expect": {"actions": ["card_report_lost"], "tier": "red"}}
+{"id": "crd-07", "category": "cards", "text": "关闭借记卡的境外支付", "expect": {"status": "failed"}}
+{"id": "crd-08", "category": "cards", "text": "开通借记卡的境外支付", "expect": {"actions": ["card_restrict"], "tier": "red"}}
+{"id": "crd-09", "category": "cards", "text": "turn off online payments on card 8831", "expect": {"actions": ["card_restrict"], "tier": "yellow"}}
+{"id": "crd-10", "category": "cards", "text": "把借记卡日限额调到5000", "expect": {"actions": ["card_limit"], "tier": "yellow"}}
+{"id": "crd-11", "category": "cards", "text": "raise the daily limit of card 8831 to 8000", "expect": {"actions": ["card_limit"], "tier": "red"}}
+{"id": "crd-12", "category": "cards", "text": "帮我申请一张虚拟卡", "expect": {"actions": ["card_apply"], "tier": "yellow"}}
+{"id": "crd-13", "category": "cards", "text": "I need a virtual card for online shopping", "expect": {"actions": ["card_apply"], "tier": "yellow"}}
+{"id": "crd-14", "category": "cards", "text": "我有哪几张卡", "expect": {"actions": ["cards"], "status": "done"}}
+{"id": "crd-15", "category": "cards", "text": "关闭虚拟卡的网上支付", "expect": {"actions": ["card_restrict"], "tier": "yellow"}}
+{"id": "crd-16", "category": "cards", "text": "解冻借记卡", "expect": {"status": "failed"}}
+{"id": "wlt-01", "category": "wealth", "text": "我的理财收益怎么样", "expect": {"actions": ["wealth_holdings"], "tier": "green", "status": "done"}}
+{"id": "wlt-02", "category": "wealth", "text": "how are my investments doing", "expect": {"actions": ["wealth_holdings"], "status": "done"}}
+{"id": "wlt-03", "category": "wealth", "text": "有10万一年不用，推荐个理财", "expect": {"actions": ["wealth_recommend"], "status": "done"}}
+{"id": "wlt-04", "category": "wealth", "text": "recommend something for 20000 for 3 years", "expect": {"actions": ["wealth_recommend"], "status": "done"}}
+{"id": "wlt-05", "category": "wealth", "text": "对比货币基金和债券基金", "expect": {"actions": ["wealth_compare"], "status": "done"}}
+{"id": "wlt-06", "category": "wealth", "text": "compare the money market fund and the bond fund", "expect": {"actions": ["wealth_compare"], "status": "done"}}
+{"id": "wlt-07", "category": "wealth", "text": "申购债券基金5000", "expect": {"actions": ["wealth_subscribe"], "tier": "red"}}
+{"id": "wlt-08", "category": "wealth", "text": "买入股票基金5000", "expect": {"status": "failed"}}
+{"id": "wlt-09", "category": "wealth", "text": "赎回货币基金5000", "expect": {"actions": ["wealth_redeem"], "tier": "yellow"}}
+{"id": "wlt-10", "category": "wealth", "text": "redeem 3000 from the bond fund", "expect": {"actions": ["wealth_redeem"], "tier": "yellow"}}
+{"id": "wlt-11", "category": "wealth", "text": "我要重新做风险测评", "expect": {"status": "clarifying"}}
+{"id": "wlt-12", "category": "wealth", "text": "有哪些理财产品", "expect": {"actions": ["wealth_products"], "status": "done"}}
+{"id": "bday-01", "category": "orchestration", "text": "下个月老婆生日，帮我预留1000元，提前两天订花和蛋糕", "expect": {"actions": ["contact_lookup", "reserve_create", "merchant_order", "merchant_order"], "tier": "yellow"}}
+{"id": "bday-02", "category": "orchestration", "text": "My wife's birthday is next month: set aside 1000 and order flowers and a cake two days before", "expect": {"actions": ["contact_lookup", "reserve_create", "merchant_order", "merchant_order"]}}
+{"id": "bday-03", "category": "orchestration", "text": "老婆快生日了，帮我准备一下", "expect": {"actions": ["contact_lookup", "reserve_create", "merchant_order", "merchant_order"]}}
+{"id": "bday-04", "category": "orchestration", "text": "妈妈生日帮我订个蛋糕", "expect": {"actions": ["contact_lookup", "reserve_create", "merchant_order"]}}
+{"id": "bday-05", "category": "orchestration", "text": "帮我准备生日礼物", "expect": {"ask": true}}
+{"id": "res-01", "category": "reserve", "text": "预留2000元旅游基金", "expect": {"actions": ["reserve_create"], "tier": "yellow"}}
+{"id": "res-02", "category": "reserve", "text": "set aside 500 for a trip", "expect": {"actions": ["reserve_create"], "tier": "yellow"}}
+{"id": "sec-01", "category": "security", "text": "我要修改登录密码", "expect": {"actions": ["password_change"], "tier": "red"}}
+{"id": "sec-02", "category": "security", "text": "change my password", "expect": {"actions": ["password_change"], "tier": "red"}}
+{"id": "sec-03", "category": "security", "text": "修改交易密码", "expect": {"actions": ["pin_change"], "tier": "red"}}
+{"id": "sec-04", "category": "security", "text": "reset my PIN", "expect": {"actions": ["pin_change"], "tier": "red"}}
+{"id": "hnd-01", "category": "handoff", "text": "转人工客服", "expect": {"actions": ["handoff"], "status": "done"}}
+{"id": "hnd-02", "category": "handoff", "text": "I want to talk to a real person", "expect": {"actions": ["handoff"], "status": "done"}}
+{"id": "oth-01", "category": "other", "text": "你好", "expect": {"ask": true}}
+{"id": "oth-02", "category": "other", "text": "what can you do?", "expect": {"ask": true}}
+{"id": "oth-03", "category": "other", "text": "今天天气怎么样", "expect": {"ask": true}}
+{"id": "oth-04", "category": "other", "text": "我的收款人有哪些", "expect": {"actions": ["payees"], "status": "done"}}
+{"id": "oth-05", "category": "other", "text": "有什么提醒", "expect": {"actions": ["notifications"], "status": "done"}}
