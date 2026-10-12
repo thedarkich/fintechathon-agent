@@ -1,0 +1,127 @@
+# Banking AI Agent: specification
+
+Entry for the 2026 Shenzhen International FinTech Competition (FinTechathon), Domestic AI Track, "Banking AI Agent" (银行 AI 智能体). Submission deadline 2 November 2026.
+
+**One rule shapes everything: the AI only proposes. Fixed code decides what is allowed, and code (not the AI) states every fact.**
+
+## 1. Request flow
+
+```
+message (text / photo / voice)
+  → screening      instruction-like or bypass attempts are flagged (never blocks a normal request on its own)
+  → planner        AI (or the offline planner) returns a plan: steps from the action catalogue, as a DAG
+  → validation     unknown actions, extra fields, bad arguments, cycles, more than 8 steps → rejected
+  → resolution     names / phones / notes / card numbers / merchants matched against the customer's own data;
+                   ambiguity → a clarification question with choices built by code
+  → policy         each step gets green / yellow / red from §3; risk signals can only raise a tier
+  → approval       green runs; yellow needs a confirmation of the exact details; red also needs PIN + SMS code or passkey
+  → execution      steps run in dependency order; scheduled steps wait for their time and are re-checked then
+  → reply          built by code from the results (both languages); the AI never writes amounts, balances or outcomes
+  → audit          every stage above appends to the customer's hash-chained audit log
+```
+
+Tool results never go back into the model. The planner sees only the customer's own words, short code-written summaries of earlier turns, today's date and the action catalogue. Merchant names, transaction notes and other outside text never reach it, so they cannot inject instructions.
+
+## 2. Money and time
+
+- Amounts are integer fen (分). The API also returns a formatted string.
+- Time zone: China Standard Time (UTC+8, no daylight saving). "Today" is the calendar day in UTC+8.
+- Each customer has a **demo clock** (an offset from real time) so scheduled steps, reminders and birthdays can be shown without waiting. Only the demo panel and tests move it.
+
+## 3. Permission tiers
+
+The thresholds match the brief exactly. **Today's agent payments** = transfers + merchant orders + scheduled transfers executed today (UTC+8), plus the step being decided and earlier steps of the same plan that run today. Internal moves (reserve funds, wealth redemption into the customer's own account) do not count.
+
+| Action | Tier | Rule ID |
+|---|---|---|
+| `balance`, `transactions`, `spending`, `report`, `anomalies`, `analyze` | green | `G_QUERY` |
+| `payees`, `cards`, `scheduled`, `collections`, `reserves`, `notifications` | green | `G_QUERY` |
+| `wealth_holdings`, `wealth_products`, `wealth_compare`, `wealth_recommend` | green | `G_QUERY` |
+| `contact_lookup`, `read_receipt` | green | `G_QUERY` |
+| `subscriptions` (query) | yellow | `Y_SUBSCRIPTION` (the brief lists subscription queries as yellow) |
+| `subscription_cancel`, `subscription_remind` | yellow | `Y_SUBSCRIPTION` |
+| `transfer`, `schedule_transfer`, `merchant_order` with today's agent payments ≤ ¥1,000 | yellow | `Y_SMALL_PAYMENT` |
+| same with today's agent payments > ¥1,000 | red | `R_LARGE_PAYMENT` |
+| `collect` (split bill / AA collection request) | yellow | `Y_COLLECTION` |
+| `card_apply` (virtual or physical) | yellow | `Y_CARD_APPLY` |
+| `card_freeze`, `card_restrict` turning something **off**, `card_limit` **lower** | yellow | `Y_RISK_REDUCING` |
+| `card_unfreeze`, `card_restrict` turning something **on**, `card_limit` **higher** | red | `R_RISK_INCREASING` |
+| `card_report_lost` | red | `R_CARD_LOSS` |
+| `reserve_create`, `reserve_release` | yellow | `Y_INTERNAL_MOVE` |
+| `wealth_redeem` | yellow | `Y_WEALTH_REDEEM` |
+| `risk_assessment` | yellow | `Y_PROFILE_CHANGE` |
+| `payee_add` | yellow | `Y_PAYEE_ADD` |
+| `wealth_subscribe` | red | `R_INVESTMENT` |
+| `password_change`, `pin_change` | red | `R_CREDENTIAL` |
+
+Risk signals that raise a tier (never lower one):
+- `S_NEW_PAYEE_LARGE`: a payment over ¥500 to a payee added in the last 24 hours → red.
+- `S_FLAGGED_REQUEST`: the request was flagged by screening → yellow becomes red.
+- `S_LOCK`: an active safety lock blocks the step outright (§7).
+
+A step approved at one tier is checked again when it actually runs. If the tier is now higher, the step waits for the higher approval.
+
+## 4. Approval
+
+- **Yellow**: the client shows the confirmation card (every step, every resolved detail, every tier) and sends back the plan's `approval_hash`. A changed plan has a different hash, so an old confirmation cannot approve it.
+- **Red**: confirmation plus the 6-digit transaction PIN plus a second factor: an SMS code (simulated; delivered to the in-app phone panel with the operation details in the text) or a passkey (WebAuthn: device face/fingerprint unlock or a security key). Codes and PINs go to a separate endpoint and are never shown to the AI or written to the audit log.
+- Codes expire after 5 minutes and allow 3 attempts.
+
+## 5. Plan format (planner output)
+
+```json
+{
+  "steps": [
+    {"id": "s1", "action": "contact_lookup", "args": {"who": "wife"}},
+    {"id": "s2", "action": "reserve_create", "args": {"amount_yuan": 1000, "name": "Birthday", "month_of": "$s1.birthday"}, "after": ["s1"]},
+    {"id": "s3", "action": "merchant_order", "args": {"merchant": "florist", "item": "bouquet", "deliver_on": "$s1.birthday", "pay_from": "$s2.reserve_id"}, "after": ["s2"], "run_at": {"ref": "s1.birthday", "offset_days": -2}},
+    {"id": "s4", "action": "merchant_order", "args": {"merchant": "bakery", "item": "cake", "deliver_on": "$s1.birthday", "pay_from": "$s2.reserve_id"}, "after": ["s2"], "run_at": {"ref": "s1.birthday", "offset_days": -2}}
+  ],
+  "ask": null,
+  "suspicious": false
+}
+```
+
+- `after` lists dependencies; the graph must be acyclic. `$<step>.<field>` refers to a field of an earlier step's result.
+- `ask` is a clarification question (`{"en": ..., "zh": ...}`) when the request cannot be planned. It may not contain digits that are not in the customer's own messages.
+- `suspicious` is the planner's own judgement that the message tries to bypass rules. It feeds screening and the safety lock.
+
+## 6. Execution, interruption, rollback, takeover
+
+- Plan states: `clarifying`, `awaiting_approval`, `running`, `scheduled`, `done`, `failed`, `cancelled`, `rolled_back`, `escalated`.
+- Step states: `pending`, `waiting` (for time or approval), `running`, `done`, `failed`, `skipped`, `cancelled`, `compensated`.
+- **Stop**: a plan can be cancelled at any time before its last step; pending and scheduled steps are cancelled.
+- **Rollback**: each action declares a compensation. On failure or on request, finished steps are compensated in reverse order. A compensation never moves the account into a less safe state (a freeze is not undone automatically; a finished transfer cannot be undone and the reply says so). Money for multi-step plans is set aside first (reserve) and spent last.
+- **Edit**: changing a pending step re-runs validation, resolution and policy and needs a new approval.
+- **Human takeover**: the customer can ask for a person at any time, and the system escalates after a safety lock or repeated clarification failures. An operator sees the conversation, the plan and the audit trail, and can answer, cancel or edit. An operator can never approve a red step on the customer's behalf.
+
+## 7. Safety lock (circuit breaker)
+
+| Trigger | Lock | Cleared by |
+|---|---|---|
+| 3 failed PIN / code / passkey checks in 15 min | `red` (no red steps) for 30 min | time, or an operator |
+| 3 flagged requests in 10 min | `agent` (the assistant stops planning) | the customer passing red verification, or an operator |
+| 5 rejected plans in 10 min (the model misbehaving) | `agent` | as above |
+| 3 payments to payees added in the last 24 h within 1 h | `payments` (no transfers or orders) | the customer passing red verification, or an operator |
+
+Every lock and unlock is audited and shown to the customer.
+
+## 8. Audit log
+
+Append-only rows per customer: `seq`, `kind`, `plan_id`, `data`, `at`, `prev_hash`, `hash` where `hash = sha256(prev_hash + canonical_json(seq, kind, plan_id, data, at))`. `GET /api/audit/verify` recomputes the chain. Kinds: `request`, `screening`, `plan_proposed`, `plan_rejected`, `resolution`, `clarification`, `policy`, `approval_requested`, `approved`, `verification_failed`, `verified`, `step_started`, `step_done`, `step_failed`, `compensated`, `cancelled`, `lock`, `unlock`, `operator`, `notification`. Secrets (PINs, codes, passwords) are never logged.
+
+## 9. Sandbox (open-ended analysis)
+
+For questions the fixed analyses cannot answer ("how much on coffee on weekends after 8 pm?") the AI writes a short Python function. It runs in a separate process with no network, no file access beyond a read-only copy of that customer's transactions, CPU/memory/time limits and an import allow-list. The result is a table that code renders. Every run (code, limits, outcome) is audited.
+
+## 10. Data model (simulated bank)
+
+`Customer` (the account), `BankAccount` (checking, savings, reserve), `Txn`, `Payee` (name, aliases, phone, bank, masked account, relationship, birthday, note), `Card` (physical/virtual, status, limits, restriction switches), `Subscription`, `ScheduledTransfer`, `Collection` (split-bill requests), `WealthProduct`, `Holding`, `RiskProfile`, `Merchant` + `Order`, `Plan`, `Conversation` + `Message`, `Challenge` (SMS / passkey), `Passkey`, `SmsMessage` (simulated phone), `Notification`, `SafetyLock`, `AuditEntry`, `DemoClock`.
+
+Every customer gets their own seeded bank on sign-up: about 22 months of realistic transactions (so a full-year report works), family and friend payees (including two people with the same pinyin name, to show clarification), subscriptions (including a duplicate music service and a forgotten trial), seeded anomalies (duplicate charge, late-night large purchase at a new merchant, overseas online charge), two cards, wealth holdings and a risk profile. `POST /api/demo/reset` restores it.
+
+## 11. Evaluation support
+
+- `POST /api/chat` returns structured results: the plan, each step's tier and rule, status and the reply, so a script can check them.
+- `LLM_ENABLED=false` uses the offline planner: deterministic, no API key, used by the test suite.
+- The AI provider is any OpenAI-compatible endpoint (`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`), so evaluators can plug in their own.

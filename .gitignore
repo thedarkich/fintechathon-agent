@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+node_modules/
+frontend/dist/
+__pycache__/
+.venv/
+*.pyc
+.DS_Store
+backend/.pytest_cache/
+backend/.ruff_cache/
+output/
+
+# Runtime data: customer records, audit logs and uploads never enter git.
+data/
+deploy/runtime.env
+deploy/backups/
