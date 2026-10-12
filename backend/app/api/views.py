@@ -26,6 +26,7 @@ def plan_view(plan: Plan, ctx: Ctx) -> dict:
             "error": (error.get("zh") if ctx.lang == "zh" else error.get("en")) if error else None,
             "error_code": error.get("code") if error else None,
             "irreversible": bool(s.get("irreversible")),
+            "fen": (resolved or {}).get("fen"),
         })
     return {"id": plan.id, "status": plan.status, "tier": plan.tier, "source": plan.source, "flags": plan.flags,
             "approval_hash": plan.approval_hash if plan.status == "awaiting_approval" else None,

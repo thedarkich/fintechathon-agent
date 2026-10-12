@@ -17,8 +17,6 @@ WORKDIR /app/backend
 COPY backend/pyproject.toml backend/uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY backend/app ./app
-COPY docs/deployments/ /app/docs/deployments/
-COPY data/vendors.json data/pos.json /app/seed/
 COPY --from=frontend /src/frontend/dist/ /app/static/
 RUN groupadd --gid 10001 bank && useradd --uid 10001 --gid 10001 --no-create-home bank \
     && mkdir -p /app/data && chown 10001:10001 /app/data

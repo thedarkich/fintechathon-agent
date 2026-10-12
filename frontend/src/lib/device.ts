@@ -1,4 +1,4 @@
-const KEY = 'cs_device'
+const KEY = 'ba_device'
 let memoryId: string | null = null
 
 function newId(): string {
