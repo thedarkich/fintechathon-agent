@@ -16,7 +16,7 @@ const ACTION_LABEL: Record<string, [string, string]> = {
   card_report_lost: ['挂失', 'Report lost'], subscriptions: ['查看订阅', 'Subscriptions'], subscription_cancel: ['取消订阅', 'Cancel subscription'],
   subscription_remind: ['续费提醒', 'Renewal reminder'], wealth_subscribe: ['申购理财', 'Buy investment'], wealth_redeem: ['赎回理财', 'Redeem investment'],
   risk_assessment: ['风险测评', 'Risk profile'], password_change: ['修改登录密码', 'Change password'], pin_change: ['修改交易密码', 'Change PIN'],
-  contact_lookup: ['查找联系人', 'Look up contact'],
+  contact_lookup: ['查找联系人', 'Look up contact'], analyze: ['沙箱分析', 'Sandbox analysis'],
 }
 
 export const actionLabel = (action: string, lang: 'zh' | 'en') => ACTION_LABEL[action]?.[lang === 'zh' ? 0 : 1] ?? action

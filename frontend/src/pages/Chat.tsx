@@ -11,6 +11,7 @@ const SUGGESTIONS: [string, string][] = [
   ['Pay my landlord 3200 for rent', '给房东转3200房租'],
   ['How much did I spend last month?', '上个月花了多少钱'],
   ['Anything unusual on my account?', '最近有没有异常交易'],
+  ['How much did I spend on coffee on weekends after 8pm?', '周末晚上8点后喝咖啡花了多少钱'],
   ['What subscriptions am I paying for?', '我有哪些自动续费'],
   ["Split last night's hotpot with Liu Yang and Wang Fang", '昨晚海底捞和刘洋、王芳AA'],
   ["My wife's birthday is next month: set aside 1000 and order flowers and a cake two days before", '下个月老婆生日，帮我预留1000元，提前两天订花和蛋糕'],

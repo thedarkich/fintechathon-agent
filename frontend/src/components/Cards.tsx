@@ -216,6 +216,28 @@ export function CardView({ card }: { card: Card }) {
           </ul>
         </Panel>
       )
+    case 'analysis': {
+      const show = (v: number) => (card.unit === 'count' ? tr(`${v} times`, `${v} 次`) : card.unit === 'percent' ? `${v}%` : yuan(Math.round(v * 100)))
+      return (
+        <Panel>
+          <p className="text-sm text-ink2">{card.title}</p>
+          {card.value !== null && <p className="num text-2xl font-bold">{show(card.value)}</p>}
+          {card.rows.length > 0 && (
+            <ul className="mt-3 divide-y divide-[var(--rule)]">
+              {card.rows.slice(-8).map(([label, value]: [string, number]) => <Row key={label} left={label} right={show(value)} />)}
+            </ul>
+          )}
+          <details className="mt-3 text-xs">
+            <summary className="cursor-pointer font-semibold text-indigo">{tr('See the generated code and sandbox limits', '查看生成的代码和沙箱限制')}</summary>
+            <pre className="mt-2 max-h-64 overflow-auto rounded-lg bg-well p-3 text-[11px] leading-relaxed text-ink2">{card.code}</pre>
+            <p className="mt-2 text-ink3">
+              {tr(`Ran in ${card.ms} ms in a separate process: ${card.limits.memory_mb} MB memory, ${card.limits.cpu_seconds} s CPU, no files, imports limited to ${card.limits.imports.join(', ')}.`,
+                `在独立进程中运行 ${card.ms} 毫秒：内存 ${card.limits.memory_mb} MB，CPU ${card.limits.cpu_seconds} 秒，不能读写文件，仅允许导入 ${card.limits.imports.join('、')}。`)}
+            </p>
+          </details>
+        </Panel>
+      )
+    }
     case 'products':
     case 'compare':
       return (

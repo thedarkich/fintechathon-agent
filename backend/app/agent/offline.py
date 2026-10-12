@@ -9,6 +9,7 @@ from datetime import date, timedelta
 
 from app.agent.planner import AskOut, PlanOut, StepOut
 from app.clock import add_months
+from app.sandbox import templates
 
 CN_DIGITS = {"零": 0, "〇": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
 CN_UNITS = {"十": 10, "百": 100, "千": 1000, "万": 10000}
@@ -341,6 +342,11 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         if when:
             return one("schedule_transfer", {"payee": payee, "amount_yuan": amount, "when": when, "repeat": repeat, "memo": memo})
         return one("transfer", {"payee": payee, "amount_yuan": amount, "memo": memo})
+
+    # open-ended questions: generated analysis code, run in the sandbox
+    code = templates.from_question(text, today)
+    if code and has(text, "花", "消费", "多少", "几次", "次数", "平均", "spend", "spent", "how much", "how many", "how often", "average"):
+        return one("analyze", {"question": text[:300], "code": code})
 
     # spending, reports, history
     category = next((c for c, words in CATEGORY_WORDS if has(text, *words)), None)
