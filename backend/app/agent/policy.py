@@ -29,6 +29,7 @@ RULE_TEXT = {
 SIGNAL_TEXT = {
     "S_NEW_PAYEE_LARGE": ("向 24 小时内新加的收款人付款超过 ¥500", "Over ¥500 to a payee added in the last 24 hours"),
     "S_FLAGGED_REQUEST": ("请求中有试图绕过安全规则的内容", "The request tried to get around the safety rules"),
+    "S_FLAGGED_CONTENT": ("上传的小票里有隐藏文字或给机器的指令", "The uploaded receipt contains hidden text or instructions aimed at a machine"),
 }
 
 
@@ -48,6 +49,9 @@ def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_s
         tier = higher(tier, "red")
     if flagged and tier == "yellow":
         signals.append("S_FLAGGED_REQUEST")
+        tier = "red"
+    if resolved.get("content_flags") and tier != "green":
+        signals.append("S_FLAGGED_CONTENT")
         tier = "red"
     lock = locks.blocks(locks.active(ctx.session, ctx.user.id), tier=tier, payment=bool(payment)) \
         if tier != "green" else None

@@ -24,6 +24,7 @@ class ChatIn(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     conversation_id: str | None = Field(default=None, max_length=36)
     lang: Literal["zh", "en"] = "zh"
+    attachment_id: str | None = Field(default=None, max_length=36)
 
 
 class ApproveIn(BaseModel):
@@ -90,7 +91,8 @@ async def chat(request: Request, body: ChatIn, user_id: str = Depends(require_us
     with Session(runtime(request).engine) as session:
         user = session.get(UserAccount, user_id)
         conversation, messages, plan = await service.handle(
-            session, user, runtime(request).planner, body.message, conversation_id=body.conversation_id, lang=body.lang)
+            session, user, runtime(request).planner, body.message, conversation_id=body.conversation_id, lang=body.lang,
+            attachment_id=body.attachment_id)
         ctx = context(session, user, plan, messages[-1].lang if messages else body.lang)
         return {"conversation_id": conversation.id, "escalated": conversation.escalated,
                 "messages": [message_view(m) for m in messages],

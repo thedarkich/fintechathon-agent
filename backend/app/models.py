@@ -245,6 +245,19 @@ class Order(SQLModel, table=True):
     paid_at: str | None = None
 
 
+class Upload(SQLModel, table=True):
+    """A receipt photo or PDF. Only the code-checked reading is kept with it, never raw model text."""
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    user_id: str = Field(index=True)
+    created_at: str = Field(default_factory=now_iso)
+    kind: str  # pdf | image
+    preview_path: str | None = None
+    read_by: str  # model | rules
+    reading: dict = json_dict()
+    flags: list = json_list()
+
+
 # --- the agent ---------------------------------------------------------------------------------
 
 

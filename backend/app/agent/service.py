@@ -9,7 +9,7 @@ from app.agent import audit, executor, locks, offline, replies, screening
 from app.agent.core import Ctx
 from app.agent.planner import Planner, PlanOut, validate
 from app.llm import ModelUnavailable
-from app.models import Conversation, Message, Plan, UserAccount
+from app.models import Conversation, Message, Plan, Upload, UserAccount
 
 NUMERIC_FIELDS = {"amount_yuan", "total_yuan", "daily_limit_yuan", "horizon_months"}
 
@@ -79,14 +79,20 @@ def option_match(plan: Plan, text: str):
 
 
 async def handle(session: Session, user: UserAccount, planner: Planner, text: str, *, conversation_id: str | None = None,
-                 lang: str = "zh") -> tuple[Conversation, list[Message], Plan | None]:
+                 lang: str = "zh", attachment_id: str | None = None) -> tuple[Conversation, list[Message], Plan | None]:
     now = clock.now(session, user.id)
     ctx = Ctx(session=session, user=user, now=now, lang=detect_lang(text, lang))
     conversation = conversation_for(session, user, conversation_id)
     clean, hidden = screening.redact(text)
-    user_message = add_message(session, ctx, conversation, "user", clean)
+    attachment = session.get(Upload, attachment_id) if attachment_id else None
+    if attachment is not None and attachment.user_id != user.id:
+        attachment = None
+    user_message = add_message(session, ctx, conversation, "user", clean, cards=[
+        {"type": "attachment", "upload_id": attachment.id, "kind": attachment.kind,
+         "preview": f"/api/uploads/{attachment.id}/preview"}] if attachment else None)
     audit.append(session, user.id, "request", {"text": clean, "lang": ctx.lang, "secret_hidden": hidden,
-                                               "conversation": conversation.id})
+                                               "conversation": conversation.id,
+                                               "attachment": attachment.id if attachment else None})
     out: list[Message] = [user_message]
 
     if conversation.escalated:
@@ -136,9 +142,11 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
     versions: dict = {}
     source = "offline"
     proposed: PlanOut | None = None
+    # the planner learns only that a receipt is attached (its id), never what it says
+    planner_text = clean + (f"\n[Attached receipt id: {attachment.id}]" if attachment else "")
     if planner.online:
         try:
-            proposed = await planner.plan_with_model(clean, history(session, conversation.id)[:-1], ctx.today, versions)
+            proposed = await planner.plan_with_model(planner_text, history(session, conversation.id)[:-1], ctx.today, versions)
             source = "ai"
         except ModelUnavailable as exc:
             audit.append(session, user.id, "model_unavailable", {"code": exc.code})
@@ -147,8 +155,8 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
                 locks.evaluate(session, user.id)
             source = "offline_fallback"
     if proposed is None:
-        proposed = offline.plan(clean, ctx.today, suspicious=bool(flags))
-    errors = validate(proposed, clean)
+        proposed = offline.plan(clean, ctx.today, suspicious=bool(flags), attachment=attachment.id if attachment else None)
+    errors = validate(proposed, planner_text)
     audit.append(session, user.id, "plan_proposed", {"source": source, "model": versions.get("planner"),
                                                      "plan": proposed.model_dump(), "errors": errors})
     if errors:

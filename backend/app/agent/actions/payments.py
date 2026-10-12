@@ -12,7 +12,7 @@ from app.agent.resolve import find_payee, find_reserve, payee_label
 from app.bank import ledger
 from app.bank.analysis import txns_between
 from app.clock import CST
-from app.models import BankAccount, Collection, Order, Payee, ScheduledTransfer, Txn
+from app.models import BankAccount, Collection, Order, Payee, ScheduledTransfer, Txn, Upload
 from app.money import to_fen, yuan
 
 SINGLE_TRANSFER_CAP = 5_000_000  # ¥50,000 per transfer in the demo bank
@@ -199,6 +199,17 @@ class CollectArgs(Args):
     from_merchant: str | None = Field(default=None, max_length=40)
     include_me: bool = True
     title: str | None = Field(default=None, max_length=30)
+    receipt: str | None = Field(default=None, max_length=36)
+
+
+def load_receipt(ctx: Ctx, receipt_id: str, *, need_total: bool = True) -> Upload:
+    row = ctx.session.get(Upload, receipt_id)
+    if row is None or row.user_id != ctx.user.id:
+        raise Refuse("RECEIPT_NOT_FOUND", "没有找到这张小票。", "That receipt was not found.")
+    if need_total and (not row.reading.get("is_receipt") or not row.reading.get("total_fen")):
+        raise Refuse("NOT_A_RECEIPT", "没能从这张图片里读出金额，请直接告诉我总额。",
+                     "I couldn't read a total from that file. Tell me the total instead.")
+    return row
 
 
 def collect_resolve(ctx: Ctx, args: CollectArgs) -> dict:
@@ -208,7 +219,10 @@ def collect_resolve(ctx: Ctx, args: CollectArgs) -> dict:
         if payee.id not in {p["payee_id"] for p in people}:
             people.append({"payee_id": payee.id, "name": payee.name, "name_en": payee.name_en or payee.name})
     source_txn = None
-    if args.total_yuan is not None:
+    receipt = load_receipt(ctx, args.receipt) if args.receipt else None
+    if receipt is not None and args.total_yuan is None:
+        total = receipt.reading["total_fen"]
+    elif args.total_yuan is not None:
         total = to_fen(args.total_yuan)
     elif args.from_merchant:
         recent = [t for t in txns_between(ctx.session, ctx.user.id, ctx.today - timedelta(days=14),
@@ -223,10 +237,12 @@ def collect_resolve(ctx: Ctx, args: CollectArgs) -> dict:
         raise Ask("total_yuan", "这次一共多少钱？", "What was the total?")
     heads = len(people) + (1 if args.include_me else 0)
     share = total // heads
-    title = args.title or (source_txn.counterparty if source_txn else ctx.t("AA 收款", "Split bill"))
-    return {"people": people, "total_fen": total, "share_fen": share, "heads": heads, "title": title,
+    title = args.title or (receipt.reading.get("merchant") if receipt else None) or (
+        source_txn.counterparty if source_txn else ctx.t("AA 收款", "Split bill"))
+    return {"people": people, "total_fen": total, "share_fen": share, "heads": heads, "title": title[:30],
             "source_txn": source_txn.id if source_txn else None,
-            "source_at": source_txn.at if source_txn else None}
+            "source_at": source_txn.at if source_txn else None,
+            "receipt": receipt.id if receipt else None, "content_flags": receipt.flags if receipt else []}
 
 
 def collect_run(ctx: Ctx, r: dict) -> dict:
@@ -255,7 +271,7 @@ def collect_describe(ctx: Ctx, r: dict) -> str:
 
 register(Action(
     name="collect", args=CollectArgs,
-    help="Split a bill (AA): request equal shares from payees. total_yuan, or from_merchant to use a recent payment there; include_me; title.",
+    help="Split a bill (AA): request equal shares from payees. total_yuan, or receipt (an attached receipt id), or from_merchant to use a recent payment there; include_me; title.",
     resolve=collect_resolve, run=collect_run, describe=collect_describe,
     reply=lambda ctx, r, res: ctx.t(f"已向 {res['count']} 人发起收款，每人 {yuan(res['share_fen'])}。对方付款后会自动到账。",
                                     f"Sent requests to {res['count']} people for {yuan(res['share_fen'])} each. Payments arrive automatically."),
@@ -527,4 +543,39 @@ register(Action(
     reply=lambda ctx, r, res: ctx.t(f"已下单 {r['item_name']}（{yuan(res['fen'])}），{res['deliver_on']} 送达。",
                                     f"Ordered {r['item_name_en']} ({yuan(res['fen'])}) for delivery on {res['deliver_on']}."),
     rule="PAYMENT", payment=lambda r: r["fen"], compensate=order_compensate, schedulable=True,
+))
+
+
+# --- receipts ---
+
+
+class ReceiptArgs(Args):
+    receipt: str = Field(min_length=1, max_length=36)
+
+
+def receipt_run(ctx: Ctx, r: dict) -> dict:
+    row = ctx.session.get(Upload, r["receipt"])
+    return {"reading": row.reading, "flags": row.flags, "read_by": row.read_by, "receipt": row.id}
+
+
+def receipt_reply(ctx: Ctx, r: dict, res: dict) -> str:
+    reading = res["reading"]
+    if not reading.get("is_receipt"):
+        return ctx.t("这张图片看起来不是小票，或者没能读出金额。", "That doesn't look like a receipt, or I couldn't read a total.")
+    lines = [ctx.t(f"{reading['merchant']}，合计 {yuan(reading['total_fen'] or 0)}，共 {len(reading['items'])} 项。",
+                   f"{reading['merchant']}: total {yuan(reading['total_fen'] or 0)}, {len(reading['items'])} items.")]
+    if res["flags"]:
+        lines.append(ctx.t("注意：小票里有隐藏文字或写给机器的指令，我没有执行它们。基于这张小票的操作都需要强验证。",
+                           "Careful: this receipt contains hidden text or instructions aimed at a machine. I ignored them, and anything based on it needs strong verification."))
+    else:
+        lines.append(ctx.t("需要和谁 AA 吗？", "Want to split it with someone?"))
+    return "\n".join(lines)
+
+
+register(Action(
+    name="read_receipt", args=ReceiptArgs,
+    help="Show what an attached receipt says (merchant, total, items). receipt = the attached receipt id.",
+    resolve=lambda ctx, a: {"receipt": load_receipt(ctx, a.receipt, need_total=False).id}, run=receipt_run,
+    describe=lambda ctx, r: ctx.t("读取小票", "Read the receipt"), reply=receipt_reply,
+    card=lambda ctx, r, res: {"type": "receipt_reading", **res},
 ))

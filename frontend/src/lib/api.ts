@@ -89,3 +89,21 @@ export interface PlanResult {
   plan: Plan
   messages: Message[]
 }
+
+export interface UploadResult {
+  id: string
+  kind: string
+  read_by: 'model' | 'rules'
+  reading: { is_receipt: boolean; merchant: string; date: string | null; total_fen: number | null; items: { name: string; fen: number }[] }
+  flags: string[]
+  preview: string | null
+}
+
+export async function uploadFile(file: File): Promise<UploadResult> {
+  const form = new FormData()
+  form.append('file', file)
+  const response = await fetch('/api/uploads', { method: 'POST', body: form, credentials: 'same-origin', headers: { 'X-Device-Id': getDeviceId() } })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) throw new ApiError(response.status, data.code, data.message_en ?? 'Upload failed.', data.message_zh ?? '上传失败。')
+  return data as UploadResult
+}

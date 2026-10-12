@@ -187,10 +187,23 @@ HELP = ("我可以帮您：查余额和账单、分析消费、找出异常交�
         "split bills, manage cards and subscriptions, handle investments, and chain tasks together (like preparing for a birthday).")
 
 
-def plan(text: str, today: date, *, pending_field: str | None = None, suspicious: bool = False) -> PlanOut:
-    result = _plan(text.strip(), today, pending_field)
+def plan(text: str, today: date, *, pending_field: str | None = None, suspicious: bool = False,
+         attachment: str | None = None) -> PlanOut:
+    result = _with_receipt(text.strip(), attachment) if attachment else None
+    result = result or _plan(text.strip(), today, pending_field)
     result.suspicious = suspicious
     return result
+
+
+def _with_receipt(text: str, receipt: str) -> PlanOut | None:
+    if has(text, "aa", "平摊", "分摊", "均摊", "split", "分一下", "分账"):
+        people = names_in(text)
+        if not people:
+            return ask("和谁一起平摊这张小票？", "Who are you splitting this receipt with?")
+        return one("collect", {"payees": people, "receipt": receipt})
+    if not text or has(text, "小票", "收据", "账单", "看看", "多少", "receipt", "bill", "what", "read"):
+        return one("read_receipt", {"receipt": receipt})
+    return None
 
 
 def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:

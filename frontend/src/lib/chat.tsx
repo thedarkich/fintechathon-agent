@@ -12,7 +12,7 @@ type Chat = {
   error: string
   planId: string | null
   setPlanId: (id: string | null) => void
-  send: (text: string) => Promise<void>
+  send: (text: string, attachmentId?: string) => Promise<void>
   apply: (result: PlanResult) => void
   reload: () => Promise<void>
   newConversation: () => Promise<void>
@@ -47,14 +47,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { void reload().catch(() => undefined) }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const send = useCallback(async (text: string) => {
+  const send = useCallback(async (text: string, attachmentId?: string) => {
     const message = text.trim()
     if (!message || pending) return
     setPending(message)
     setError('')
     navigate('/')
     try {
-      const body = await call<ChatResult>('/api/chat', { message, conversation_id: conversationId, lang })
+      const body = await call<ChatResult>('/api/chat', { message, conversation_id: conversationId, lang, attachment_id: attachmentId ?? null })
       setConversationId(body.conversation_id)
       setEscalated(body.escalated)
       setMessages((current) => [...current, ...body.messages])

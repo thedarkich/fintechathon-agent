@@ -216,6 +216,20 @@ export function CardView({ card }: { card: Card }) {
           </ul>
         </Panel>
       )
+    case 'receipt_reading':
+      return card.reading.is_receipt ? (
+        <Panel>
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="font-semibold">{card.reading.merchant}</p>
+            <p className="num text-lg font-bold">{yuan(card.reading.total_fen)}</p>
+          </div>
+          <ul className="mt-2 divide-y divide-[var(--rule)]">
+            {card.reading.items.slice(0, 12).map((item: { name: string; fen: number }, i: number) => <Row key={i} left={item.name} right={yuan(item.fen)} />)}
+          </ul>
+          {card.flags.length > 0 && <p className="mt-2 text-xs font-semibold text-vermilion">{tr('Hidden text or instructions were found in this file and ignored.', '文件中发现隐藏文字或指令，已忽略。')}</p>}
+          <p className="mt-2 text-[11px] text-ink3">{card.read_by === 'rules' ? tr('Read from the PDF text by fixed rules.', '由固定规则从 PDF 文字读取。') : tr('Read by the AI model into a fixed format.', '由 AI 模型按固定格式读取。')}</p>
+        </Panel>
+      ) : null
     case 'analysis': {
       const show = (v: number) => (card.unit === 'count' ? tr(`${v} times`, `${v} 次`) : card.unit === 'percent' ? `${v}%` : yuan(Math.round(v * 100)))
       return (
