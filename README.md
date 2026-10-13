@@ -8,7 +8,7 @@ A customer says what they need in Chinese or English ("给妈妈转200", "冻结
 
 The design is in [docs/SPEC.md](docs/SPEC.md).
 
-## Status (12 October 2026)
+## Status (13 October 2026)
 
 Working and tested:
 
@@ -19,9 +19,12 @@ Working and tested:
 - **Security**: injection screening, a strict plan schema the model cannot extend, no tool output ever reaching the model, approval bound to a hash of the exact details, safety locks, typed secrets hidden, replies written only by code.
 - **Planning**: dependency graph, clarification questions with choices built by code, stop, undo (compensation), edit, and human takeover through an operator console.
 - **Planner**: an offline Chinese/English planner (no key needed, used by the tests) and an OpenAI-compatible model planner with validation and fallback.
+- **Open-ended questions** ("周末晚上8点后喝咖啡花了多少钱") are answered by generated analysis code that must pass an allow-list check and runs in an isolated, resource-limited process; the code and result go to the audit log.
+- **Receipts**: split a bill from a receipt photo or PDF. The file is read in an isolated worker; hidden text and instructions aimed at a machine are flagged and raise any step based on the receipt to strong verification.
+- **Voice input** through the browser speech API where available.
 - **Frontend**: bilingual (中文 / English) web app, light and dark: landing, sign-in, Assistant (conversation + the 审批栏 sign-off row for each plan), Accounts, Bills, Wealth, Cards & controls (safety lock, passkeys, simulated phone, demo clock), Ledger (hash-chained audit) and an operator console. See [frontend/README.md](frontend/README.md).
 
-Not built yet: reading receipt photos, the code sandbox for open-ended analysis questions, voice input, an IM channel, the submission documents. The AI provider has not been chosen, so the model planner has only been tested with a fake model.
+Not built yet: an IM channel, deployment, the submission documents. The AI provider has not been chosen, so the model planner has only been tested with a fake model.
 
 ## Run it locally
 
@@ -33,7 +36,7 @@ cd ../backend && uv sync
 uv run uvicorn app.main:app --port 8000
 ```
 
-Open http://localhost:8000, choose **Open a demo account**, and pick any 6-digit PIN that isn't repeated or sequential. No AI key is needed: without one, the offline planner answers.
+Open http://localhost:8000, choose **Get started** and create an account (any email; a 6-digit PIN that isn't repeated or sequential). Every new account gets its own simulated bank. No AI key is needed: without one, the offline planner answers.
 
 For frontend work, run `npm run dev` in `frontend/` as well (Vite proxies `/api` to port 8000).
 
@@ -46,6 +49,16 @@ cd backend && uv run pytest -q
 ```
 
 The suite runs every scenario through the HTTP API with the offline planner, plus the model planner with a fake model. It covers the tier boundaries, approval hashes, verification, the safety lock, rollback, scheduling and the audit chain.
+
+### Evaluation sets
+
+[evals/intent.jsonl](evals/intent.jsonl) holds 120 everyday requests in Chinese and English across all six scenarios. [evals/attacks.jsonl](evals/attacks.jsonl) holds 25 attempts to get around the rules: ignoring the rules, skipping verification, fake authority, claiming to be verified already, changing the thresholds, splitting a payment to stay under the limit, typing secrets into the chat, scam payees and more. Each case runs on a newly opened customer through the HTTP API. The runner checks the planned actions, the tier and the status. For attacks it also checks, case by case, that the attempt was flagged, that nothing ran without approval and that typed secrets were hidden.
+
+```bash
+cd backend && uv run python -m app.evals ../evals/intent.jsonl ../evals/attacks.jsonl --out ../docs/eval
+```
+
+Offline planner, 13 October 2026: 120/120 requests and 25/25 attacks ([report](docs/eval/report-offline.md)). `--model` runs the same sets against the configured AI provider; that makes one paid call per case, so it never runs by default.
 
 ## Deploy
 

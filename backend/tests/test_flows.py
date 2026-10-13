@@ -197,6 +197,13 @@ def test_scheduled_transfer_runs_when_due(bank):
     assert bank.get("/api/bank/scheduled").json()["transfers"][0]["status"] == "done"
 
 
+def test_monthly_rent_keeps_its_amount_and_needs_strong_verification(bank):
+    plan = plan_of(bank.chat("每月1号给房东转3200房租"))  # '1号' is a date, not the amount
+    step = plan["steps"][0]
+    assert step["action"] == "schedule_transfer" and step["fen"] == 320_000
+    assert plan["tier"] == "red" and "每月" in step["text"]
+
+
 def test_scheduled_transfer_rechecked_at_run_time(bank):
     from datetime import timedelta
 

@@ -4,7 +4,8 @@
 {"id": "bal-04", "category": "balance", "text": "how much money do I have", "expect": {"actions": ["balance"], "status": "done"}}
 {"id": "bal-05", "category": "balance", "text": "我的存款有多少", "expect": {"actions": ["balance"], "status": "done"}}
 {"id": "txn-01", "category": "transactions", "text": "最近一周的交易记录", "expect": {"actions": ["transactions"], "tier": "green", "status": "done"}}
-{"id": "txn-02", "category": "transactions", "text": "看看我和张伟之间的转账记录", "expect": {"ask": true}}
+{"id": "txn-02", "category": "transactions", "text": "show my transfer history with Zhang Wei", "expect": {"ask": true}}
+{"id": "txn-06", "category": "transactions", "text": "看看我和张伟之间的转账记录", "expect": {"actions": ["transactions"], "status": "done"}}
 {"id": "txn-03", "category": "transactions", "text": "show my transactions from this week", "expect": {"actions": ["transactions"], "status": "done"}}
 {"id": "txn-04", "category": "transactions", "text": "今天的消费明细", "expect": {"actions": ["transactions"], "status": "done"}}
 {"id": "txn-05", "category": "transactions", "text": "show my payment history", "expect": {"actions": ["transactions"], "status": "done"}}
@@ -64,7 +65,7 @@
 {"id": "sch-04", "category": "scheduled", "text": "后天给爸爸转300", "expect": {"actions": ["schedule_transfer"]}}
 {"id": "sch-05", "category": "scheduled", "text": "every month on the 15th send mom 800", "expect": {"actions": ["schedule_transfer"]}}
 {"id": "sch-06", "category": "scheduled", "text": "我有哪些预约转账", "expect": {"actions": ["scheduled"], "status": "done"}}
-{"id": "aa-01", "category": "split", "text": "昨晚海底捞和张伟、王芳AA", "expect": {"status": "clarifying"}}
+{"id": "aa-01", "category": "split", "text": "Split last night's Haidilao with Zhang Wei and Wang Fang", "expect": {"status": "clarifying"}}
 {"id": "aa-02", "category": "split", "text": "昨晚海底捞和刘洋、王芳AA", "expect": {"actions": ["collect"], "tier": "yellow"}}
 {"id": "aa-03", "category": "split", "text": "Split last night's hotpot with Liu Yang and Wang Fang", "expect": {"actions": ["collect"], "tier": "yellow"}}
 {"id": "aa-04", "category": "split", "text": "和孙磊平摊300", "expect": {"actions": ["collect"], "tier": "yellow"}}

@@ -16,12 +16,13 @@ from collections import defaultdict
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from sqlalchemy import delete
 from sqlmodel import Session, select
 
 from app.agent.core import TIERS
 from app.config import Settings
 from app.main import create_app
-from app.models import AuditEntry, Message, UserAccount
+from app.models import AuditEntry, Message, RateBucket, UserAccount
 from app.runtime import Runtime
 
 ORIGIN = {"Origin": "http://testserver"}
@@ -71,6 +72,10 @@ def run(paths: list[Path], *, model: bool) -> dict:
                     if not line.strip():
                         continue
                     case = json.loads(line)
+                    # every case opens a customer, far beyond the sign-up limit; this database is the eval's own
+                    with Session(runtime.engine) as session:
+                        session.execute(delete(RateBucket))
+                        session.commit()
                     client.cookies.clear()
                     email = f"eval-{uuid.uuid4().hex[:10]}@example.test"
                     client.post("/api/register", json={"name": "Eval Customer", "email": email,

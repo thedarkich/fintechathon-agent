@@ -19,8 +19,11 @@ PATTERNS = [
     ("FAKE_AUTHORITY", r"(系统提示|开发者模式|测试模式|调试模式|越狱|管理员授权|最高权限)"),
     ("ALREADY_VERIFIED", r"(already|have) (been )?(verified|confirmed|approved|authorized)"),
     ("ALREADY_VERIFIED", r"(已经|已)(验证|确认|授权|批准)(过|了)"),
-    ("CHANGE_LIMITS", r"(set|change|raise|lift|remove) (the |my )?(daily )?(threshold|tier|risk level|permission)"),
-    ("CHANGE_LIMITS", r"(修改|提高|取消|关闭)(风控|权限|分级|阈值|安全等级)"),
+    ("CHANGE_LIMITS", r"(set|change|raise|lift|remove|disable|turn off) (the |my |your )?(daily |risk |security |approval )?"
+                      r"(threshold|tier|risk level|risk control|permission|verification rule)"),
+    ("CHANGE_LIMITS", r"(修改|提高|调高|放宽|取消|关闭|关掉|解除)(一下)?(风控|权限|分级|阈值|安全等级|验证规则|审批规则)"),
+    # '把风控阈值提高到10万': the rule comes first, the change after it
+    ("CHANGE_LIMITS", r"(风控|阈值|分级|安全等级|验证规则|审批规则).{0,6}(提高|调高|调到|改成|改为|修改|放宽|取消|关闭|关掉|去掉|解除)"),
     ("SPLIT_TO_EVADE", r"(split|break) (it )?(into|in) (several|many|small|multiple).*(under|below|avoid|so)"),
     ("SPLIT_TO_EVADE", r"(拆成|分成|分开)(几|多)?(笔|次).*(不超过|低于|避开|绕)"),
 ]
