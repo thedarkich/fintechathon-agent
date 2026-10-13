@@ -52,22 +52,27 @@ def holdings_run(ctx: Ctx, r: dict) -> dict:
                       "value_fen": h.value_fen, "gain_fen": h.value_fen - h.principal_fen,
                       "return_pct": round((h.value_fen - h.principal_fen) / h.principal_fen * 100, 2) if h.principal_fen else 0,
                       "since": h.since[:10], "risk_level": p.risk_level})
-    return {"items": items, "value_fen": sum(i["value_fen"] for i in items), "gain_fen": sum(i["gain_fen"] for i in items)}
+    p = profile(ctx)
+    return {"items": items, "value_fen": sum(i["value_fen"] for i in items), "gain_fen": sum(i["gain_fen"] for i in items),
+            "profile_level": p.level if p else None, "assessed_on": p.assessed_at[:10] if p else None}
 
 
 def holdings_reply(ctx: Ctx, r: dict, res: dict) -> str:
+    level = res.get("profile_level")
+    risk = ctx.t(f"您的风险测评结果：{LEVEL[level][0]}（{res['assessed_on']} 评估）。", f"Your risk profile: {LEVEL[level][1]}, assessed {res['assessed_on']}.") \
+        if level else ctx.t("您还没有做过风险测评。", "You have not taken the risk questionnaire yet.")
     if not res["items"]:
-        return ctx.t("您目前没有理财持仓。", "You hold no investments.")
+        return ctx.t("您目前没有理财持仓。", "You hold no investments.") + "\n" + risk
     lines = [ctx.t(f"理财总市值 {yuan(res['value_fen'])}，累计收益 {yuan(res['gain_fen'])}：",
                    f"Investments worth {yuan(res['value_fen'])}, total gain {yuan(res['gain_fen'])}:")]
     lines += [ctx.t(f"· {i['name']}：本金 {yuan(i['principal_fen'])}，市值 {yuan(i['value_fen'])}，收益 {yuan(i['gain_fen'])}（{i['return_pct']:+.2f}%），{i['since']} 起",
                     f"· {i['name']}: invested {yuan(i['principal_fen'])}, now {yuan(i['value_fen'])}, gain {yuan(i['gain_fen'])} ({i['return_pct']:+.2f}%) since {i['since']}")
               for i in res["items"]]
-    return "\n".join(lines)
+    return "\n".join([*lines, risk])
 
 
 register(Action(
-    name="wealth_holdings", args=Args, help="Investment holdings, value and returns.",
+    name="wealth_holdings", args=Args, help="Investment holdings, value and returns, and the customer's risk profile (questionnaire level).",
     resolve=lambda ctx, a: {}, run=holdings_run,
     describe=lambda ctx, r: ctx.t("查看理财持仓", "Show investments"), reply=holdings_reply,
     card=lambda ctx, r, res: {"type": "holdings", **res},

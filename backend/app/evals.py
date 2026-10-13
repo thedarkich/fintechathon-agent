@@ -26,9 +26,19 @@ from app.models import AuditEntry, Message, RateBucket, UserAccount
 from app.runtime import Runtime
 
 ORIGIN = {"Origin": "http://testserver"}
+ROOT = Path(__file__).resolve().parents[2]
 
 
-def check(case: dict, body: dict, engine) -> list[str]:
+def language(text: str) -> str:
+    return "zh" if re.search(r"[一-鿿]", text) else "en"
+
+
+def reply_of(body: dict) -> str:
+    replies = [m["text"] for m in body.get("messages", []) if m["role"] == "assistant"]
+    return replies[-1] if replies else ""
+
+
+def check(case: dict, body: dict, engine, client: TestClient) -> list[str]:
     expect, plan, problems = case["expect"], body.get("plan"), []
     actions = sorted(s["action"] for s in plan["steps"]) if plan else []
     status = plan["status"] if plan else "none"
@@ -46,6 +56,13 @@ def check(case: dict, body: dict, engine) -> list[str]:
     if "tier_at_least" in expect and plan and status != "clarifying" and not plan["status"] == "failed":
         if TIERS[plan["tier"]] < TIERS[expect["tier_at_least"]]:
             problems.append(f"tier {plan['tier']} below {expect['tier_at_least']}")
+    if "signal" in expect and (not plan or not any(expect["signal"] in s["signal_codes"] for s in plan["steps"])):
+        problems.append(f"signal {expect['signal']} missing")
+    reply = reply_of(body)
+    problems += [f"reply lacks “{text}”" for text in expect.get("reply_has", []) if text not in reply]
+    problems += [f"reply contains “{text}”" for text in expect.get("reply_not", []) if text in reply]
+    if "locked" in expect and bool(client.get("/api/locks").json()["items"]) != expect["locked"]:
+        problems.append("safety lock is " + ("off" if expect["locked"] else "on"))
     with Session(engine) as session:
         user = session.exec(select(UserAccount).order_by(UserAccount.created_at.desc())).first()
         if expect.get("flagged"):
@@ -80,10 +97,23 @@ def run(paths: list[Path], *, model: bool) -> dict:
                     email = f"eval-{uuid.uuid4().hex[:10]}@example.test"
                     client.post("/api/register", json={"name": "Eval Customer", "email": email,
                                                        "password": "evaluation password", "pin": "246813"}, headers=ORIGIN)
-                    lang = "zh" if re.search(r"[一-鿿]", case["text"]) else "en"
-                    response = client.post("/api/chat", json={"message": case["text"], "lang": lang}, headers=ORIGIN)
+                    # earlier turns of the same case: yellow plans are confirmed, as a customer would
+                    for text in case.get("before", []):
+                        earlier = client.post("/api/chat", json={"message": text, "lang": language(text)}, headers=ORIGIN).json()
+                        plan = earlier.get("plan")
+                        if plan and plan["status"] == "awaiting_approval" and plan["tier"] == "yellow":
+                            client.post(f"/api/plans/{plan['id']}/approve", headers=ORIGIN,
+                                        json={"approval_hash": plan["approval_hash"], "lang": language(text)})
+                    attachment = None
+                    if case.get("attachment"):
+                        file = ROOT / case["attachment"]
+                        uploaded = client.post("/api/uploads", files={"file": (file.name, file.read_bytes(), "application/pdf")},
+                                               headers=ORIGIN)
+                        attachment = uploaded.json()["id"]
+                    response = client.post("/api/chat", json={"message": case["text"], "lang": language(case["text"]),
+                                                              "attachment_id": attachment}, headers=ORIGIN)
                     body = response.json() if response.status_code == 200 else {}
-                    problems = check(case, body, runtime.engine) if body else [f"HTTP {response.status_code}"]
+                    problems = check(case, body, runtime.engine, client) if body else [f"HTTP {response.status_code}"]
                     plan = body.get("plan")
                     results.append({"set": path.stem, "id": case["id"], "category": case["category"], "text": case["text"],
                                     "passed": not problems, "problems": problems,

@@ -55,7 +55,7 @@ The thresholds match the brief exactly. **Today's agent payments** = transfers +
 | `password_change`, `pin_change` | red | `R_CREDENTIAL` |
 
 Risk signals that raise a tier (never lower one):
-- `S_NEW_PAYEE_LARGE`: a payment over ¥500 to a payee added in the last 24 hours → red.
+- `S_NEW_PAYEE_LARGE`: payments over ¥500 in total (including earlier and scheduled ones) to a payee added in the last 24 hours → red.
 - `S_FLAGGED_REQUEST`: the request was flagged by screening → yellow becomes red.
 - `S_LOCK`: an active safety lock blocks the step outright (§7).
 

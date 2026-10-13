@@ -7,7 +7,7 @@ from app.agent.core import Action, Ctx, higher, tier_of
 from app.bank import ledger
 
 DAILY_LIMIT_FEN = 100_000  # ¥1,000: at or under is yellow, over is red
-NEW_PAYEE_FEN = 50_000  # ¥500 to a payee added in the last 24 hours raises to red
+NEW_PAYEE_FEN = 50_000  # over ¥500 in total to a payee added in the last 24 hours raises to red
 
 RULE_TEXT = {
     "G_QUERY": ("只读查询，自动执行", "Read-only query, runs automatically"),
@@ -27,14 +27,14 @@ RULE_TEXT = {
     "R_CREDENTIAL": ("修改密码，需强验证", "Credential change: strong verification needed"),
 }
 SIGNAL_TEXT = {
-    "S_NEW_PAYEE_LARGE": ("向 24 小时内新加的收款人付款超过 ¥500", "Over ¥500 to a payee added in the last 24 hours"),
+    "S_NEW_PAYEE_LARGE": ("向 24 小时内新加的收款人累计付款超过 ¥500", "Over ¥500 in total to a payee added in the last 24 hours"),
     "S_FLAGGED_REQUEST": ("请求中有试图绕过安全规则的内容", "The request tried to get around the safety rules"),
     "S_FLAGGED_CONTENT": ("上传的小票里有隐藏文字或给机器的指令", "The uploaded receipt contains hidden text or instructions aimed at a machine"),
 }
 
 
 def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_same_day_fen: int = 0,
-           flagged: bool = False, already_counted_fen: int = 0) -> dict:
+           earlier_to_payee_fen: int = 0, flagged: bool = False, already_counted_fen: int = 0) -> dict:
     rule = action.rule_for(ctx, resolved)
     payment = action.payment(resolved) if action.payment else 0
     signals: list[str] = []
@@ -44,9 +44,12 @@ def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_s
                      + earlier_same_day_fen + payment)
         rule = "Y_SMALL_PAYMENT" if day_total <= DAILY_LIMIT_FEN else "R_LARGE_PAYMENT"
     tier = tier_of(rule)
-    if payment > NEW_PAYEE_FEN and resolved.get("payee_new"):
-        signals.append("S_NEW_PAYEE_LARGE")
-        tier = higher(tier, "red")
+    if payment and resolved.get("payee_new") and resolved.get("payee_id"):
+        # in total, so two ¥400 payments to a payee added today count as ¥800
+        to_payee = ledger.paid_to(ctx.session, ctx.user.id, resolved["payee_id"]) + earlier_to_payee_fen + payment
+        if to_payee > NEW_PAYEE_FEN:
+            signals.append("S_NEW_PAYEE_LARGE")
+            tier = higher(tier, "red")
     if flagged and tier == "yellow":
         signals.append("S_FLAGGED_REQUEST")
         tier = "red"

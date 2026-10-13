@@ -22,6 +22,7 @@ def plan_view(plan: Plan, ctx: Ctx) -> dict:
             "id": s["id"], "action": s["action"], "status": s.get("status") or "new", "tier": s.get("tier"),
             "rule": s.get("rule"), "rule_text": explain(s["rule"], ctx.lang) if s.get("rule") else None,
             "signals": [explain_signal(x, ctx.lang) for x in s.get("signals", [])],
+            "signal_codes": s.get("signals", []),
             "text": text, "after": s.get("after", []), "run_at": s.get("run_at_resolved"),
             "error": (error.get("zh") if ctx.lang == "zh" else error.get("en")) if error else None,
             "error_code": error.get("code") if error else None,

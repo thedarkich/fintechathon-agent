@@ -139,7 +139,7 @@ def payee_from(text: str) -> str | None:
         r"(?:转|汇|打)(?:账)?\s*[\d零一二两三四五六七八九十百千万.]+\s*(?:元|块)?\s*给\s*([一-龥]{2,4})",
         r"([一-龥]{2,3}?)(?:借我|借给我)",  # '孙磊借我的钱还他600'
         r"\bto\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
-        r"\b(?:send|pay|transfer)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+\d",
+        r"\b(?:send|pay|transfer|wire)\s+(?:back\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+\d",  # 'pay back Sun Lei 600'
     ]
     for pattern in patterns:
         if m := re.search(pattern, text):
@@ -192,23 +192,48 @@ def ask(zh: str, en: str) -> PlanOut:
     return PlanOut(ask=AskOut(zh=zh, en=en))
 
 
-def transactions(text: str, category: str | None) -> PlanOut:
-    days = 30
-    if has(text, "一周", "7天", "七天", "这周", "week"):
+def transactions(text: str, category: str | None, *, incoming: bool = False) -> PlanOut:
+    days = None
+    if has(text, "上周", "上星期", "last week"):
+        days = 14
+    elif has(text, "一周", "7天", "七天", "这周", "week"):
         days = 7
     elif has(text, "今天", "today"):
         days = 1
+    elif has(text, "上个月", "上月", "last month"):
+        days = 62
     payee = None
     if m := re.search(r"(?:和|跟|与)\s*([一-龥]{2,4}?)(?:之间|的)", text) or re.search(r"\bwith\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", text):
         payee = m.group(1)  # '我和张伟之间的转账记录', 'transfer history with Zhang Wei'
     elif has(text, "给", "to "):
         payee = payee_from(text)
-    args = {"days": days, "limit": 10}
+    args = {"limit": 10}
     if category:
         args["category"] = category
     if payee:
         args["payee"] = payee
+    # '我在星巴克的消费记录', 'payments at Starbucks'
+    if m := re.search(r"在\s*([一-龥A-Za-z0-9]{2,12}?)\s*的?(?:消费|花|买|支付|付款)", text) \
+            or re.search(r"\bat\s+([A-Z][A-Za-z']+(?:\s+[A-Z][A-Za-z']+)?)", text):
+        args["merchant"] = m.group(1)
+    args["days"] = days or (90 if "merchant" in args else 30)  # one shop needs a longer look back
+    if incoming:
+        args["direction"] = "in"
     return one("transactions", args)
+
+
+def payees_each(text: str) -> list[str]:
+    """People who each get the same amount: '给爸爸妈妈各转500', '给张伟和王芳各转200'."""
+    m = re.search(r"给\s*([一-龥、，, 和]{2,20}?)\s*各", text)
+    if not m:
+        return []
+    chunk, people = m.group(1), []
+    for word in RELATION_WORDS:
+        if word in chunk:
+            people.append(word)
+            chunk = chunk.replace(word, " ")
+    people += [p for p in re.split(r"[、，, 和]+", chunk) if len(p) >= 2]
+    return people[:5] if len(people) >= 2 else []
 
 
 HELP = ("我可以帮您：查余额和账单、分析消费、找出异常交易、转账和预约转账、AA 收款、管理银行卡、"
@@ -240,7 +265,9 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     lowered = text.lower()
     money = amounts(text)
 
-    if has(text, "人工", "真人", "客服", "human", "real person", "operator", "talk to someone", "agent please"):
+    # asking for a person; '客服已经批准了' only mentions one
+    if has(text, "转人工", "人工客服", "人工服务", "找客服", "联系客服", "要客服", "接客服", "真人", "human", "real person",
+           "operator", "talk to someone", "agent please") or text.strip(" 。！!") in ("人工", "客服"):
         return one("handoff", {"reason": text[:200]})
 
     # cross-scenario: birthday preparation
@@ -278,6 +305,8 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         if has(text, "冻结", "锁卡", "锁定", "freeze", "lock", "block"):
             return one("card_freeze", {"card": hint})
         if has(text, "限额", "limit"):
+            if not money and has(text, "多少", "是什么", "查", "看", "what", "how much", "show"):
+                return one("cards")  # '我的虚拟卡日限额是多少' asks; it changes nothing
             amount = money[0] if money else None
             return one("card_limit", {"card": hint, "daily_limit_yuan": amount})
         switches = {}
@@ -309,8 +338,14 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     if sub and has(text, "提醒", "remind"):
         days = next((int(m) for m in re.findall(r"(\d+)\s*(?:天|days?)", lowered)), 3)
         return one("subscription_remind", {"merchant": sub, "days_before": min(max(days, 1), 30)})
-    if has(text, "订阅", "自动续费", "自动扣费", "自动扣款", "代扣", "会员费", "subscription", "recurring", "direct debit", "auto-renew"):
-        if has(text, "取消", "cancel") and sub is None:
+    if has(text, "订阅", "自动续费", "自动扣费", "自动扣款", "代扣", "会员", "subscription", "membership", "recurring",
+           "direct debit", "auto-renew"):
+        if has(text, "取消", "退订", "不要", "cancel", "unsubscribe", "stop") and sub is None:
+            # a service the customer names but doesn't have ('取消Netflix会员') is refused by the bank's records
+            named = re.search(r"(?:取消|退订|不要)掉?\s*([A-Za-z0-9一-龥]{2,12}?)\s*的?(?:会员|订阅|自动续费|连续包月)", text) \
+                or re.search(r"(?:cancel|stop)\s+(?:my\s+)?([a-z0-9 ]{2,20}?)\s+(?:subscription|membership)", lowered)
+            if named:
+                return one("subscription_cancel", {"merchant": named.group(1).strip()})
             return ask("要取消哪一项订阅？", "Which subscription should I cancel?")
         return one("subscriptions")
 
@@ -332,7 +367,8 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         return one("collect", args)
 
     # anomalies
-    if has(text, "异常", "可疑", "陌生", "不认识", "盗刷", "奇怪", "suspicious", "unusual", "fraud", "anomal", "strange", "don't recognise", "don't recognize"):
+    if has(text, "异常", "可疑", "陌生", "不认识", "盗刷", "奇怪", "重复扣款", "重复扣费", "扣了两次", "多扣", "suspicious", "unusual",
+           "fraud", "anomal", "strange", "don't recognise", "don't recognize", "double charged", "charged twice", "duplicate charge"):
         return one("anomalies")
 
     # reserves, before wealth: '预留2000元旅游基金' is money set aside, not a fund purchase
@@ -345,7 +381,10 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
             return one("reserve_create", {"amount_yuan": money[0], "name": name})
         return one("reserves")
 
-    # wealth
+    # wealth; '我的风险等级是什么' is a question (the holdings answer includes the risk profile)
+    if has(text, "风险等级", "风险承受", "risk level", "what's my risk", "what is my risk") \
+            and not has(text, "测评", "评估", "重新", "重做", "redo", "retake", "update", "questionnaire"):
+        return one("wealth_holdings")
     if has(text, "风险测评", "风险评估", "测评", "risk assessment", "risk profile", "risk questionnaire"):
         return one("risk_assessment")
     if has(text, "赎回", "卖出", "redeem", "sell"):
@@ -364,7 +403,7 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         elif has(text, "三个月", "3个月", "3 months", "短期", "short term"):
             horizon = 2
         return one("wealth_recommend", {"amount_yuan": money[0] if money else None, "horizon_months": horizon})
-    if has(text, "申购", "买入", "购买", "buy", "invest in") and (product_words(text) or has(text, "基金", "理财", "fund")):
+    if has(text, "申购", "买", "buy", "invest in") and (product_words(text) or has(text, "基金", "理财", "fund")):
         products = product_words(text)
         if not products:
             return ask("要购买哪一款产品？", "Which product would you like to buy?")
@@ -376,12 +415,16 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
 
     # history, before transfers and spending: '转账记录' and '消费明细' are lists to look at
     category = next((c for c, words in CATEGORY_WORDS if has(text, *words)), None)
-    if has(text, "记录", "明细", "流水", "清单", "history", "records"):
-        return transactions(text, category)
+    incoming = has(text, "收到", "到账", "进账", "收入", "工资", "received", "income", "incoming", "salary")
+    if incoming or has(text, "记录", "明细", "流水", "清单", "history", "records") \
+            or re.search(r"转了(多少|几|哪些)|转过|付了(多少|几)", text):  # '上周给妈妈转了多少钱' asks about the past
+        return transactions(text, category, incoming=incoming)
 
     # transfers
     if has(text, "预约转账", "定时转账", "scheduled transfer") and has(text, "查看", "有哪些", "list", "show", "what"):
         return one("scheduled")
+    if "各" in text and money and (people := payees_each(text)):
+        return PlanOut(steps=[step(i + 1, "transfer", {"payee": p, "amount_yuan": money[0]}) for i, p in enumerate(people)])
     colloquial = re.search(r"给\s*[一-龥]{1,4}?\s*打\s*[\d零一二两三四五六七八九十百千万]"  # '给王芳打300块'
                            r"|还(?:给)?\s*(?:他|她|[一-龥]{2,3}?)\s*[\d零一二两三四五六七八九十百千万]", text)  # '还他600'
     if (colloquial or has(text, "转", "汇", "打钱", "打款", "付给", "还钱", "transfer", "send", "pay ", "wire")) \
@@ -408,9 +451,11 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     # spending, reports, history
     year = has(text, "年", "year", "annual")
     offset = -1 if has(text, "上个月", "上月", "去年", "last month", "last year", "previous") else 0
-    if has(text, "报告", "总结", "报表", "report", "summary", "review"):
+    if has(text, "比上个月", "和上个月比", "跟上个月比", "环比", "compared to last month", "vs last month"):
+        return one("report", {"period": "month", "offset": 0})  # this month's report compares it with the last
+    if has(text, "报告", "总结", "报表", "年度账单", "月度账单", "年账单", "report", "summary", "review"):
         return one("report", {"period": "year" if year else "month", "offset": offset if (offset or year or has(text, "本月", "这个月", "this month", "今年", "this year")) else -1})
-    if has(text, "花了", "消费", "支出", "开销", "花销", "spend", "spent", "spending", "expenses"):
+    if has(text, "花了", "消费", "支出", "开销", "花销", "花太多", "花得", "花钱", "spend", "spent", "spending", "expenses"):
         return one("spending", {"period": "year" if year else "month", "offset": offset, "category": category})
     if has(text, "交易", "账单", "transactions", "statement", "payments"):
         return transactions(text, category)

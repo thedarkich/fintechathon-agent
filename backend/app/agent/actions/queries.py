@@ -77,6 +77,11 @@ class TransactionsArgs(Args):
     limit: int = Field(default=10, ge=1, le=50)
 
 
+# English names of merchants whose records are in Chinese
+MERCHANT_ALIASES = {"starbucks": "星巴克", "luckin": "瑞幸", "haidilao": "海底捞", "meituan": "美团", "didi": "滴滴",
+                    "taobao": "淘宝", "jd": "京东", "jingdong": "京东", "pinduoduo": "拼多多", "heytea": "喜茶"}
+
+
 def transactions_resolve(ctx: Ctx, args: TransactionsArgs) -> dict:
     end = args.end or ctx.today
     start = args.start or (end - timedelta(days=(args.days or 30) - 1))
@@ -97,8 +102,11 @@ def transactions_resolve(ctx: Ctx, args: TransactionsArgs) -> dict:
     if args.category and category is None:
         category = next((c for c, (zh, en) in LABELS.items()
                          if args.category in (zh, en.lower(), en) or args.category.lower() in en.lower()), None)
+    payee = ctx.session.get(Payee, payee_id) if payee_id else None
+    merchant = MERCHANT_ALIASES.get((args.merchant or "").casefold().replace(" ", ""), args.merchant)
     return {"start": start.isoformat(), "end": end.isoformat(), "category": category,
-            "merchant": args.merchant, "payee_id": payee_id, "direction": args.direction,
+            "merchant": merchant, "payee_id": payee_id, "direction": args.direction,
+            "payee_name": payee.name if payee else None, "payee_name_en": (payee.name_en or payee.name) if payee else None,
             "min_fen": to_fen(args.min_yuan) if args.min_yuan is not None else None,
             "max_fen": to_fen(args.max_yuan) if args.max_yuan is not None else None, "limit": args.limit}
 
@@ -133,8 +141,26 @@ def txn_view(t: Txn) -> dict:
             "channel": t.channel, "status": t.status, "kind": t.kind}
 
 
+def txn_scope(ctx: Ctx, r: dict) -> str:
+    """What the search was limited to, so an empty answer still says what was looked for."""
+    zh, en = [], []
+    if r.get("merchant"):
+        zh.append(f"商户“{r['merchant']}”")
+        en.append(f"merchant “{r['merchant']}”")
+    if r.get("payee_name"):
+        zh.append(f"收款人 {r['payee_name']}")
+        en.append(f"payee {r['payee_name_en']}")
+    if r.get("category"):
+        zh.append(f"类别 {LABELS[r['category']][0]}")
+        en.append(f"category {LABELS[r['category']][1]}")
+    if r.get("direction") in ("in", "out"):
+        zh.append("只看收入" if r["direction"] == "in" else "只看支出")
+        en.append("money in only" if r["direction"] == "in" else "money out only")
+    return ctx.t(f"（{'，'.join(zh)}）", f" ({', '.join(en)})") if zh else ""
+
+
 def transactions_reply(ctx: Ctx, r: dict, result: dict) -> str:
-    span = f"{r['start']} ~ {r['end']}"
+    span = f"{r['start']} ~ {r['end']}{txn_scope(ctx, r)}"
     if not result["count"]:
         return ctx.t(f"{span} 没有符合条件的交易。", f"No matching transactions between {span}.")
     head = ctx.t(f"{span} 共 {result['count']} 笔，支出 {yuan(result['out_fen'])}，收入 {yuan(result['in_fen'])}。",
@@ -151,7 +177,7 @@ register(Action(
     name="transactions", args=TransactionsArgs,
     help="Transaction history. days or start/end (YYYY-MM-DD), category, merchant, payee, direction in|out, min_yuan, max_yuan, limit.",
     resolve=transactions_resolve, run=transactions_run,
-    describe=lambda ctx, r: ctx.t("查询交易记录", "List transactions"), reply=transactions_reply,
+    describe=lambda ctx, r: ctx.t("查询交易记录", "List transactions") + txn_scope(ctx, r), reply=transactions_reply,
     card=lambda ctx, r, result: {"type": "transactions", **result},
     examples=["最近一周的消费", "show my transactions with Zhang Wei"],
 ))

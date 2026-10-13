@@ -109,6 +109,7 @@ def prepare(ctx: Ctx, plan: Plan) -> Plan:
     steps = copy.deepcopy(plan.steps)
     results = results_of(steps)
     earlier_by_day: dict[date, int] = {}
+    earlier_by_payee: dict[str | None, int] = {}
     plan.ask = None
     for step in order(steps):
         if step.get("status") in FINISHED:
@@ -143,10 +144,13 @@ def prepare(ctx: Ctx, plan: Plan) -> Plan:
                                                               "resolved": resolved}, plan.id)
         pay_day = date.fromisoformat(resolved["pay_day"]) if resolved.get("pay_day") else (
             when.date() if when else ctx.today)
+        payee = resolved.get("payee_id")
         decision = policy.decide(ctx, action, resolved, pay_day=pay_day,
-                                 earlier_same_day_fen=earlier_by_day.get(pay_day, 0), flagged=bool(plan.flags))
+                                 earlier_same_day_fen=earlier_by_day.get(pay_day, 0),
+                                 earlier_to_payee_fen=earlier_by_payee.get(payee, 0), flagged=bool(plan.flags))
         if action.payment:
             earlier_by_day[pay_day] = earlier_by_day.get(pay_day, 0) + decision["payment_fen"]
+            earlier_by_payee[payee] = earlier_by_payee.get(payee, 0) + decision["payment_fen"]
         step.update(tier=decision["tier"], rule=decision["rule"], signals=decision["signals"],
                     day_total_fen=decision["day_total_fen"])
         audit.append(ctx.session, ctx.user.id, "policy", {"step": step["id"], **decision}, plan.id)

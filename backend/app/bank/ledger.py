@@ -107,3 +107,19 @@ def payments_on(session: Session, user_id: str, day: date, *, include_scheduled:
         )
     ).one()
     return int(posted) + int(scheduled) + int(orders)
+
+
+def paid_to(session: Session, user_id: str, payee_id: str) -> int:
+    """Everything sent to one payee so far, plus transfers to them that are scheduled and not yet run."""
+    posted = session.exec(
+        select(func.coalesce(func.sum(-Txn.amount_fen), 0)).where(
+            Txn.user_id == user_id, Txn.payee_id == payee_id, Txn.kind.in_(PAYMENT_KINDS), Txn.status == "posted",
+        )
+    ).one()
+    scheduled = session.exec(
+        select(func.coalesce(func.sum(ScheduledTransfer.amount_fen), 0)).where(
+            ScheduledTransfer.user_id == user_id, ScheduledTransfer.payee_id == payee_id,
+            ScheduledTransfer.status.in_(["scheduled", "waiting_approval"]),
+        )
+    ).one()
+    return int(posted) + int(scheduled)

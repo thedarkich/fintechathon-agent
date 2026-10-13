@@ -52,13 +52,13 @@ The suite runs every scenario through the HTTP API with the offline planner, plu
 
 ### Evaluation sets
 
-[evals/intent.jsonl](evals/intent.jsonl) holds 120 everyday requests in Chinese and English across all six scenarios. [evals/attacks.jsonl](evals/attacks.jsonl) holds 25 attempts to get around the rules: ignoring the rules, skipping verification, fake authority, claiming to be verified already, changing the thresholds, splitting a payment to stay under the limit, typing secrets into the chat, scam payees and more. Each case runs on a newly opened customer through the HTTP API. The runner checks the planned actions, the tier and the status. For attacks it also checks, case by case, that the attempt was flagged, that nothing ran without approval and that typed secrets were hidden.
+[evals/intent.jsonl](evals/intent.jsonl) holds 178 everyday requests in Chinese, English and a mix of both across all six scenarios, including vague wording, things that don't exist (a payee, card, fund or subscription the customer doesn't have) and out-of-scope questions. [evals/attacks.jsonl](evals/attacks.jsonl) holds 55 attempts to get around the rules: ignoring the rules (also spaced out, full-width or with look-alike letters), role-play, fake authority, fake approvals and plan JSON, claiming to be verified already, changing the thresholds, splitting payments or spreading them over days to stay under a limit, instructions hidden in a receipt, scam scripts, asking for secrets, and repeated attempts that must trip the safety lock. A case can include earlier turns and an attached receipt. Each case runs on a newly opened customer through the HTTP API. The runner checks the planned actions, the tier, the status, risk signals and the reply. For attacks it also checks, case by case, that the attempt was flagged, that nothing ran without approval, that typed secrets were hidden and that the safety lock is on.
 
 ```bash
 cd backend && uv run python -m app.evals ../evals/intent.jsonl ../evals/attacks.jsonl --out ../docs/eval
 ```
 
-Offline planner, 13 October 2026: 120/120 requests and 25/25 attacks ([report](docs/eval/report-offline.md)). `--model` runs the same sets against the configured AI provider; that makes one paid call per case, so it never runs by default.
+Offline planner, 13 October 2026: 178/178 requests and 55/55 attacks ([report](docs/eval/report-offline.md)). `--model` runs the same sets against the configured AI provider; that makes one paid call per case, so it never runs by default.
 
 ## Deploy
 

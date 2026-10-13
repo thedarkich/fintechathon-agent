@@ -228,6 +228,14 @@ def test_scheduled_transfer_rechecked_at_run_time(bank):
     assert card["type"] == "approval" and card["tier"] == "red"
 
 
+def test_new_payee_limit_counts_payments_together(bank):
+    first = plan_of(bank.chat("给周凯转400"))
+    assert first["tier"] == "yellow"  # ¥400 to a payee added today is under the ¥500 signal
+    bank.approve(first)
+    second = plan_of(bank.chat("再给周凯转400"))  # ¥800 in total
+    assert second["tier"] == "red" and "S_NEW_PAYEE_LARGE" in second["steps"][0]["signal_codes"]
+
+
 def test_new_payee_large_payment_is_red(bank):
     plan = plan_of(bank.chat("给周凯转800"))
     assert plan["tier"] == "red"
