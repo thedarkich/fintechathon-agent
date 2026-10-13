@@ -2,7 +2,7 @@
 export const zh = {
   brand: '银行代办',
   brand_en: 'Bank Agent',
-  tagline: 'AI 拆解请求，规则管钱。',
+  tagline: '你说一句，我来办；动钱之前，先问你。',
   nav_label: '导航',
   copied: '已复制',
 
@@ -34,8 +34,8 @@ export const zh = {
   col_detail: '内容',
   col_hash: '哈希',
 
-  ledger_title: '账本',
-  ledger_sub: '每一次请求、计划、规则判定、确认和结果都记在这里。每条记录都带着上一条的哈希，任何一处被改动，链就会断开。',
+  ledger_title: '记录',
+  ledger_sub: '你办过的每件事，以及背后每一步的记录。记录用哈希串起来，任何改动都会被发现。',
   ledger_empty: '还没有记录。',
 }
 
@@ -44,7 +44,7 @@ export type Strings = typeof zh
 export const en: Strings = {
   brand: '银行代办',
   brand_en: 'Bank Agent',
-  tagline: 'The AI plans. The rules hold the purse strings.',
+  tagline: 'Say it once. We do it. Money only moves when you say yes.',
   nav_label: 'Main',
   copied: 'copied',
 
@@ -73,7 +73,7 @@ export const en: Strings = {
   col_detail: 'Detail',
   col_hash: 'Hash',
 
-  ledger_title: 'Ledger',
-  ledger_sub: 'Every request, plan, rule decision, approval and result is written here. Each entry carries the hash of the one before it, so changing any of them breaks the chain.',
+  ledger_title: 'History',
+  ledger_sub: 'Everything you asked for, and the record of every step behind it. Entries are chained by hashes, so any change would be noticed.',
   ledger_empty: 'Nothing recorded yet.',
 }

@@ -27,18 +27,18 @@ export function SiteHeader({ workspace = false, status }: { workspace?: boolean;
   }
   const home = user ? '/assistant' : getAdminToken() ? '/operator' : '/login'
   const links = (workspace
-    ? [['/assistant', tr('Assistant', '助手')], ['/accounts', tr('Accounts', '账户')], ['/transfers', tr('Transfers', '转账')], ['/bills', tr('Bills', '账单')], ['/wealth', tr('Wealth', '理财')], ['/controls', tr('Controls', '控制台')], ['/ledger', tr('Ledger', '账本')], ['/operator', tr('Operator', '客服')]]
-    : [['/?section=workflow', tr('How it works', '工作流程')], ['/?section=stack', tr('Building blocks', '核心能力')], [home, tr('Workspace', '工作台')]]
+    ? [['/assistant', tr('Assistant', '助手')], ['/accounts', tr('Accounts', '账户与转账')], ['/bills', tr('Spending', '账单')], ['/wealth', tr('Invest', '理财')], ['/controls', tr('Cards', '卡片与安全')], ['/ledger', tr('History', '记录')], ['/operator', tr('Staff', '客服')]]
+    : [['/?section=features', tr('What it does', '能做什么')], ['/how', tr('How it stays safe', '安全原理')], [home, tr('Open the app', '进入')]]
   ).filter(([to]) => to !== '/operator' || isOperator(user)).filter(([to]) => !workspace || user || to === '/operator')
   return <header className="site-header">
     <div className="site-topbar">
-      <Link to="/" className="site-brand" aria-label={tr('Bank Agent home', '银行代办首页')}><BrandSeal size={40} /><span>{t.brand_en}</span></Link>
+      <Link to="/" className="site-brand" aria-label={tr('Bank Agent home', '银行代办首页')}><BrandSeal size={40} /><span>{tr(t.brand_en, t.brand)}</span></Link>
       <div className="site-actions">
         <LangSwitch /><ThemeSwitch />
         {signedIn ? <>
           <span className="account-label" title={user?.email}>{user ? user.name : tr('Operator token', '工作人员令牌')}</span>
           {workspace ? <button type="button" className="site-button secondary" disabled={busy} onClick={() => void signOut()}>{busy ? tr('Signing out…', '正在退出…') : tr('Sign out', '退出登录')}</button>
-            : <Link className="site-button" to={home}>{tr('Open workspace', '进入工作台')} <span aria-hidden>→</span></Link>}
+            : <Link className="site-button" to={home}>{tr('Open the assistant', '打开助手')} <span aria-hidden>→</span></Link>}
         </> : <>
           <Link className="site-signin" to="/login">{tr('Sign in', '登录')}</Link>
           <Link className="site-button" to="/signup">{tr('Get started', '开始使用')} <span aria-hidden>→</span></Link>
@@ -57,5 +57,5 @@ export function SiteHeader({ workspace = false, status }: { workspace?: boolean;
 
 export function SiteFooter() {
   const { tr, t } = useLang()
-  return <footer className="site-footer"><Link className="site-brand" to="/"><BrandSeal size={36} /><span>{t.brand_en}</span></Link><span>© 2026 {t.brand_en} · {t.tagline}</span><Link to="/ledger">{tr('Open your ledger', '查看你的账本')} →</Link></footer>
+  return <footer className="site-footer"><Link className="site-brand" to="/"><BrandSeal size={36} /><span>{tr(t.brand_en, t.brand)}</span></Link><span>© 2026 {tr(t.brand_en, t.brand)} · {t.tagline} · {tr("Simulated bank, no real money", "模拟银行，不涉及真实资金")}</span><Link to="/how">{tr('How it stays safe', '安全原理')} →</Link></footer>
 }

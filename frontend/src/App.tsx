@@ -32,7 +32,7 @@ const AuthPage = page(() => import('./pages/Auth'))
 const TeamAccess = page(() => import('./pages/TeamAccess'))
 const Assistant = page(() => import('./pages/Assistant'))
 const Accounts = page(() => import('./pages/Accounts'))
-const Transfers = page(() => import('./pages/Transfers'))
+const How = page(() => import('./pages/How'))
 const Bills = page(() => import('./pages/Bills'))
 const Wealth = page(() => import('./pages/Wealth'))
 const Controls = page(() => import('./pages/Controls'))
@@ -82,10 +82,11 @@ export default function App() {
                 <Route path="/login" element={<AuthPage />} />
                 <Route path="/signup" element={<Register />} />
                 <Route path="/team-token" element={<TeamAccess />} />
+                <Route path="/how" element={<How />} />
                 <Route element={<Workspace />}>
                   <Route path="/assistant" element={<Assistant />} />
                   <Route path="/accounts" element={<Accounts />} />
-                  <Route path="/transfers" element={<Transfers />} />
+                  <Route path="/transfers" element={<Navigate to="/accounts#transfers" replace />} />
                   <Route path="/bills" element={<Bills />} />
                   <Route path="/wealth" element={<Wealth />} />
                   <Route path="/controls" element={<Controls />} />

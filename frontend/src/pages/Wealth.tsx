@@ -17,7 +17,7 @@ export default function Wealth() {
   const ask = (text: string) => void send(text)
   return (
     <main tabIndex={-1} className="page-content ">
-      <h1 className="cond text-[2.4rem] font-extrabold leading-tight">{tr('Wealth', '理财')}</h1>
+      <h1 className="cond text-[2.4rem] font-extrabold leading-tight">{tr('Invest', '理财')}</h1>
       <p className="max-w-[44rem] text-ink2">{tr('Your holdings and the bank’s products. You can only buy a product at or below your risk level; buying needs strong verification, redeeming needs one confirmation. All products here are simulated, and nothing here is investment advice.', '你的持仓和银行的产品。只能购买不高于你风险等级的产品；申购需要强验证，赎回只需确认。这里的产品均为模拟，不构成投资建议。')}</p>
       {!d ? <div className="mt-6 h-64 animate-pulse rounded-box bg-paper2" /> : <>
         <dl className="metric-grid mt-7">

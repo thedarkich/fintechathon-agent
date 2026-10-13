@@ -26,7 +26,7 @@ export default function Bills() {
     <main tabIndex={-1} className="page-content ">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
-          <h1 className="cond text-[2.4rem] font-extrabold leading-tight sm:text-[2.9rem]">{tr('Bills', '账单')}</h1>
+          <h1 className="cond text-[2.4rem] font-extrabold leading-tight sm:text-[2.9rem]">{tr('Spending', '账单')}</h1>
           <p className="max-w-[38rem] text-ink2">{tr('Where the money went, by category and by merchant, with the transactions worth a second look. Computed by fixed code from your own records.', '钱花到了哪里：按类别、按商户，以及值得留意的交易。全部由固定代码根据你自己的记录计算。')}</p>
         </div>
         <div className="flex items-center gap-2">

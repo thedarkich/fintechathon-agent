@@ -120,7 +120,8 @@ async def cards(request: Request, lang: Lang = "zh", user_id: str = Depends(requ
 async def payees(request: Request, user_id: str = Depends(require_user)):
     with Session(request.app.state.runtime.engine) as session:
         rows = session.exec(select(Payee).where(Payee.user_id == user_id).order_by(Payee.created_at)).all()
-        return {"items": [{"id": p.id, "name": p.name, "name_en": p.name_en, "note": p.note, "bank": p.bank,
+        return {"items": [{"id": p.id, "name": p.name, "name_en": p.name_en, "note": p.note, "note_en": transfers.note_en(p.note), "bank": p.bank,
+                           "bank_en": transfers.bank_en(p.bank),
                            "account_tail": p.account_no[-4:], "phone": p.phone[:3] + "****" + p.phone[-4:],
                            "relationship": p.relationship, "birthday": p.birthday, "created_at": p.created_at}
                           for p in rows]}

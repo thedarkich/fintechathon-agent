@@ -42,6 +42,7 @@ def resolve_payee(ctx: Ctx, text: str, field_name: str = "payee") -> Payee:
 def payee_fields(ctx: Ctx, p: Payee) -> dict:
     created = clock.parse(p.created_at)
     return {"payee_id": p.id, "payee": p.name, "payee_en": p.name_en or p.name, "payee_note": p.note,
+            "payee_note_en": transfers.note_en(p.note),
             "bank": p.bank, "account_tail": p.account_no[-4:],
             "payee_new": (ctx.now - created) < timedelta(hours=24)}
 
@@ -70,7 +71,7 @@ def parse_when(ctx: Ctx, value: str) -> datetime:
 def describe_payee(ctx: Ctx, r: dict) -> str:
     note = f"（{r['payee_note']}）" if r.get("payee_note") else ""
     return ctx.t(f"{r['payee']}{note} {r['bank']} ****{r['account_tail']}",
-                 f"{r['payee_en']}{' (' + r['payee_note'] + ')' if r.get('payee_note') else ''}, {transfers.bank_en(r['bank'])} ****{r['account_tail']}")
+                 f"{r['payee_en']}{' (' + r['payee_note_en'] + ')' if r.get('payee_note_en') else ''}, {transfers.bank_en(r['bank'])} ****{r['account_tail']}")
 
 
 # --- transfer ---

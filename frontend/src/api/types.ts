@@ -35,6 +35,9 @@ export interface PlanStep {
   rule_text: string | null
   signals: string[]
   text: string
+  /** the facts to check before saying yes (payee, account, amount, arrival…); empty for actions shown by text */
+  details: { label: string; value: string }[]
+  signal_codes: string[]
   after: string[]
   run_at: string | null
   error: string | null
@@ -168,7 +171,9 @@ export interface Payee {
   name: string
   name_en: string
   note: string | null
+  note_en: string | null
   bank: string
+  bank_en: string
   account_tail: string
   phone: string
   relationship: string | null

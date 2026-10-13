@@ -19,6 +19,7 @@ cancelled. Modelled on how transfers work in mainland China:
 Exact timings vary by bank; the ones here are the demo bank's own.
 """
 
+import re
 from datetime import datetime, time, timedelta
 
 from sqlmodel import Session, select
@@ -49,6 +50,21 @@ REGISTERED_HOLDERS = {"6230580000673307": "周楷"}
 
 def bank_en(bank: str) -> str:
     return BANK_EN.get(bank, bank)
+
+
+# The demo customer's own payee notes, in English. Any other note the customer wrote in Chinese is
+# left out of English screens rather than shown untranslated.
+NOTE_EN = {"家人": "family", "大学同学": "university friend", "同事，财务部": "colleague, finance",
+           "室友，水电网费AA": "roommate, splits bills", "房租": "rent", "羽毛球球友": "badminton friend",
+           "高中同学": "school friend", "二手相机卖家（今天新加）": "used-camera seller (added today)"}
+
+
+def note_en(note: str | None) -> str | None:
+    if not note:
+        return None
+    if note in NOTE_EN:
+        return NOTE_EN[note]
+    return None if re.search(r"[一-鿿]", note) else note
 
 
 def route_for(bank: str) -> str:

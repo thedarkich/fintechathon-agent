@@ -28,12 +28,12 @@ export default function Controls() {
 
   return (
     <main tabIndex={-1} className="page-content ">
-      <h1 className="cond text-[2.4rem] font-extrabold leading-tight">{tr('Cards & controls', '卡片与控制台')}</h1>
-      <p className="max-w-[44rem] text-ink2">{tr('Making a card safer needs one confirmation. Anything that makes it more usable again needs strong verification. Each button asks the assistant, so the change goes through the same rules and lands in your ledger.', '让卡片更安全只需一次确认；让它重新可用的操作需要强验证。每个按钮都会交给助手办理，同样经过规则检查并记入账本。')}</p>
+      <h1 className="cond text-[2.2rem] font-extrabold leading-tight">{tr('Cards & security', '卡片与安全')}</h1>
+      <p className="max-w-[44rem] text-ink2">{tr('Freeze a card, change a limit, cancel a subscription, and the protections on your account. Making a card safer needs one tap to confirm; making it usable again needs your PIN and a code.', '冻结卡片、调整限额、取消订阅，以及账户上的各项保护。让卡更安全，点一下确认即可；让它重新可用，需要交易密码和验证码。')}</p>
       <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm">
-        <span className="flex items-center gap-1.5"><TierTag tier="yellow" /> {tr('one confirmation', '确认一次')}</span>
-        <span className="flex items-center gap-1.5"><TierTag tier="red" /> {tr('PIN plus an SMS code or passkey', '交易密码加短信验证码或通行密钥')}</span>
-        <span className="flex items-center gap-1.5"><TierTag tier="green" /> {tr('runs at once (read-only)', '立即执行（只读）')}</span>
+        <span className="flex items-center gap-1.5"><TierTag tier="green" /> {tr('questions', '查询')}</span>
+        <span className="flex items-center gap-1.5"><TierTag tier="yellow" /> {tr('one tap to confirm', '点一下确认')}</span>
+        <span className="flex items-center gap-1.5"><TierTag tier="red" /> {tr('PIN plus an SMS code, or a passkey', '交易密码加短信验证码，或通行密钥')}</span>
       </div>
 
       {!d ? <div className="mt-6 h-64 animate-pulse rounded-box bg-paper2" /> : (
@@ -281,7 +281,7 @@ function DemoPanel({ setStatus }: { setStatus: (s: { tone: 'ok' | 'err' | 'wait'
         </div>
         <div className="mt-4 flex flex-wrap gap-2 border-t border-rule pt-4">
           <button type="button" className="btn btn-line py-1.5" disabled={busy} onClick={() => void newConversation()}>{tr('New conversation', '新对话')}</button>
-          <button type="button" className="btn btn-cinnabar py-1.5" disabled={busy} onClick={() => window.confirm(tr('Reset your demo bank to its starting data? The ledger is kept.', '把演示银行恢复到初始数据？账本会保留。')) && void run(api.reset, tr('Demo bank reset.', '演示银行已重置。'))}>{tr('Reset demo bank', '重置演示银行')}</button>
+          <button type="button" className="btn btn-cinnabar py-1.5" disabled={busy} onClick={() => window.confirm(tr('Reset your demo bank to its starting data? Your history is kept.', '把演示银行恢复到初始数据？你的记录会保留。')) && void run(api.reset, tr('Demo bank reset.', '演示银行已重置。'))}>{tr('Reset demo bank', '重置演示银行')}</button>
         </div>
         {here && !/localhost|127\.0\.0\.1/.test(here) && (
           <div className="mt-4 flex items-center gap-4 border-t border-rule pt-4">

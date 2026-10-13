@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import type { AuditEntry } from '../api/types'
 import { useLang } from '../i18n'
 import { Icon } from '../components/Icon'
+import { Requests } from '../components/Requests'
 import { SealMark, type MarkKind } from '../components/Seal'
 import { clock, shortAddr, timeAgo } from '../lib/format'
 
@@ -111,14 +112,21 @@ export default function Ledger() {
   const all = entries.data?.items ?? []
   const rows = kind === 'all' ? all : all.filter((e) => info(e.kind).group === kind)
   const fresh = useArrivals(entries.data?.items)
-  const count = (kinds: string[]) => all.filter((e) => kinds.includes(e.kind)).length
 
   return (
     <main tabIndex={-1} className="page-content ">
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-        <div>
-          <h1 className="cond text-[2.4rem] font-extrabold leading-tight sm:text-[2.9rem]">{t.ledger_title}</h1>
-          <p className="max-w-[38rem] text-ink2">{t.ledger_sub}</p>
+      <h1 className="cond text-[2.4rem] font-extrabold leading-tight sm:text-[2.9rem]">{t.ledger_title}</h1>
+      <p className="max-w-[38rem] text-ink2">{t.ledger_sub}</p>
+
+      <div className="mt-7"><Requests /></div>
+
+      <div className="mb-1 mt-12 flex items-center gap-2"><Icon name="activity" size={19} /><h2 className="text-lg font-semibold">{tr('Full record of every step', '每一步的完整记录')}</h2></div>
+      <p className="mb-4 max-w-[44rem] text-sm text-ink2">{tr('The technical audit log behind your requests. PINs, codes and passwords are never written here. Each row stores the hash of the row before it, and the chain is checked again every few seconds.', '你的请求背后的技术审计日志。交易密码、验证码和登录密码从不写入。每条记录都保存上一条的哈希，系统每隔几秒重新校验整条链。')}</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="tab-scroll flex gap-1" role="tablist" aria-label={t.ledger_title}>
+          {([['all', tr('All', '全部')], ['requests', tr('Requests & plans', '请求与计划')], ['decisions', tr('Decisions', '判定与确认')], ['actions', tr('Actions', '执行')], ['security', tr('Security', '安全')]] as const).map(([k, label]) => (
+            <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} className={`rounded-box px-3 py-1.5 text-[0.95rem] ${kind === k ? 'bg-ink text-field' : 'text-ink hover:bg-paper2'}`}>{label}</button>
+          ))}
         </div>
         {chain.data && (
           <p className={`text-sm ${chain.data.ok ? 'text-ink2' : 'font-semibold text-cinnabar'}`}>
@@ -127,25 +135,6 @@ export default function Ledger() {
               : tr(`Hash chain broken at entry ${chain.data.broken_at}`, `哈希链在第 ${chain.data.broken_at} 条断开`)}
           </p>
         )}
-      </div>
-
-      <dl className="metric-grid mt-7">
-        {[
-          { label: tr('Requests', '请求'), value: count(['request']), icon: 'chat' as const, tone: '' },
-          { label: tr('Steps done', '完成的步骤'), value: count(['step_done', 'scheduled_run']), icon: 'check' as const, tone: 'text-jade' },
-          { label: tr('Approvals and checks', '确认与验证'), value: count(['approved', 'verified']), icon: 'shield' as const, tone: '' },
-          { label: tr('Security events', '安全事件'), value: count(['screening', 'lock', 'verification_failed', 'plan_rejected']), icon: 'flag' as const, tone: 'text-cinnabar' },
-        ].map((x) => <div className="metric-card" key={x.label}><dt>{x.label}<Icon name={x.icon} size={17} /></dt><dd className={x.tone}>{entries.isLoading ? '—' : x.value}</dd></div>)}
-      </dl>
-      <p className="mt-3 text-xs text-ink2">{tr('PINs, codes and passwords are never written here. Each row stores the hash of the row before it; the chain is checked again every few seconds.', '交易密码、验证码和登录密码从不写入账本。每条记录都保存上一条的哈希，系统每隔几秒重新校验整条链。')}</p>
-
-      <div className="mb-4 mt-9 flex items-center gap-2"><Icon name="activity" size={19} /><h2 className="text-lg font-semibold">{tr('Recent activity', '最近记录')}</h2></div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="tab-scroll flex gap-1" role="tablist" aria-label={t.ledger_title}>
-          {([['all', tr('All', '全部')], ['requests', tr('Requests & plans', '请求与计划')], ['decisions', tr('Decisions', '判定与确认')], ['actions', tr('Actions', '执行')], ['security', tr('Security', '安全')]] as const).map(([k, label]) => (
-            <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} className={`rounded-box px-3 py-1.5 text-[0.95rem] ${kind === k ? 'bg-ink text-field' : 'text-ink hover:bg-paper2'}`}>{label}</button>
-          ))}
-        </div>
       </div>
 
       {entries.isLoading ? <div className="mt-3 h-64 animate-pulse rounded-box bg-paper2" aria-hidden /> : rows.length === 0 ? <p className="mt-6 text-ink2">{t.ledger_empty}</p> : <>

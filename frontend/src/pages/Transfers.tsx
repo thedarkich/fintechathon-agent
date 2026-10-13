@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, errorText } from '../api/client'
 import type { Transfer, TransferStatus } from '../api/types'
 import { useLang } from '../i18n'
-import { Card, Panel } from '../components/bits'
+import { Panel } from '../components/bits'
 import { Icon } from '../components/Icon'
 import { SealMark, type MarkKind } from '../components/Seal'
 import { usePhone } from '../components/Verify'
@@ -119,7 +119,8 @@ function Phones() {
   )
 }
 
-export default function Transfers() {
+/** Transfers as the bank processes them, next to your phone and the payee's: a section of the Accounts page. */
+export function TransfersSection() {
   const { tr, lang } = useLang()
   const qc = useQueryClient()
   const { send, pending } = useChat()
@@ -130,33 +131,20 @@ export default function Transfers() {
   })
   const [status, setStatus] = useState<{ text: string; ok: boolean } | null>(null)
   const items = list.data?.items ?? []
-  const waiting = items.filter((t) => t.status === 'accepted').length
   const done = (text: string, ok: boolean) => {
     setStatus({ text, ok })
     void qc.invalidateQueries()
   }
   return (
-    <main tabIndex={-1} className="page-content">
-      <h1 className="cond text-[2.4rem] font-extrabold leading-tight">{tr('Transfers', '转账')}</h1>
-      <p className="mt-2 max-w-3xl text-sm text-ink2">{tr(
-        'Every transfer as the bank processes it. Same-bank transfers arrive at once; other banks go through the interbank online system. You can choose when money arrives, and a delayed transfer can be cancelled until then. The payee’s bank checks the name and sends the money back if it doesn’t match.',
-        '每笔转账在银行里的处理过程。行内转账即时到账，跨行转账经超级网银清算。可以选择到账时间，延时到账的转账在到账前可以撤销。对方银行会核对户名，不符就把钱退回。')}</p>
-      <p className="mt-3 inline-block rounded-box border border-rule2 px-3 py-1.5 text-sm text-ink2">{tr('Simulated bank · no real money · timings are the demo bank’s own', '模拟银行 · 不涉及真实资金 · 时间以演示银行为准')}</p>
-
-      <dl className="metric-grid mt-6">
-        <div className="metric-card"><dt>{tr('Transfers', '转账笔数')}<Icon name="arrow" size={17} /></dt><dd className="num">{items.length}</dd></div>
-        <div className="metric-card"><dt>{tr('Waiting to arrive', '等待到账')}<Icon name="clock" size={17} /></dt><dd className="num">{waiting}</dd></div>
-        <div className="metric-card"><dt>{tr('Arrived', '已到账')}<Icon name="check" size={17} /></dt><dd className="num text-jade">{items.filter((t) => t.status === 'arrived').length}</dd></div>
-        <div className="metric-card"><dt>{tr('Returned or cancelled', '退回或撤销')}<Icon name="shield" size={17} /></dt><dd className="num">{items.filter((t) => t.status === 'returned' || t.status === 'cancelled').length}</dd></div>
-      </dl>
-
-      {status && <p role="status" className={`mt-4 text-sm font-semibold ${status.ok ? 'text-jade' : 'text-cinnabar'}`}>{status.text}</p>}
-
-      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <Card title={tr('1 · In the bank', '1 · 银行处理进度')} sub={tr('Newest first. Each stage has the bank time it happened.', '最新的在前，每个阶段都记录了银行时间。')}>
-          {!list.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : !items.length ? (
-            <div className="space-y-3 text-sm text-ink2">
-              <p>{tr('No transfers yet. Try one of these:', '还没有转账。试试：')}</p>
+    <section id="transfers" className="scroll-mt-6">
+      <h2 className="cond text-xl font-bold">{tr('Where your money is', '转账到哪了')}</h2>
+      <p className="mt-1 max-w-3xl text-sm text-ink2">{tr('Each transfer from the moment the bank takes it to the moment it lands. A transfer that is still waiting can be cancelled.', '每笔转账从银行受理到到账的全过程。还没到账的转账可以撤销。')}</p>
+      {status && <p role="status" className={`mt-3 text-sm font-semibold ${status.ok ? 'text-jade' : 'text-cinnabar'}`}>{status.text}</p>}
+      <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div className="min-w-0 ruled bg-field">
+          {!list.data ? <div className="m-4 h-40 animate-pulse rounded-box bg-paper2" /> : !items.length ? (
+            <div className="space-y-3 p-4 text-sm text-ink2">
+              <p>{tr('No transfers yet. Try one:', '还没有转账，试试：')}</p>
               <div className="flex flex-wrap gap-2">
                 {[tr('Send my wife 200', '给老婆转200'), tr('Send mom 200', '给妈妈转200'), tr('Send Zhou Kai 800', '给周凯转800'), tr('Send dad 300, arriving in 2 hours', '给爸爸转300，2小时后到账')].map((text) => (
                   <button key={text} type="button" className="btn btn-line py-1 text-[0.85rem]" disabled={!!pending} onClick={() => void send(text)}>{text}</button>
@@ -164,24 +152,13 @@ export default function Transfers() {
               </div>
             </div>
           ) : (
-            <ul className="divide-y divide-[var(--rule)] ruled">
+            <ul className="divide-y divide-[var(--rule)]">
               {items.map((t) => <TransferRow key={t.id} t={t} demo={!!health.data?.demo_tools} onDone={done} />)}
             </ul>
           )}
-        </Card>
+        </div>
         <Phones />
       </div>
-
-      <div className="mt-5">
-        <Card title={tr('2 · How the bank handles a transfer', '2 · 银行如何处理一笔转账')} sub={tr('Fixed rules in the bank, not choices the AI makes.', '这些是银行里的固定规则，不由 AI 决定。')}>
-          <ul className="grid gap-3 text-sm sm:grid-cols-2">
-            <li><strong>{tr('Route', '路径')}</strong> · {tr('same bank: arrives at once; other banks: the interbank online system (超级网银), around the clock, in real time.', '同行：即时到账；跨行：经超级网银，全天候实时清算。')}</li>
-            <li><strong>{tr('When it arrives', '到账时间')}</strong> · {tr('now, in 2 hours, or early tomorrow, as banks in China must offer. A delayed transfer can be cancelled until it arrives.', '实时、2 小时后或次日凌晨，这是国内银行须提供的选项。延时到账的转账在到账前可以撤销。')}</li>
-            <li><strong>{tr('Risky transfers wait', '有风险就延时')}</strong> · {tr('a transfer with a risk signal (a payee added today, a flagged request or receipt) arrives in 2 hours, so there is time to stop it.', '带风险提示的转账（今天新加的收款人、被标记的请求或小票）会改为 2 小时后到账，留出撤销的时间。')}</li>
-            <li><strong>{tr('Name check', '户名核对')}</strong> · {tr('the payee’s bank compares the name with the account holder and returns the money if they differ.', '对方银行核对户名与账户持有人，不一致就退回资金。')}</li>
-          </ul>
-        </Card>
-      </div>
-    </main>
+    </section>
   )
 }

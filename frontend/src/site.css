@@ -25,7 +25,8 @@ html { scroll-padding-top: 24px; }
 .site-button.secondary:not(:disabled):active { transform: translateY(1px); box-shadow: 0 1px 2px var(--shadow); }
 .site-button:disabled { opacity: .55; cursor: wait; box-shadow: none; transform: none; }
 .site-subbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 59px; }
-.site-subbar nav { display: flex; gap: 30px; min-width: 0; overflow-x: auto; }
+.site-subbar nav { display: flex; gap: 30px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.site-subbar nav::-webkit-scrollbar { display: none; }
 .site-subbar nav a { font-size: 14px; color: var(--ink-2); white-space: nowrap; padding: 14px 0; border-bottom: 2px solid transparent; }
 .site-subbar nav a:hover, .site-subbar nav a.is-active { color: var(--action); border-bottom-color: var(--action); }
 .site-network { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--ink-2); white-space: nowrap; }
@@ -136,6 +137,7 @@ html { scroll-padding-top: 24px; }
 .reveal.revealed { opacity: 1; transform: none; }
 .magnetic { display: inline-flex; will-change: transform; transition: transform .18s ease; }
 @media (max-width: 1000px) {
+  .site-subbar .site-network { display: none; }
   .hero-card { gap: 26px; padding: 32px 28px; }
   .hero-copy h1 { font-size: 35px; }
   .auth-main { gap: 38px; }

@@ -89,12 +89,12 @@ def compose(ctx: Ctx, plan: Plan) -> tuple[str, list[dict], str]:
     elif plan.status == "awaiting_approval":
         card = approval_card(ctx, plan)
         cards.append(card)
-        # the slip carries the details; the text only says what kind of approval it needs
+        # the confirmation card carries the details; the text only says what kind of yes it needs
         if plan.tier == "red":
-            lines.append(ctx.t("这是高风险操作。请核对凭证，然后输入交易密码并完成短信验证码或通行密钥验证。",
-                               "This is high risk. Check the slip, then enter your PIN and an SMS code or passkey."))
+            lines.append(ctx.t("这笔需要验证身份：请核对下面的内容，然后输入交易密码和短信验证码（或用通行密钥）。",
+                               "This one needs you to verify it's you: check the details below, then enter your PIN and an SMS code (or use a passkey)."))
         else:
-            lines.append(ctx.t("请核对凭证上的内容，确认后执行。", "Check the slip and confirm to go ahead."))
+            lines.append(ctx.t("请核对下面的内容，没问题就点“确认”。", "Check the details below and tap Confirm if they're right."))
         summary.append("[awaiting approval] " + "; ".join(i["text"] for i in card["steps"]))
     elif plan.status == "rolled_back":
         lines.append(ctx.t("计划未能全部完成，已撤销可以安全撤销的步骤。", "The plan couldn't finish, so I undid the steps that can be safely undone."))

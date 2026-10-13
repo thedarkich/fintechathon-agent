@@ -9,23 +9,24 @@ from app.bank import ledger
 DAILY_LIMIT_FEN = 100_000  # ¥1,000: at or under is yellow, over is red
 NEW_PAYEE_FEN = 50_000  # over ¥500 in total to a payee added in the last 24 hours raises to red
 
+# The reason each rule gives, in plain words; the card itself says what is needed (nothing, a tap, PIN and code).
 RULE_TEXT = {
-    "G_QUERY": ("只读查询，自动执行", "Read-only query, runs automatically"),
-    "Y_SMALL_PAYMENT": ("当日累计付款不超过 ¥1,000，需确认", "Today's payments stay at or under ¥1,000: confirmation needed"),
-    "R_LARGE_PAYMENT": ("当日累计付款超过 ¥1,000，需强验证", "Today's payments go over ¥1,000: strong verification needed"),
-    "Y_SUBSCRIPTION": ("订阅查询与管理，需确认", "Subscription query or change: confirmation needed"),
-    "Y_COLLECTION": ("发起 AA 收款，需确认", "Split-bill request: confirmation needed"),
-    "Y_CARD_APPLY": ("申请新卡，需确认", "Card application: confirmation needed"),
-    "Y_RISK_REDUCING": ("降低风险的卡片设置，需确认", "Makes a card safer: confirmation needed"),
-    "R_RISK_INCREASING": ("提高风险的卡片设置，需强验证", "Makes a card more usable: strong verification needed"),
-    "R_CARD_LOSS": ("挂失，需强验证", "Card loss report: strong verification needed"),
-    "Y_INTERNAL_MOVE": ("本人账户间划转，需确认", "Move between your own accounts: confirmation needed"),
-    "Y_WEALTH_REDEEM": ("理财赎回，需确认", "Investment redemption: confirmation needed"),
-    "Y_PROFILE_CHANGE": ("更新风险测评，需确认", "Risk profile update: confirmation needed"),
-    "Y_PAYEE_ADD": ("新增收款人，需确认", "New payee: confirmation needed"),
-    "R_INVESTMENT": ("理财申购，需强验证", "Investment purchase: strong verification needed"),
-    "R_CREDENTIAL": ("修改密码，需强验证", "Credential change: strong verification needed"),
-    "Y_TRANSFER_CANCEL": ("撤销尚未到账的转账，需确认", "Cancel a transfer before it arrives: confirmation needed"),
+    "G_QUERY": ("只是查询，直接办好", "Just a question, answered right away"),
+    "Y_SMALL_PAYMENT": ("今天累计付款不超过 ¥1,000", "Today's payments stay at or under ¥1,000"),
+    "R_LARGE_PAYMENT": ("今天累计付款将超过 ¥1,000", "Today's payments would go over ¥1,000"),
+    "Y_SUBSCRIPTION": ("会改动你的订阅", "It changes a subscription"),
+    "Y_COLLECTION": ("会向朋友发起收款", "It asks your friends for money"),
+    "Y_CARD_APPLY": ("会为你申请一张新卡", "It applies for a new card"),
+    "Y_RISK_REDUCING": ("会让卡片更安全", "It makes a card safer"),
+    "R_RISK_INCREASING": ("会让卡片重新可用，或能花更多钱", "It makes a card usable again or able to spend more"),
+    "R_CARD_LOSS": ("挂失后这张卡会永久停用", "Reporting a card lost stops it for good"),
+    "Y_INTERNAL_MOVE": ("在你自己的账户之间转钱", "It moves money between your own accounts"),
+    "Y_WEALTH_REDEEM": ("会赎回你的理财", "It sells an investment"),
+    "Y_PROFILE_CHANGE": ("会更新你的风险测评", "It updates your risk profile"),
+    "Y_PAYEE_ADD": ("会添加一位新收款人", "It adds a new payee"),
+    "R_INVESTMENT": ("买理财必须确认是你本人", "Buying an investment must be you"),
+    "R_CREDENTIAL": ("改密码必须确认是你本人", "Changing a password must be you"),
+    "Y_TRANSFER_CANCEL": ("会撤销一笔还没到账的转账", "It cancels a transfer that hasn't arrived"),
 }
 SIGNAL_TEXT = {
     "S_NEW_PAYEE_LARGE": ("向 24 小时内新加的收款人累计付款超过 ¥500", "Over ¥500 in total to a payee added in the last 24 hours"),

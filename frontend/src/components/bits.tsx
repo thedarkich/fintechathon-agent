@@ -54,12 +54,13 @@ export function OperatorGate({ children }: { children: ReactNode }) {
 }
 
 /** The permission tier of a step, in the same small-tag style as the controls page. */
+/** The three levels in plain words: done right away, needs your OK, needs your PIN and a code. */
 export function TierTag({ tier }: { tier: Tier | null | undefined }) {
   const { tr } = useLang()
   if (!tier) return null
-  if (tier === 'green') return <span className="inline-flex items-center rounded-[2px] border border-jade px-1.5 py-px text-[0.72rem] font-semibold leading-tight text-jade">{tr('automatic', '自动')}</span>
-  if (tier === 'yellow') return <span className="inline-flex items-center rounded-[2px] bg-ink px-1.5 py-px text-[0.72rem] font-semibold leading-tight text-field">{tr('confirm', '需确认')}</span>
-  return <span className="inline-flex items-center rounded-[2px] border border-dashed border-cinnabar px-1.5 py-px text-[0.72rem] font-semibold leading-tight text-cinnabar">{tr('strong check', '强验证')}</span>
+  if (tier === 'green') return <span className="inline-flex items-center rounded-full border border-jade px-2 py-px text-[0.72rem] font-semibold leading-tight text-jade">{tr('Done right away', '直接办')}</span>
+  if (tier === 'yellow') return <span className="inline-flex items-center rounded-full bg-ink px-2 py-px text-[0.72rem] font-semibold leading-tight text-field">{tr('Needs your OK', '需确认')}</span>
+  return <span className="inline-flex items-center rounded-full bg-cinnabar px-2 py-px text-[0.72rem] font-semibold leading-tight text-white">{tr('Needs PIN + code', '需验证')}</span>
 }
 
 export function Problem({ text }: { text: string | null | undefined }) {

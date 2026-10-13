@@ -106,7 +106,7 @@ function Operator() {
                   })}
                 </ul>
               </Panel>
-              <Panel title={tr('Ledger', '账本')}>
+              <Panel title={tr('Record', '记录')}>
                 <ul className="max-h-80 divide-y divide-rule overflow-y-auto">
                   {d.audit.map((e) => <li key={e.seq} className="flex justify-between gap-2 px-4 py-1.5 text-xs"><span className="font-semibold">#{e.seq} {e.kind}</span><span className="font-mono text-ink2">{clock(e.at)}</span></li>)}
                 </ul>

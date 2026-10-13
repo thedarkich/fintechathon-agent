@@ -477,7 +477,7 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         return one("report", {"period": "month", "offset": 0})  # this month's report compares it with the last
     if has(text, "报告", "总结", "报表", "年度账单", "月度账单", "年账单", "report", "summary", "review"):
         return one("report", {"period": "year" if year else "month", "offset": offset if (offset or year or has(text, "本月", "这个月", "this month", "今年", "this year")) else -1})
-    if has(text, "花了", "消费", "支出", "开销", "花销", "花太多", "花得", "花钱", "spend", "spent", "spending", "expenses"):
+    if has(text, "花了", "消费", "支出", "开销", "花销", "花太多", "花得", "花钱", "花哪", "花在哪", "where did my money go", "where's my money going", "where is my money going", "spend", "spent", "spending", "expenses"):
         return one("spending", {"period": "year" if year else "month", "offset": offset, "category": category})
     if has(text, "交易", "账单", "transactions", "statement", "payments"):
         return transactions(text, category)

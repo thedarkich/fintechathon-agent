@@ -62,15 +62,15 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
   const fieldError = (key: string) => errors[key] && <p id={key + '-error'} className="auth-field-error">{errors[key]}</p>
   return <div className="public-site"><SiteHeader />
     <main className="auth-main" tabIndex={-1}>
-      <div className="auth-intro"><p className="mono-label">// {tr('SAY IT ONCE. THE RULES DECIDE.', '说一句话，规则来把关。')}</p><h1>{tr('AI plans the request.', 'AI 拆解请求。')}<br /><span>{tr('The bank’s rules call the shots.', '规则拍板。')}</span></h1><p>{tr('The AI turns what you say into steps. Fixed rules decide which run at once, which need your confirmation and which need your PIN and a code.', 'AI 把你的话拆成步骤，固定规则决定哪些直接办、哪些要你确认、哪些要交易密码和验证码。')}</p>
-        <div className="auth-flow"><div className="mono-label">{tr('THE REQUEST WORKFLOW', '办理流程')}</div>{[
-          [tr('You ask', '你提出需求'), tr('In Chinese or English, by text, voice or receipt photo', '中文或英文，文字、语音或小票照片')],
-          [tr('Rules check', '规则检查'), tr('Tiers, the ¥1,000 daily total and safety locks', '分级规则、¥1,000 当日累计与安全锁')],
-          [tr('You approve', '你来确认'), tr('A tap for small things, PIN and a code for large ones', '小事点一下，大事要交易密码和验证码')],
+      <div className="auth-intro"><h1>{tr('Say it once.', '你说一句，')}<br /><span>{tr('We do it.', '我来办。')}</span></h1><p>{tr('Send money, check your spending or freeze a card by just saying so. Before any money moves, you see exactly what will happen and say yes.', '转账、查账、冻结卡片，说一句就行。动钱之前，你会看清楚要办什么，由你来点头。')}</p>
+        <div className="auth-flow"><div className="mono-label">{tr('HOW IT WORKS', '怎么用')}</div>{[
+          [tr('Say what you need', '说出你要办的事'), tr('In Chinese or English, typed, spoken or with a receipt photo', '中文英文都行，打字、语音或拍小票')],
+          [tr('Check the details', '核对内容'), tr('Who, how much and when it arrives, shown before anything happens', '收款人、金额、到账时间，办之前先给你看')],
+          [tr('Say yes', '点头确认'), tr('One tap for small things; your PIN and a code for large ones', '小事点一下，大额要交易密码和验证码')],
         ].map(([title, text], i) => <div className="auth-flow-row" key={title}><span>{i === 2 ? '✓' : '0' + (i + 1)}</span><div><strong>{title}</strong><p>{text}</p></div></div>)}</div>
         <p className="auth-local-note">{tr('Your simulated bank is private to your account · No real money moves', '你的模拟银行仅本账户可见 · 不涉及真实资金')}</p>
       </div>
-      <section className="auth-card" aria-labelledby="auth-title"><p className="mono-label">{tr('LET’S GET YOU STARTED', '从这里开始')}</p><h2 id="auth-title">{register ? tr('Your bank starts here.', '开通你的银行。') : tr('Welcome back.', '欢迎回来。')}</h2><p className="auth-subtitle">{register ? tr('You get your own simulated bank with two years of history.', '系统会为你生成独立的模拟银行，含近两年的交易记录。') : tr('Sign in to your bank.', '登录你的银行。')}</p>
+      <section className="auth-card" aria-labelledby="auth-title"><h2 id="auth-title">{register ? tr('Your bank starts here.', '开通你的银行。') : tr('Welcome back.', '欢迎回来。')}</h2><p className="auth-subtitle">{register ? tr('You get your own simulated bank with two years of history.', '系统会为你生成独立的模拟银行，含近两年的交易记录。') : tr('Sign in to your bank.', '登录你的银行。')}</p>
         <nav className="auth-tabs" aria-label={tr('Account access mode', '账户访问方式')}><Link to={'/login' + suffix} aria-current={!register ? 'page' : undefined} className={!register ? 'is-active' : ''}>{tr('Sign in', '登录')}</Link><Link to={'/signup' + suffix} aria-current={register ? 'page' : undefined} className={register ? 'is-active' : ''}>{tr('Create account', '创建账户')}</Link></nav>
         <form onSubmit={submit} noValidate aria-busy={busy}>
           <fieldset disabled={busy || loading}>

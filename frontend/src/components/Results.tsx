@@ -5,9 +5,8 @@ import type { Card } from '../api/types'
 import { useLang } from '../i18n'
 import { useChat } from '../lib/chat'
 import { category, stamp, yuan } from '../lib/format'
-import { usePlan, markFor, markColor, statusLabel } from './PlanView'
+import { ConfirmCard } from './PlanView'
 import { SealMark } from './Seal'
-import { TierTag } from './bits'
 
 /** A ruled table in the ledger's style. */
 export function Table({ head, children, minWidth = '30rem' }: { head: ReactNode[]; children: ReactNode; minWidth?: string }) {
@@ -65,29 +64,6 @@ function Ask({ text }: { text: string }) {
   return <button type="button" disabled={!!pending} onClick={() => void send(text)} className="btn btn-line py-1 text-[0.85rem]">{text}</button>
 }
 
-/** A plan waiting for the customer, as one line in the conversation; the full form is in the plan panel. */
-function PlanLine({ planId }: { planId: string }) {
-  const { tr, t } = useLang()
-  const { setPlanId } = useChat()
-  const plan = usePlan(planId)
-  const p = plan.data
-  if (!p) return null
-  const mark = markFor({ status: p.status, tier: p.tier, reason: p.steps.find((s) => s.error)?.error ?? null })
-  const total = p.steps.filter((s) => s.fen && ['transfer', 'schedule_transfer', 'merchant_order', 'wealth_subscribe'].includes(s.action)).reduce((a, s) => a + (s.fen ?? 0), 0)
-  return (
-    <div className="flex flex-wrap items-center gap-3 ruled bg-field px-3 py-2.5">
-      <SealMark kind={mark} size={30} />
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold" style={{ color: markColor(mark) }}>{statusLabel(p.status, t)} <TierTag tier={p.status === 'awaiting_approval' ? p.tier : null} /></p>
-        <p className="text-[0.85rem] text-ink2">{tr(`${p.steps.length} step${p.steps.length > 1 ? 's' : ''}`, `${p.steps.length} 个步骤`)}{total ? ` · ${yuan(total)}` : ''}</p>
-      </div>
-      <button type="button" className={`btn py-1.5 ${p.status === 'awaiting_approval' ? 'btn-ink' : 'btn-line'}`} onClick={() => { setPlanId(planId); document.getElementById('plan-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
-        {p.status === 'awaiting_approval' ? tr('Review and approve', '查看并确认') : tr('Open the slip', '查看审批单')}
-      </button>
-    </div>
-  )
-}
-
 function Question({ card }: { card: Card }) {
   const { lang, tr } = useLang()
   const { apply } = useChat()
@@ -141,7 +117,7 @@ export function Result({ card }: { card: Card }) {
   const navigate = useNavigate()
   switch (card.type) {
     case 'approval':
-      return <PlanLine planId={card.plan_id} />
+      return <ConfirmCard planId={card.plan_id} />
     case 'question':
       return <Question card={card} />
     case 'lock':
@@ -226,7 +202,7 @@ export function Result({ card }: { card: Card }) {
       return (
         <Table head={[tr('Card', '卡片'), tr('Status', '状态'), tr('Daily limit', '日限额')]} minWidth="22rem">
           {card.items.map((c: { id: string; name: string; last4: string; status: string; daily_limit_fen: number }) => (
-            <tr key={c.id} className="rule-b last:border-b-0"><td className="px-3 py-2">{c.name} <span className="font-mono text-[0.82rem] text-ink2">****{c.last4}</span></td><td className="px-3 py-2">{c.status}</td><td className="num px-3 py-2 text-right font-mono">{yuan(c.daily_limit_fen)}</td></tr>
+            <tr key={c.id} className="rule-b last:border-b-0"><td className="px-3 py-2">{c.name} <span className="font-mono text-[0.82rem] text-ink2">****{c.last4}</span></td><td className={`px-3 py-2 ${c.status === 'active' ? 'text-jade' : 'text-cinnabar'}`}>{({ active: tr('In use', '正常'), frozen: tr('Frozen', '已冻结'), lost: tr('Reported lost', '已挂失') } as Record<string, string>)[c.status] ?? c.status}</td><td className="num px-3 py-2 text-right font-mono">{yuan(c.daily_limit_fen)}</td></tr>
           ))}
         </Table>
       )
