@@ -27,9 +27,9 @@ cd frontend && npm run build                # dist/ is served by the backend
 backend/app/
   agent/        planner (model + offline), executor, policy, resolve, replies, audit, locks, screening, verify, scheduler
   agent/actions the action catalogue: queries, payments, cards, subscriptions, wealth, security
-  bank/         seed (demo customer), ledger, analysis, categories
+  bank/         seed (demo customer), ledger, transfers (how a transfer clears), analysis, categories
   api/          accounts, agent (chat, plans, verification), bank pages, demo tools, operator console
-frontend/src/   pages (Landing, Auth, Assistant, Accounts, Bills, Wealth, Controls, Ledger, Operator, TeamAccess), components (StepRow, Decision, PlanView, Verify, Results, Seal, SiteChrome)
+frontend/src/   pages (Landing, Auth, Assistant, Accounts, Transfers, Bills, Wealth, Controls, Ledger, Operator, TeamAccess), components (StepRow, Decision, PlanView, Verify, Results, Seal, SiteChrome)
 deploy/         docker-compose.yml, Caddyfile, runtime.env.example
 docs/SPEC.md    the design contract
 ```

@@ -8,6 +8,7 @@ A bilingual (中文 / English) React app with light and dark themes. Every plan 
 | Sign in / Create account | Email sign-in, plus the 6-digit transaction PIN |
 | Assistant | Conversation → the AI's plan → the bank's rules → your approval, with the step row and "who decided what" |
 | Accounts | Accounts, payees, scheduled transfers, split bills, payments |
+| Transfers | Each transfer in the bank (accepted → clearing → arrived, returned or cancelled), cancel before arrival, demo stage controls, and the customer's and payee's phones side by side |
 | Bills | Spending by period, category and merchant; transactions worth a second look; 90-day search |
 | Wealth | Holdings and products, with risk levels R1–R5 |
 | Cards & controls | Cards, subscriptions, safety lock, passkeys, simulated phone, demo clock |

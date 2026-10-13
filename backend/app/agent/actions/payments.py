@@ -9,10 +9,19 @@ from sqlmodel import select
 from app import clock
 from app.agent.core import Action, Args, Ask, Ctx, Refuse, register
 from app.agent.resolve import find_payee, find_reserve, payee_label
-from app.bank import ledger
+from app.bank import ledger, transfers
 from app.bank.analysis import txns_between
 from app.clock import CST
-from app.models import BankAccount, Collection, Order, Payee, ScheduledTransfer, Txn, Upload
+from app.models import (
+    BankAccount,
+    Collection,
+    Order,
+    Payee,
+    ScheduledTransfer,
+    Transfer,
+    Txn,
+    Upload,
+)
 from app.money import to_fen, yuan
 
 SINGLE_TRANSFER_CAP = 5_000_000  # ¥50,000 per transfer in the demo bank
@@ -61,7 +70,7 @@ def parse_when(ctx: Ctx, value: str) -> datetime:
 def describe_payee(ctx: Ctx, r: dict) -> str:
     note = f"（{r['payee_note']}）" if r.get("payee_note") else ""
     return ctx.t(f"{r['payee']}{note} {r['bank']} ****{r['account_tail']}",
-                 f"{r['payee_en']}{' (' + r['payee_note'] + ')' if r.get('payee_note') else ''}, {r['bank']} ****{r['account_tail']}")
+                 f"{r['payee_en']}{' (' + r['payee_note'] + ')' if r.get('payee_note') else ''}, {transfers.bank_en(r['bank'])} ****{r['account_tail']}")
 
 
 # --- transfer ---
@@ -72,6 +81,7 @@ class TransferArgs(Args):
     amount_yuan: float | None = Field(default=None, gt=0)
     memo: str | None = Field(default=None, max_length=40)
     from_account: Literal["checking", "savings"] = "checking"
+    arrival: Literal["instant", "standard", "next_day"] = "instant"
 
 
 def source_account(ctx: Ctx, kind: str) -> BankAccount:
@@ -93,36 +103,116 @@ def transfer_resolve(ctx: Ctx, args: TransferArgs) -> dict:
         raise Refuse("INSUFFICIENT_FUNDS", f"{source.name}余额 {yuan(source.balance_fen)}，不足以转账 {yuan(fen)}。",
                      f"{source.name_en} has {yuan(source.balance_fen)}, not enough for {yuan(fen)}.")
     return {**payee_fields(ctx, payee), "fen": fen, "memo": args.memo, "source_id": source.id,
-            "source": source.name, "source_en": source.name_en}
+            "source": source.name, "source_en": source.name_en, "route": transfers.route_for(payee.bank),
+            "arrival": args.arrival}
 
 
 def transfer_run(ctx: Ctx, r: dict) -> dict:
     payee = ctx.session.get(Payee, r["payee_id"])
     source = ledger.account(ctx.session, ctx.user.id, r["source_id"])
-    txn = ledger.debit(ctx.session, source, r["fen"], when=ctx.now, kind="transfer_out", counterparty=payee.name,
-                       payee=payee, memo=r["memo"], plan_id=ctx.plan.id if ctx.plan else None)
-    return {"txn_id": txn.id, "fen": r["fen"], "payee": payee.name, "balance_fen": source.balance_fen, "at": txn.at}
+    row = transfers.send(ctx.session, ctx.user, payee, source, r["fen"], now=ctx.now, memo=r["memo"],
+                         arrival=r.get("arrival", "instant"), arrival_reason=r.get("arrival_reason"),
+                         plan_id=ctx.plan.id if ctx.plan else None)
+    return {"transfer_id": row.id, "status": row.status, "reason": row.reason, "fen": r["fen"], "payee": payee.name,
+            "balance_fen": source.balance_fen, "at": row.created_at, "arrive_at": row.arrive_at, "route": row.route}
+
+
+def arrival_text(ctx: Ctx, r: dict) -> str:
+    """How and when the money arrives, as the slip shows it."""
+    route = transfers.ROUTES[r.get("route") or transfers.route_for(r["bank"])]
+    arrival = transfers.ARRIVALS[r.get("arrival", "instant")]
+    why = ctx.t("，新收款人等风险提示由规则设为延时到账，到账前可撤销", "; the rules delay it because of a risk signal, and you can cancel before it arrives") \
+        if r.get("arrival_reason") else (ctx.t("，到账前可撤销", "; you can cancel before it arrives") if r.get("arrival", "instant") != "instant" else "")
+    return ctx.t(f"（{route[0]}，{arrival[0]}{why}）", f" ({route[1]}, {arrival[1]}{why})")
 
 
 def transfer_describe(ctx: Ctx, r: dict) -> str:
     memo = ctx.t(f"，备注“{r['memo']}”", f", note “{r['memo']}”") if r.get("memo") else ""
     new = ctx.t("（今天新添加的收款人）", " (payee added today)") if r.get("payee_new") else ""
-    return ctx.t(f"从{r['source']}向 {describe_payee(ctx, r)}{new} 转账 {yuan(r['fen'])}{memo}",
-                 f"Transfer {yuan(r['fen'])} from {r['source_en']} to {describe_payee(ctx, r)}{new}{memo}")
+    return ctx.t(f"从{r['source']}向 {describe_payee(ctx, r)}{new} 转账 {yuan(r['fen'])}{memo}{arrival_text(ctx, r)}",
+                 f"Transfer {yuan(r['fen'])} from {r['source_en']} to {describe_payee(ctx, r)}{new}{memo}{arrival_text(ctx, r)}")
 
 
 def transfer_reply(ctx: Ctx, r: dict, res: dict) -> str:
-    return ctx.t(f"已向 {res['payee']} 转账 {yuan(res['fen'])}。{r['source']}余额 {yuan(res['balance_fen'])}。",
-                 f"Sent {yuan(res['fen'])} to {r['payee_en']}. {r['source_en']} balance: {yuan(res['balance_fen'])}.")
+    balance = ctx.t(f"{r['source']}余额 {yuan(res['balance_fen'])}。", f"{r['source_en']} balance: {yuan(res['balance_fen'])}.")
+    status = res.get("status", "arrived")
+    if status == "returned":
+        zh, en = transfers.RETURN_REASONS[res["reason"]]
+        return ctx.t(f"向 {res['payee']} 的 {yuan(res['fen'])} 被对方银行退回：{zh}。钱已回到您的账户，请核对收款人信息。{balance}",
+                     f"The {yuan(res['fen'])} to {r['payee_en']} was returned by their bank because {en}. "
+                     f"The money is back in your account; please check the payee's details. {balance}")
+    if status == "accepted":
+        when = res["arrive_at"][5:16].replace("T", " ")
+        return ctx.t(f"已受理：向 {res['payee']} 转账 {yuan(res['fen'])}，预计 {when} 到账。到账前可以说“撤销转账”。{balance}",
+                     f"Accepted: {yuan(res['fen'])} to {r['payee_en']}, arriving around {when}. Say “cancel the transfer” "
+                     f"before then to stop it. {balance}")
+    return ctx.t(f"已向 {res['payee']} 转账 {yuan(res['fen'])}，已到账。{balance}",
+                 f"Sent {yuan(res['fen'])} to {r['payee_en']}; it has arrived. {balance}")
 
 
 register(Action(
     name="transfer", args=TransferArgs,
-    help="Send money now. payee = name, alias, relationship (妈妈/landlord), phone number or note; amount_yuan; optional memo; from_account checking|savings.",
+    help="Send money now. payee = name, alias, relationship (妈妈/landlord), phone number or note; amount_yuan; optional memo; "
+         "from_account checking|savings; arrival instant|standard (2 hours later, can be cancelled until then)|next_day.",
     resolve=transfer_resolve, run=transfer_run, describe=transfer_describe, reply=transfer_reply,
     rule="PAYMENT", payment=lambda r: r["fen"], schedulable=True,
     card=lambda ctx, r, res: {"type": "receipt", "action": "transfer", **res},
     examples=["给妈妈转200", "send 3000 to my landlord", "转500给13912345678"],
+))
+
+
+# --- cancel a delayed transfer before it arrives ---
+
+
+class CancelTransferArgs(Args):
+    transfer: str | None = Field(default=None, max_length=40)  # a transfer id (or its start) or the payee
+
+
+def transfer_label(t: Transfer, lang: str) -> str:
+    when = t.arrive_at[5:16].replace("T", " ")
+    return f"{t.payee_name} {yuan(t.amount_fen)}，预计 {when} 到账" if lang == "zh" \
+        else f"{t.payee_name_en} {yuan(t.amount_fen)}, arriving {when}"
+
+
+def cancel_resolve(ctx: Ctx, args: CancelTransferArgs) -> dict:
+    rows = [t for t in ctx.session.exec(select(Transfer).where(Transfer.user_id == ctx.user.id, Transfer.status == "accepted")
+                                        .order_by(Transfer.created_at.desc())) if transfers.cancellable(t, ctx.now)]
+    if args.transfer:
+        key = args.transfer.strip().lstrip("#")
+        by_id = [t for t in rows if len(key) >= 6 and t.id.startswith(key)]
+        if by_id:
+            rows = by_id
+        else:
+            found = find_payee(ctx.session, ctx.user.id, args.transfer)
+            matches = {found.value.id} if found.value else {p.id for p in found.options}
+            rows = [t for t in rows if t.payee_id in matches]
+    if not rows:
+        raise Refuse("NOTHING_TO_CANCEL", "没有可以撤销的转账：只有延时到账、而且还没到账的转账才能撤销。",
+                     "There is no transfer to cancel: only a delayed transfer that hasn't arrived yet can be cancelled.")
+    if len(rows) > 1:
+        raise Ask("transfer", "要撤销哪一笔？", "Which transfer should I cancel?",
+                  [{"value": t.id, "label_zh": transfer_label(t, "zh"), "label_en": transfer_label(t, "en")} for t in rows[:6]])
+    t = rows[0]
+    return {"transfer_id": t.id, "payee": t.payee_name, "payee_en": t.payee_name_en, "fen": t.amount_fen,
+            "arrive_at": t.arrive_at}
+
+
+def cancel_run(ctx: Ctx, r: dict) -> dict:
+    row = ctx.session.get(Transfer, r["transfer_id"])
+    transfers.cancel(ctx.session, row, ctx.now)
+    source = ctx.session.get(BankAccount, row.source_id)
+    return {"fen": row.amount_fen, "balance_fen": source.balance_fen if source else None}
+
+
+register(Action(
+    name="transfer_cancel", args=CancelTransferArgs,
+    help="Cancel a delayed transfer that has not arrived yet; the money comes back. transfer = its id or the payee.",
+    resolve=cancel_resolve, run=cancel_run,
+    describe=lambda ctx, r: ctx.t(f"撤销向 {r['payee']} 的 {yuan(r['fen'])} 转账（尚未到账，钱退回原账户）",
+                                  f"Cancel the {yuan(r['fen'])} transfer to {r['payee_en']} (not arrived yet; the money comes back)"),
+    reply=lambda ctx, r, res: ctx.t(f"已撤销，{yuan(res['fen'])} 已回到您的账户。", f"Cancelled. {yuan(res['fen'])} is back in your account."),
+    rule="Y_TRANSFER_CANCEL",
+    examples=["撤销刚才给周凯的转账", "cancel the transfer to Zhou Kai"],
 ))
 
 

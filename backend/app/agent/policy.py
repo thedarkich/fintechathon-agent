@@ -25,6 +25,7 @@ RULE_TEXT = {
     "Y_PAYEE_ADD": ("新增收款人，需确认", "New payee: confirmation needed"),
     "R_INVESTMENT": ("理财申购，需强验证", "Investment purchase: strong verification needed"),
     "R_CREDENTIAL": ("修改密码，需强验证", "Credential change: strong verification needed"),
+    "Y_TRANSFER_CANCEL": ("撤销尚未到账的转账，需确认", "Cancel a transfer before it arrives: confirmation needed"),
 }
 SIGNAL_TEXT = {
     "S_NEW_PAYEE_LARGE": ("向 24 小时内新加的收款人累计付款超过 ¥500", "Over ¥500 in total to a payee added in the last 24 hours"),
@@ -60,6 +61,18 @@ def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_s
         if tier != "green" else None
     return {"tier": tier, "rule": rule, "signals": signals, "day_total_fen": day_total,
             "payment_fen": payment, "blocked_by": lock.reason if lock else None}
+
+
+SAFER_ARRIVAL_SIGNALS = ("S_NEW_PAYEE_LARGE", "S_FLAGGED_REQUEST", "S_FLAGGED_CONTENT")
+
+
+def safer_arrival(action: Action, resolved: dict, decision: dict) -> str | None:
+    """A transfer with a risk signal arrives in 2 hours instead of now, so the customer can still cancel it.
+    Fixed code: the model can neither ask for nor skip this."""
+    if action.name == "transfer" and resolved.get("arrival", "instant") == "instant" \
+            and any(s in decision["signals"] for s in SAFER_ARRIVAL_SIGNALS):
+        return "standard"
+    return None
 
 
 def explain(rule: str, lang: str) -> str:

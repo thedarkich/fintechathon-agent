@@ -91,9 +91,21 @@ A step approved at one tier is checked again when it actually runs. If the tier 
 - Plan states: `clarifying`, `awaiting_approval`, `running`, `scheduled`, `done`, `failed`, `cancelled`, `rolled_back`, `escalated`.
 - Step states: `pending`, `waiting` (for time or approval), `running`, `done`, `failed`, `skipped`, `cancelled`, `compensated`.
 - **Stop**: a plan can be cancelled at any time before its last step; pending and scheduled steps are cancelled.
-- **Rollback**: each action declares a compensation. On failure or on request, finished steps are compensated in reverse order. A compensation never moves the account into a less safe state (a freeze is not undone automatically; a finished transfer cannot be undone and the reply says so). Money for multi-step plans is set aside first (reserve) and spent last.
+- **Rollback**: each action declares a compensation. On failure or on request, finished steps are compensated in reverse order. A compensation never moves the account into a less safe state (a freeze is not undone automatically; a transfer that has arrived cannot be undone and the reply says so, while a delayed one can be cancelled until it arrives, §6a). Money for multi-step plans is set aside first (reserve) and spent last.
 - **Edit**: changing a pending step re-runs validation, resolution and policy and needs a new approval.
 - **Human takeover**: the customer can ask for a person at any time, and the system escalates after a safety lock or repeated clarification failures. An operator sees the conversation, the plan and the audit trail, and can answer, cancel or edit. An operator can never approve a red step on the customer's behalf.
+
+## 6a. How the bank processes a transfer (simulated)
+
+After approval a transfer belongs to the bank, not the agent (`bank/transfers.py`), and moves through `accepted → clearing → arrived`, or ends `returned` (the payee's bank refuses it) or `cancelled` (the customer stops a delayed transfer). Money leaves when it is accepted and comes back on a return or cancel. Every stage is a timestamped event, written to the audit log and shown on the Transfers page.
+
+- **Route**: a payee at our own bank (演示银行, Demo Bank) is a same-bank transfer and arrives at once. Any other bank goes through a simulated 超级网银 (the central bank's online interbank system: real time, around the clock). The ¥50,000 single-transfer cap keeps every transfer within it.
+- **Arrival**: instant, standard (2 hours later) or next day (early morning), the choices banks in mainland China must offer under the PBOC's 2016 anti-telecom-fraud notice (银发〔2016〕261号). Exact timings vary by bank; these are the demo bank's own.
+- **Risky transfers wait** (`policy.safer_arrival`, fixed code): a transfer carrying `S_NEW_PAYEE_LARGE`, `S_FLAGGED_REQUEST` or `S_FLAGGED_CONTENT` arrives in 2 hours instead of now. The slip says so and the approval hash covers it; the model can neither request nor skip it.
+- **Cancel**: `transfer_cancel` (yellow) stops a delayed transfer until its arrival time; afterwards the bank refuses.
+- **Name check**: at clearing the payee's bank compares the name with the account holder on record and returns the money if they differ (`REGISTERED_HOLDERS`; the seeded seller added today gave an account in someone else's name).
+- **Phones**: the customer's simulated phone gets return and cancel texts; the payee's phone gets the arrival text their own bank would send (`PayeeMessage`), for the two-phone demo.
+- **Demo control**: `POST /api/demo/transfers/{id}` clears a waiting transfer now or makes the payee's bank return it (name mismatch, frozen account, refused); delayed transfers also clear on their own as bank time passes.
 
 ## 7. Safety lock (circuit breaker)
 
@@ -108,7 +120,7 @@ Every lock and unlock is audited and shown to the customer.
 
 ## 8. Audit log
 
-Append-only rows per customer: `seq`, `kind`, `plan_id`, `data`, `at`, `prev_hash`, `hash` where `hash = sha256(prev_hash + canonical_json(seq, kind, plan_id, data, at))`. `GET /api/audit/verify` recomputes the chain. Kinds: `request`, `screening`, `plan_proposed`, `plan_rejected`, `resolution`, `clarification`, `policy`, `approval_requested`, `approved`, `verification_failed`, `verified`, `step_started`, `step_done`, `step_failed`, `compensated`, `cancelled`, `lock`, `unlock`, `operator`, `notification`. Secrets (PINs, codes, passwords) are never logged.
+Append-only rows per customer: `seq`, `kind`, `plan_id`, `data`, `at`, `prev_hash`, `hash` where `hash = sha256(prev_hash + canonical_json(seq, kind, plan_id, data, at))`. `GET /api/audit/verify` recomputes the chain. Kinds: `request`, `screening`, `plan_proposed`, `plan_rejected`, `resolution`, `clarification`, `policy`, `approval_requested`, `approved`, `verification_failed`, `verified`, `step_started`, `step_done`, `step_failed`, `compensated`, `cancelled`, `transfer` (each stage of a transfer in the bank), `lock`, `unlock`, `operator`, `notification`. Secrets (PINs, codes, passwords) are never logged.
 
 ## 9. Sandbox (open-ended analysis)
 
@@ -116,7 +128,7 @@ For questions the fixed analyses cannot answer ("how much on coffee on weekends 
 
 ## 10. Data model (simulated bank)
 
-`Customer` (the account), `BankAccount` (checking, savings, reserve), `Txn`, `Payee` (name, aliases, phone, bank, masked account, relationship, birthday, note), `Card` (physical/virtual, status, limits, restriction switches), `Subscription`, `ScheduledTransfer`, `Collection` (split-bill requests), `WealthProduct`, `Holding`, `RiskProfile`, `Merchant` + `Order`, `Plan`, `Conversation` + `Message`, `Challenge` (SMS / passkey), `Passkey`, `SmsMessage` (simulated phone), `Notification`, `SafetyLock`, `AuditEntry`, `DemoClock`.
+`Customer` (the account), `BankAccount` (checking, savings, reserve), `Txn`, `Payee` (name, aliases, phone, bank, masked account, relationship, birthday, note), `Card` (physical/virtual, status, limits, restriction switches), `Subscription`, `ScheduledTransfer`, `Transfer` (route, arrival, stage events, §6a), `PayeeMessage` (the payee's phone), `Collection` (split-bill requests), `WealthProduct`, `Holding`, `RiskProfile`, `Merchant` + `Order`, `Plan`, `Conversation` + `Message`, `Challenge` (SMS / passkey), `Passkey`, `SmsMessage` (simulated phone), `Notification`, `SafetyLock`, `AuditEntry`, `DemoClock`.
 
 Every customer gets their own seeded bank on sign-up: about 22 months of realistic transactions (so a full-year report works), family and friend payees (including two people with the same pinyin name, to show clarification), subscriptions (including a duplicate music service and a forgotten trial), seeded anomalies (duplicate charge, late-night large purchase at a new merchant, overseas online charge), two cards, wealth holdings and a risk profile. `POST /api/demo/reset` restores it.
 

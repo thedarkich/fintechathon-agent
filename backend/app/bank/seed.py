@@ -23,12 +23,14 @@ from app.models import (
     Notification,
     Order,
     Payee,
+    PayeeMessage,
     Plan,
     RiskProfile,
     SafetyLock,
     ScheduledTransfer,
     SmsMessage,
     Subscription,
+    Transfer,
     Txn,
     UserAccount,
     WealthProduct,
@@ -76,7 +78,7 @@ PAYEES = [
          birthday="07-21", note="家人"),
     dict(key="spouse", name="陈静", name_en="Chen Jing", relationship="spouse",
          aliases=["老婆", "媳妇", "妻子", "爱人", "wife", "my wife", "spouse"],
-         phone="13886051123", bank="招商银行", account_no="6225880145671123",
+         phone="13886051123", bank="演示银行", account_no="6225880145671123",
          birthday=None, note="家人"),
     dict(key="zhangwei", name="张伟", name_en="Zhang Wei", relationship="friend",
          aliases=["小张", "伟哥"], phone="13912345678", bank="中国建设银行",
@@ -85,7 +87,7 @@ PAYEES = [
          aliases=["小张"], phone="13698765432", bank="交通银行",
          account_no="6222600512349876", note="同事，财务部"),
     dict(key="roommate", name="刘洋", name_en="Liu Yang", relationship="roommate",
-         aliases=["室友", "roommate"], phone="15527301190", bank="中国银行",
+         aliases=["室友", "roommate"], phone="15527301190", bank="演示银行",
          account_no="6217856100023190", note="室友，水电网费AA"),
     dict(key="landlord", name="赵建华", name_en="Zhao Jianhua", relationship="landlord",
          aliases=["房东", "landlord"], phone="13507149922", bank="中国农业银行",
@@ -110,7 +112,7 @@ def reset_customer(session: Session, user_id: str) -> None:
     """Remove the customer's bank and conversation data (the audit log is kept)."""
     for table in (Txn, Payee, Card, BankAccount, Subscription, ScheduledTransfer, Collection,
                   Holding, RiskProfile, Order, Plan, Message, Conversation, SmsMessage,
-                  Notification, SafetyLock, DemoClock):
+                  Notification, SafetyLock, DemoClock, Transfer, PayeeMessage):
         session.exec(delete(table).where(table.user_id == user_id))
 
 

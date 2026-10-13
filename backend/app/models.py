@@ -180,6 +180,45 @@ class ScheduledTransfer(SQLModel, table=True):
     detail: str | None = None
 
 
+class Transfer(SQLModel, table=True):
+    """A transfer as the bank processes it (bank/transfers.py): accepted, then clearing, then arrived,
+    returned by the payee's bank, or cancelled by the customer while a delayed transfer waits."""
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    user_id: str = Field(index=True)
+    payee_id: str
+    payee_name: str
+    payee_name_en: str
+    bank: str
+    account_tail: str
+    source_id: str
+    amount_fen: int
+    memo: str | None = None
+    route: str  # internal (same bank) | ibps (超级网银, interbank real time)
+    arrival: str = "instant"  # instant | standard (2 hours) | next_day
+    arrival_reason: str | None = None  # the risk signal that made the rules choose a later arrival
+    status: str = "accepted"  # accepted | clearing | arrived | returned | cancelled
+    reason: str | None = None  # why the payee's bank returned it
+    debit_txn_id: str | None = None
+    created_at: str = Field(index=True)
+    arrive_at: str
+    finished_at: str | None = None
+    events: list = json_list()
+    plan_id: str | None = None
+    scheduled_id: str | None = None
+
+
+class PayeeMessage(SQLModel, table=True):
+    """What the payee's phone receives from their bank: the other half of the two-phone demo."""
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    user_id: str = Field(index=True)  # the sender, who owns this simulation
+    payee_id: str
+    at: str
+    text: str
+    text_en: str
+
+
 class Collection(SQLModel, table=True):
     """A split-bill (AA) collection request sent to payees. No money leaves the account."""
 

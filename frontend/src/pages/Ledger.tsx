@@ -32,6 +32,8 @@ const KINDS: Record<string, { mark: MarkKind; zh: string; en: string; group: Exc
   sandbox_run: { mark: 'query', zh: '沙箱运行', en: 'Sandbox run', group: 'actions' },
   upload: { mark: 'query', zh: '读取小票', en: 'Receipt read', group: 'actions' },
   reserve_released: { mark: 'change', zh: '预留退回', en: 'Reserve returned', group: 'actions' },
+  transfer: { mark: 'done', zh: '转账进度', en: 'Transfer stage', group: 'actions' },
+  demo_transfer: { mark: 'change', zh: '演示：推进转账', en: 'Demo: transfer moved', group: 'actions' },
   notification: { mark: 'pending', zh: '提醒', en: 'Reminder', group: 'actions' },
   screening: { mark: 'flag', zh: '安全标记', en: 'Flagged', group: 'security' },
   lock: { mark: 'blocked', zh: '安全锁开启', en: 'Safety lock on', group: 'security' },
@@ -75,6 +77,7 @@ function detail(e: AuditEntry, lang: 'zh' | 'en'): string {
     }
     case 'cancelled': return `${lang === 'zh' ? '停止' : 'stopped'} ${s(d.stopped)} · ${lang === 'zh' ? '撤销' : 'undone'} ${s(d.compensated)}`
     case 'notification': return s(d.key)
+    case 'transfer': return `${s(d.status)} · ${s(d.route)} · ${s(d.arrival)} · ¥${(Number(d.fen) / 100).toFixed(2)}${d.reason ? ` · ${s(d.reason)}` : ''}`
     default: return JSON.stringify(d).slice(0, 140)
   }
 }

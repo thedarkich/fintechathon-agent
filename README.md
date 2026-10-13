@@ -4,7 +4,7 @@ Entry for the 2026 Shenzhen International FinTech Competition (FinTechathon), **
 
 **The AI only proposes. Fixed code decides what is allowed, and code (not the AI) states every fact.**
 
-A customer says what they need in Chinese or English ("给妈妈转200", "冻结我的虚拟卡", "下个月老婆生日，帮我预留1000，提前两天订花和蛋糕"). The planner turns it into a plan: steps from a fixed catalogue of 38 bank actions, arranged as a dependency graph. Code then matches every name, card and merchant to the customer's own records, gives each step a permission tier, runs read-only steps at once, shows everything else on a confirmation slip and asks for strong verification when the rules require it. Every stage is written to a hash-chained audit log.
+A customer says what they need in Chinese or English ("给妈妈转200", "冻结我的虚拟卡", "下个月老婆生日，帮我预留1000，提前两天订花和蛋糕"). The planner turns it into a plan: steps from a fixed catalogue of 41 bank actions, arranged as a dependency graph. Code then matches every name, card and merchant to the customer's own records, gives each step a permission tier, runs read-only steps at once, shows everything else on a confirmation slip and asks for strong verification when the rules require it. Every stage is written to a hash-chained audit log.
 
 The design is in [docs/SPEC.md](docs/SPEC.md).
 
@@ -13,6 +13,7 @@ The design is in [docs/SPEC.md](docs/SPEC.md).
 Working and tested:
 
 - **Simulated bank** per customer: about 22 months of realistic transactions, payees (including two people who share a pinyin name), two cards, subscriptions and direct debits, wealth holdings, seeded anomalies, and a demo clock that moves time forward.
+- **Transfers processed the way a bank in mainland China does**: same-bank transfers arrive at once, other banks go through a simulated 超级网银; the customer can choose instant, 2-hour or next-day arrival, and a delayed transfer can be cancelled until it arrives. The rules delay any transfer with a risk signal by 2 hours, and the payee's bank returns money when the name doesn't match the account. Each stage is timestamped and audited, and a second simulated phone shows what the payee receives ([SPEC §6a](docs/SPEC.md)).
 - **All six scenarios from the brief**: transfers (by name, relationship, phone or note; scheduled; split bills), bill analysis (categories, unusual transactions, monthly and annual reports), wealth (holdings and returns, comparison, suitability-checked recommendations, risk questionnaire, buy and redeem), card management (apply, limits, switches, freeze and unfreeze, loss report), subscriptions (detection from transactions, reminders, cancel), and cross-scenario orchestration (the birthday plan).
 - **Permission tiers** exactly as in the brief, with the ¥1,000 daily rule counted across the day and checked again when a scheduled step runs. Risk signals can only raise a tier.
 - **Strong verification**: 6-digit PIN plus an SMS code (simulated phone) or a passkey (WebAuthn).
@@ -22,7 +23,7 @@ Working and tested:
 - **Open-ended questions** ("周末晚上8点后喝咖啡花了多少钱") are answered by generated analysis code that must pass an allow-list check and runs in an isolated, resource-limited process; the code and result go to the audit log.
 - **Receipts**: split a bill from a receipt photo or PDF. The file is read in an isolated worker; hidden text and instructions aimed at a machine are flagged and raise any step based on the receipt to strong verification.
 - **Voice input** through the browser speech API where available.
-- **Frontend**: bilingual (中文 / English) web app, light and dark: landing, sign-in, Assistant (conversation + the 审批栏 sign-off row for each plan), Accounts, Bills, Wealth, Cards & controls (safety lock, passkeys, simulated phone, demo clock), Ledger (hash-chained audit) and an operator console. See [frontend/README.md](frontend/README.md).
+- **Frontend**: bilingual (中文 / English) web app, light and dark: landing, sign-in, Assistant (conversation + the 审批栏 sign-off row for each plan), Accounts, Transfers (each transfer's stages, your phone and the payee's phone), Bills, Wealth, Cards & controls (safety lock, passkeys, simulated phone, demo clock), Ledger (hash-chained audit) and an operator console. See [frontend/README.md](frontend/README.md).
 
 Not built yet: an IM channel, deployment, the submission documents. The AI provider has not been chosen, so the model planner has only been tested with a fake model.
 

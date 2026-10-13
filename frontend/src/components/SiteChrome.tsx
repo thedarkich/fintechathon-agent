@@ -27,7 +27,7 @@ export function SiteHeader({ workspace = false, status }: { workspace?: boolean;
   }
   const home = user ? '/assistant' : getAdminToken() ? '/operator' : '/login'
   const links = (workspace
-    ? [['/assistant', tr('Assistant', '助手')], ['/accounts', tr('Accounts', '账户')], ['/bills', tr('Bills', '账单')], ['/wealth', tr('Wealth', '理财')], ['/controls', tr('Controls', '控制台')], ['/ledger', tr('Ledger', '账本')], ['/operator', tr('Operator', '客服')]]
+    ? [['/assistant', tr('Assistant', '助手')], ['/accounts', tr('Accounts', '账户')], ['/transfers', tr('Transfers', '转账')], ['/bills', tr('Bills', '账单')], ['/wealth', tr('Wealth', '理财')], ['/controls', tr('Controls', '控制台')], ['/ledger', tr('Ledger', '账本')], ['/operator', tr('Operator', '客服')]]
     : [['/?section=workflow', tr('How it works', '工作流程')], ['/?section=stack', tr('Building blocks', '核心能力')], [home, tr('Workspace', '工作台')]]
   ).filter(([to]) => to !== '/operator' || isOperator(user)).filter(([to]) => !workspace || user || to === '/operator')
   return <header className="site-header">

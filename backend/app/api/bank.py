@@ -16,7 +16,7 @@ from app.agent.actions.wealth import holdings_run, products_run
 from app.agent.core import Ctx
 from app.agent.verify import VerifyError
 from app.api.security import problem, require_user
-from app.bank import analysis
+from app.bank import analysis, transfers
 from app.models import (
     AuditEntry,
     BankAccount,
@@ -25,10 +25,12 @@ from app.models import (
     Notification,
     Passkey,
     Payee,
+    PayeeMessage,
     Plan,
     RiskProfile,
     ScheduledTransfer,
     SmsMessage,
+    Transfer,
     UserAccount,
 )
 
@@ -145,6 +147,28 @@ async def scheduled(request: Request, user_id: str = Depends(require_user)):
                                "repeat": s.repeat, "status": s.status} for s in rows],
                 "collections": [{"id": c.id, "title": c.title, "total_fen": c.total_fen, "status": c.status,
                                  "participants": c.participants} for c in collections]}
+
+
+@router.get("/bank/transfers")
+async def transfer_list(request: Request, lang: Lang = "zh", user_id: str = Depends(require_user)):
+    """Transfers as the bank processes them: route, arrival option and every stage with its time."""
+    with Session(request.app.state.runtime.engine) as session:
+        now = clock.now(session, user_id)
+        rows = session.exec(select(Transfer).where(Transfer.user_id == user_id)
+                            .order_by(Transfer.created_at.desc()).limit(30)).all()
+        return {"items": [transfers.view(row, lang, now) for row in rows]}
+
+
+@router.get("/payee-phone")
+async def payee_phone(request: Request, user_id: str = Depends(require_user)):
+    """What the payees' phones received from their banks (the other half of the two-phone demo)."""
+    with Session(request.app.state.runtime.engine) as session:
+        names = {p.id: (p.name, p.name_en or p.name) for p in session.exec(select(Payee).where(Payee.user_id == user_id))}
+        rows = session.exec(select(PayeeMessage).where(PayeeMessage.user_id == user_id)
+                            .order_by(PayeeMessage.at.desc()).limit(20)).all()
+        return {"items": [{"id": m.id, "at": m.at, "payee": names.get(m.payee_id, ("?", "?"))[0],
+                           "payee_en": names.get(m.payee_id, ("?", "?"))[1], "text": m.text, "text_en": m.text_en}
+                          for m in rows]}
 
 
 @router.get("/notifications")

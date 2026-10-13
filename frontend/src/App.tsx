@@ -32,6 +32,7 @@ const AuthPage = page(() => import('./pages/Auth'))
 const TeamAccess = page(() => import('./pages/TeamAccess'))
 const Assistant = page(() => import('./pages/Assistant'))
 const Accounts = page(() => import('./pages/Accounts'))
+const Transfers = page(() => import('./pages/Transfers'))
 const Bills = page(() => import('./pages/Bills'))
 const Wealth = page(() => import('./pages/Wealth'))
 const Controls = page(() => import('./pages/Controls'))
@@ -84,6 +85,7 @@ export default function App() {
                 <Route element={<Workspace />}>
                   <Route path="/assistant" element={<Assistant />} />
                   <Route path="/accounts" element={<Accounts />} />
+                  <Route path="/transfers" element={<Transfers />} />
                   <Route path="/bills" element={<Bills />} />
                   <Route path="/wealth" element={<Wealth />} />
                   <Route path="/controls" element={<Controls />} />

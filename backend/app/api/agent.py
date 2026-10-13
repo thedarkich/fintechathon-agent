@@ -143,8 +143,13 @@ def summary(ctx: Ctx, plan: Plan) -> tuple[str, str]:
     zh_ctx = Ctx(session=ctx.session, user=ctx.user, now=ctx.now, lang="zh", plan=plan)
     en_ctx = Ctx(session=ctx.session, user=ctx.user, now=ctx.now, lang="en", plan=plan)
     pending = [s for s in plan.steps if s.get("status") == "pending"]
-    return ("；".join(REGISTRY[s["action"]].describe(zh_ctx, s["resolved"]) for s in pending)[:120],
-            "; ".join(REGISTRY[s["action"]].describe(en_ctx, s["resolved"]) for s in pending)[:160])
+    return (shorten("；".join(REGISTRY[s["action"]].describe(zh_ctx, s["resolved"]) for s in pending), 120),
+            shorten("; ".join(REGISTRY[s["action"]].describe(en_ctx, s["resolved"]) for s in pending), 160))
+
+
+def shorten(text: str, limit: int) -> str:
+    """An SMS has room for the gist: cut at the limit and say so, rather than mid-word."""
+    return text if len(text) <= limit else text[:limit - 1].rstrip(" ,，；;（(") + "…"
 
 
 @router.post("/plans/{plan_id}/sms")

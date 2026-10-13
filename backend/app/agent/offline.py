@@ -60,6 +60,10 @@ def cn_number(text: str) -> float | None:
     return float(total + section + number) or None
 
 
+# how the customer wants a transfer to arrive (bank/transfers.py)
+STANDARD_ARRIVAL = re.compile(r"(普通|延时|延迟|2\s*小时(后)?|两小时(后)?)到账|\bdelayed\b|\bin (2|two) hours\b")
+NEXT_DAY_ARRIVAL = re.compile(r"(次日|明天|隔天|第二天)(凌晨)?到账|next[- ]day|arrive tomorrow")
+
 AMOUNT = re.compile(
     r"(?:¥|￥|rmb\s*|cny\s*)?(\d+(?:\.\d{1,2})?\s*[万千kK]?|[零〇一二两三四五六七八九十百千万]{1,8})\s*(?:元|块钱|块|rmb|yuan|cny)?",
     re.IGNORECASE)
@@ -70,7 +74,8 @@ def amounts(text: str) -> list[float]:
     cleaned = re.sub(r"1\d{10}", " ", text)  # phone numbers are not amounts
     cleaned = re.sub(r"\d{4}-\d{2}-\d{2}", " ", cleaned)
     # dates and times are not amounts; \b only works after English units ('1号给房东' has no word break)
-    cleaned = re.sub(r"(\d{1,2})\s*(?:号|日|月|点|天|周|个月|年|(?:days?|weeks?|months?|years?|th|st|nd|rd)\b)", " ", cleaned)
+    cleaned = re.sub(r"(\d{1,2})\s*(?:号|日|月|点|天|周|个月|年|小时|分钟|(?:days?|weeks?|months?|years?|hours?|minutes?|th|st|nd|rd)\b)",
+                     " ", cleaned)
     cleaned = re.sub(r"(尾号|ending|card)\s*\d{4}", " ", cleaned)
     for match in AMOUNT.finditer(cleaned):
         raw = match.group(1).replace(" ", "")
@@ -413,9 +418,16 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     if has(text, "理财", "基金", "收益", "持仓", "投资", "investment", "portfolio", "holdings", "returns", "funds"):
         return one("wealth_holdings")
 
+    # stopping a delayed transfer before it arrives: '撤销刚才给周凯的转账', 'cancel the transfer to Zhou Kai'
+    if has(text, "撤销", "撤回", "取消", "cancel", "recall", "stop") and has(text, "转账", "汇款", "transfer") \
+            and not has(text, "预约", "定时", "每月", "scheduled", "recurring"):
+        ref = re.search(r"#([0-9a-f]{6,})", lowered)
+        return one("transfer_cancel", {"transfer": ref.group(1) if ref else payee_from(text)})
+
     # history, before transfers and spending: '转账记录' and '消费明细' are lists to look at
     category = next((c for c, words in CATEGORY_WORDS if has(text, *words)), None)
-    incoming = has(text, "收到", "到账", "进账", "收入", "工资", "received", "income", "incoming", "salary")
+    incoming = has(text, "收到", "到账", "进账", "收入", "工资", "received", "income", "incoming", "salary") \
+        and not (STANDARD_ARRIVAL.search(lowered) or NEXT_DAY_ARRIVAL.search(lowered) or "实时到账" in text)
     if incoming or has(text, "记录", "明细", "流水", "清单", "history", "records") \
             or re.search(r"转了(多少|几|哪些)|转过|付了(多少|几)", text):  # '上周给妈妈转了多少钱' asks about the past
         return transactions(text, category, incoming=incoming)
@@ -438,10 +450,20 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
             memo = m.group(1)
         elif "房租" in text:
             memo = "房租"
-        when, repeat = when_from(text, today)
+        # arrival choice: '普通到账' / '2小时后到账' / '次日到账'; '明天到账' is not a transfer scheduled for tomorrow
+        arrival = "instant"
+        if m := STANDARD_ARRIVAL.search(lowered):
+            arrival = "standard"
+        elif m := NEXT_DAY_ARRIVAL.search(lowered):
+            arrival = "next_day"
+        when, repeat = when_from(re.sub(re.escape(m.group(0)), " ", text, flags=re.IGNORECASE) if arrival != "instant" else text,
+                                 today)
         if when:
             return one("schedule_transfer", {"payee": payee, "amount_yuan": amount, "when": when, "repeat": repeat, "memo": memo})
-        return one("transfer", {"payee": payee, "amount_yuan": amount, "memo": memo})
+        args = {"payee": payee, "amount_yuan": amount, "memo": memo}
+        if arrival != "instant":
+            args["arrival"] = arrival
+        return one("transfer", args)
 
     # open-ended questions: generated analysis code, run in the sandbox
     code = templates.from_question(text, today)

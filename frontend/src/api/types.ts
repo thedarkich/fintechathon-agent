@@ -176,6 +176,42 @@ export interface Payee {
   created_at: string
 }
 
+export type TransferStatus = 'accepted' | 'clearing' | 'arrived' | 'returned' | 'cancelled'
+
+/** A transfer as the simulated bank processes it (backend bank/transfers.py). */
+export interface Transfer {
+  id: string
+  payee: string
+  bank: string
+  account_tail: string
+  fen: number
+  memo: string | null
+  route: 'internal' | 'ibps'
+  route_label: string
+  arrival: 'instant' | 'standard' | 'next_day'
+  arrival_label: string
+  arrival_reason: string | null
+  status: TransferStatus
+  status_label: string
+  reason: string | null
+  created_at: string
+  arrive_at: string
+  finished_at: string | null
+  cancellable: boolean
+  plan_id: string | null
+  events: { at: string; status: TransferStatus; text: string }[]
+}
+
+/** A text the payee's phone received from their bank (the other half of the two-phone demo). */
+export interface PayeeSms {
+  id: string
+  at: string
+  payee: string
+  payee_en: string
+  text: string
+  text_en: string
+}
+
 export interface Scheduled {
   transfers: { id: string; payee: string; fen: number; run_at: string; repeat: string; status: string }[]
   collections: { id: string; title: string; total_fen: number; status: string; participants: { name: string; name_en: string; share_fen: number; status: string }[] }[]

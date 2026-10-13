@@ -13,9 +13,11 @@ import type {
   Anomaly,
   BankCard,
   Note,
+  PayeeSms,
   Scheduled,
   Sms,
   Subscriptions,
+  Transfer,
   Txn,
   UploadResult,
   Wealth,
@@ -129,6 +131,8 @@ export const api = {
   payees: () => request<{ items: Payee[] }>('/api/bank/payees'),
   wealth: (lang: Lang) => request<Wealth>(`/api/bank/wealth?lang=${lang}`),
   scheduled: () => request<Scheduled>('/api/bank/scheduled'),
+  transfers: (lang: Lang) => request<{ items: Transfer[] }>(`/api/bank/transfers?lang=${lang}`),
+  payeePhone: () => request<{ items: PayeeSms[] }>('/api/payee-phone'),
   notifications: (lang: Lang) => request<{ items: Note[] }>(`/api/notifications?lang=${lang}`),
   readNotifications: () => post('/api/notifications/read'),
   phone: () => request<{ number: string; items: Sms[] }>('/api/phone'),
@@ -147,6 +151,8 @@ export const api = {
   clock: () => request<{ now: string; offset_seconds: number }>('/api/demo/clock'),
   advance: (days: number, hours: number, lang: Lang) => post<{ now: string }>('/api/demo/advance', { days, hours, lang }),
   reset: () => post('/api/demo/reset'),
+  demoTransfer: (id: string, outcome: 'next' | 'return', lang: Lang) =>
+    post<Transfer>(`/api/demo/transfers/${id}`, { outcome, reason: 'NAME_MISMATCH', lang }),
 
   // operators
   queue: () => request<{ items: QueueItem[] }>('/api/operator/queue', {}, true),

@@ -151,6 +151,9 @@ def prepare(ctx: Ctx, plan: Plan) -> Plan:
         if action.payment:
             earlier_by_day[pay_day] = earlier_by_day.get(pay_day, 0) + decision["payment_fen"]
             earlier_by_payee[payee] = earlier_by_payee.get(payee, 0) + decision["payment_fen"]
+        if later := policy.safer_arrival(action, resolved, decision):  # shown on the slip and covered by its hash
+            resolved.update(arrival=later,
+                            arrival_reason=next(s for s in decision["signals"] if s in policy.SAFER_ARRIVAL_SIGNALS))
         step.update(tier=decision["tier"], rule=decision["rule"], signals=decision["signals"],
                     day_total_fen=decision["day_total_fen"])
         audit.append(ctx.session, ctx.user.id, "policy", {"step": step["id"], **decision}, plan.id)

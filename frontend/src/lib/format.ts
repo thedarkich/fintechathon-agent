@@ -32,9 +32,15 @@ export function clock(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Shanghai' })
 }
 
-/** 'MM-DD HH:MM' in China time (bank times already carry +08:00). */
+const CHINA = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+
+/** 'MM-DD HH:MM' in China time. Bank times already carry +08:00; others (SMS, sign-in) are UTC and converted. */
 export function stamp(iso: string): string {
-  return iso.slice(5, 16).replace('T', ' ')
+  if (iso.endsWith('+08:00')) return iso.slice(5, 16).replace('T', ' ')
+  const moment = new Date(iso)
+  if (Number.isNaN(moment.getTime())) return iso.slice(5, 16).replace('T', ' ')
+  const part = (type: string) => CHINA.formatToParts(moment).find((p) => p.type === type)?.value ?? ''
+  return `${part('month')}-${part('day')} ${part('hour')}:${part('minute')}`
 }
 
 export function pct(x?: number | null): string {

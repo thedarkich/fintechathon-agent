@@ -11,7 +11,7 @@ from app import clock
 from app.agent import audit, executor, policy
 from app.agent.actions import REGISTRY
 from app.agent.core import TIERS, Ctx
-from app.bank import analysis, ledger
+from app.bank import analysis, ledger, transfers
 from app.bank.ledger import BankError
 from app.clock import CST
 from app.models import (
@@ -85,8 +85,8 @@ def run_scheduled_transfer(ctx: Ctx, row: ScheduledTransfer) -> None:
                         f"{yuan(row.amount_fen)} to {payee.name_en or payee.name}: today's total is now over ¥1,000, so it needs strong verification.")
         return
     try:
-        ledger.debit(ctx.session, ledger.checking(ctx.session, ctx.user.id), row.amount_fen, when=ctx.now,
-                     kind="transfer_out", counterparty=payee.name, payee=payee, memo=row.memo, plan_id=row.plan_id)
+        transfers.send(ctx.session, ctx.user, payee, ledger.checking(ctx.session, ctx.user.id), row.amount_fen,
+                       now=ctx.now, memo=row.memo, plan_id=row.plan_id, scheduled_id=row.id)
     except BankError as exc:
         row.status, row.detail = "failed", exc.code
         ctx.session.add(row)
@@ -99,6 +99,20 @@ def run_scheduled_transfer(ctx: Ctx, row: ScheduledTransfer) -> None:
     audit.append(ctx.session, ctx.user.id, "scheduled_run", {"scheduled_id": row.id, "fen": row.amount_fen}, row.plan_id)
     executor.notify(ctx, f"scheduled:{row.id}:{run_at}:done", "schedule", "预约转账已完成", "Scheduled transfer sent",
                     f"已向 {payee.name} 转账 {yuan(row.amount_fen)}。", f"Sent {yuan(row.amount_fen)} to {payee.name_en or payee.name}.")
+
+
+def settle_transfers(ctx: Ctx) -> None:
+    """Delayed transfers whose arrival time has come clear now: they arrive, or the payee's bank returns them."""
+    for row in transfers.settle_due(ctx.session, ctx.user.id, ctx.now):
+        amount = yuan(row.amount_fen)
+        if row.status == "returned":
+            zh, en = transfers.RETURN_REASONS[row.reason]
+            executor.notify(ctx, f"transfer:{row.id}:returned", "info", "转账被退回", "A transfer was returned",
+                            f"向 {row.payee_name} 的 {amount} 被对方银行退回：{zh}。钱已回到您的账户。",
+                            f"The {amount} to {row.payee_name_en} was returned because {en}. The money is back in your account.")
+        else:
+            executor.notify(ctx, f"transfer:{row.id}:arrived", "info", "转账已到账", "A transfer arrived",
+                            f"向 {row.payee_name} 的 {amount} 已到账。", f"The {amount} to {row.payee_name_en} has arrived.")
 
 
 def renew_subscriptions(ctx: Ctx) -> None:
@@ -211,6 +225,7 @@ def tick(session: Session, user: UserAccount, lang: str = "zh") -> None:
             ScheduledTransfer.user_id == user.id, ScheduledTransfer.status == "scheduled",
             ScheduledTransfer.run_at <= clock.iso(ctx.now))).all():
         run_scheduled_transfer(ctx, row)
+    settle_transfers(ctx)
     salary(ctx)
     renew_subscriptions(ctx)
     release_reserves(ctx)
