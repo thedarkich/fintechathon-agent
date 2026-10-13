@@ -19,7 +19,7 @@ Working and tested:
 - **Security**: injection screening, a strict plan schema the model cannot extend, no tool output ever reaching the model, approval bound to a hash of the exact details, safety locks, typed secrets hidden, replies written only by code.
 - **Planning**: dependency graph, clarification questions with choices built by code, stop, undo (compensation), edit, and human takeover through an operator console.
 - **Planner**: an offline Chinese/English planner (no key needed, used by the tests) and an OpenAI-compatible model planner with validation and fallback.
-- **Frontend**: phone-style app (chat, accounts, bills, cards, wealth, more) with a "behind the scenes" panel: plan graph, audit trail, simulated phone, demo clock.
+- **Frontend**: bilingual (中文 / English) web app, light and dark: landing, sign-in, Assistant (conversation + the 审批栏 sign-off row for each plan), Accounts, Bills, Wealth, Cards & controls (safety lock, passkeys, simulated phone, demo clock), Ledger (hash-chained audit) and an operator console. See [frontend/README.md](frontend/README.md).
 
 Not built yet: reading receipt photos, the code sandbox for open-ended analysis questions, voice input, an IM channel, the submission documents. The AI provider has not been chosen, so the model planner has only been tested with a fake model.
 

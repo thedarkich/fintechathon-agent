@@ -29,7 +29,7 @@ backend/app/
   agent/actions the action catalogue: queries, payments, cards, subscriptions, wealth, security
   bank/         seed (demo customer), ledger, analysis, categories
   api/          accounts, agent (chat, plans, verification), bank pages, demo tools, operator console
-frontend/src/   pages (Chat, Accounts, Bills, CardsPage, Wealth, More, Operator), components (Slip, Verify, Behind, Cards)
+frontend/src/   pages (Landing, Auth, Assistant, Accounts, Bills, Wealth, Controls, Ledger, Operator, TeamAccess), components (StepRow, Decision, PlanView, Verify, Results, Seal, SiteChrome)
 deploy/         docker-compose.yml, Caddyfile, runtime.env.example
 docs/SPEC.md    the design contract
 ```

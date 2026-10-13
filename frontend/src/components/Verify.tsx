@@ -1,24 +1,25 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Fingerprint, MessageSquareText, ShieldCheck, X } from 'lucide-react'
+import { Fingerprint, MessageSquareText, ShieldCheck } from 'lucide-react'
+import { api, errorText } from '../api/client'
+import type { Plan } from '../api/types'
 import { useLang } from '../i18n'
-import { call, errorText, type Plan, type PlanResult } from '../lib/api'
 import { useChat } from '../lib/chat'
-import { passkeysSupported, assertPasskey } from '../lib/passkey'
-import { useOverview } from '../pages/Shell'
+import { assertPasskey, passkeysSupported } from '../lib/passkey'
 
-interface Sms { id: string; at: string; text: string; text_en: string }
-
-/** The simulated phone's latest SMS, shown inside the dialog so the demo works on one screen. */
+/** The simulated phone's SMS inbox. A real bank sends these to the customer's phone. */
 export function usePhone(enabled: boolean) {
-  return useQuery({ queryKey: ['phone'], queryFn: () => call<{ number: string; items: Sms[] }>('/api/phone'), refetchInterval: enabled ? 2500 : false, enabled })
+  return useQuery({ queryKey: ['phone'], queryFn: api.phone, refetchInterval: enabled ? 2500 : false, enabled })
 }
 
-export function VerifySheet({ plan, onClose }: { plan: Plan; onClose: () => void }) {
+/**
+ * Strong verification for red steps: the 6-digit PIN plus an SMS code or a passkey.
+ * Laid out like the invoice detail window. The assistant never sees what is typed here.
+ */
+export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPasskey: boolean; onClose: () => void }) {
   const { tr, lang } = useLang()
   const { apply } = useChat()
-  const overview = useOverview()
-  const canPasskey = !!overview.data?.has_passkey && passkeysSupported()
+  const canPasskey = hasPasskey && passkeysSupported()
   const [method, setMethod] = useState<'sms' | 'passkey'>(canPasskey ? 'passkey' : 'sms')
   const [pin, setPin] = useState('')
   const [code, setCode] = useState('')
@@ -27,20 +28,28 @@ export function VerifySheet({ plan, onClose }: { plan: Plan; onClose: () => void
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const phone = usePhone(!!challenge)
-  const pinRef = useRef<HTMLInputElement>(null)
+  const dialog = useRef<HTMLFormElement>(null)
   const needs = plan.steps.some((s) => s.action === 'password_change' && s.status === 'pending') ? 'new_password'
     : plan.steps.some((s) => s.action === 'pin_change' && s.status === 'pending') ? 'new_pin' : null
-  useEffect(() => { pinRef.current?.focus() }, [])
+
   useEffect(() => {
+    const before = document.activeElement as HTMLElement | null
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    dialog.current?.querySelector<HTMLInputElement>('input')?.focus()
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = overflow
+      window.removeEventListener('keydown', onKey)
+      before?.focus?.({ preventScroll: true })
+    }
   }, [onClose])
 
   async function sendCode() {
     setError('')
     try {
-      setChallenge(await call(`/api/plans/${plan.id}/sms`, {}))
+      setChallenge(await api.sms(plan.id))
     } catch (err) {
       setError(errorText(err, lang))
     }
@@ -57,10 +66,9 @@ export function VerifySheet({ plan, onClose }: { plan: Plan; onClose: () => void
         body.challenge_id = challenge?.challenge_id
         body.code = code
       } else {
-        const options = await call(`/api/plans/${plan.id}/passkey-options`, {})
-        body.credential = await assertPasskey(options)
+        body.credential = await assertPasskey(await api.passkeyOptions(plan.id))
       }
-      apply(await call<PlanResult>(`/api/plans/${plan.id}/verify`, body))
+      apply(await api.verify(plan.id, body))
       onClose()
     } catch (err) {
       setError(err instanceof DOMException ? tr('The passkey check was cancelled.', '通行密钥验证已取消。') : errorText(err, lang))
@@ -70,69 +78,66 @@ export function VerifySheet({ plan, onClose }: { plan: Plan; onClose: () => void
   }
 
   const latest = phone.data?.items[0]
-  const ready = pin.length === 6 && (method === 'passkey' || (challenge && code.length === 6)) && (!needs || secret.length >= (needs === 'new_pin' ? 6 : 10))
+  const ready = pin.length === 6 && (method === 'passkey' || (!!challenge && code.length === 6)) && (!needs || secret.length >= (needs === 'new_pin' ? 6 : 10))
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(10,18,32,.45)] sm:items-center" role="dialog" aria-modal="true" aria-labelledby="verify-title">
-      <form onSubmit={submit} className="safe-bottom max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-sheet p-5 sm:rounded-2xl">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 id="verify-title" className="flex items-center gap-2 text-lg font-bold"><ShieldCheck size={20} className="text-vermilion" />{tr('Strong verification', '强验证')}</h2>
-            <p className="mt-1 text-sm text-ink2">{tr('This is high risk, so the bank checks two things: your PIN and your phone or passkey. The assistant never sees them.', '这是高风险操作，需要验证两项：交易密码，以及手机验证码或通行密钥。助手看不到这些信息。')}</p>
+    <div className="fixed inset-0 z-40 flex justify-center bg-[rgba(0,0,0,0.55)] sm:items-center sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <form ref={dialog} onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="verify-title" className="flex h-full w-full flex-col overflow-hidden bg-field outline-none sm:h-auto sm:max-h-[92dvh] sm:max-w-lg sm:rounded-box sm:border-[1.5px] sm:border-rule2">
+        <div className="flex items-start justify-between gap-3 border-b-[1.5px] border-rule2 px-4 py-3">
+          <div className="min-w-0">
+            <p id="verify-title" className="flex items-center gap-2 font-semibold"><ShieldCheck size={18} className="text-cinnabar" />{tr('Strong verification', '强验证')}</p>
+            <p className="text-xs text-ink2">{tr('Two checks: your PIN, and your phone or passkey. The assistant never sees them.', '两项验证：交易密码，以及手机验证码或通行密钥。助手看不到这些信息。')}</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1 text-ink2" aria-label={tr('Close', '关闭')}><X size={20} /></button>
+          <button type="button" onClick={onClose} className="shrink-0 rounded-box px-2 py-1 text-lg text-ink2 hover:bg-paper2" aria-label={tr('Close', '关闭')}>✕</button>
         </div>
-
-        <label className="mt-5 block text-sm font-semibold">{tr('Transaction PIN', '交易密码')}
-          <input ref={pinRef} className="field num mt-1.5 text-center text-xl tracking-[0.6em]" type="password" inputMode="numeric" autoComplete="off"
-            maxLength={6} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} aria-describedby="pin-hint" />
-          <span id="pin-hint" className="mt-1 block text-xs font-normal text-ink3">{tr('6 digits', '6 位数字')}</span>
-        </label>
-
-        {needs && (
-          <label className="mt-4 block text-sm font-semibold">{needs === 'new_pin' ? tr('New 6-digit PIN', '新的 6 位交易密码') : tr('New login password (10+ characters)', '新的登录密码（至少 10 位）')}
-            <input className="field mt-1.5 font-normal" type="password" autoComplete="new-password" inputMode={needs === 'new_pin' ? 'numeric' : undefined}
-              value={secret} onChange={(e) => setSecret(needs === 'new_pin' ? e.target.value.replace(/\D/g, '').slice(0, 6) : e.target.value)} />
+        <div className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+          <label className="auth-field !mb-0" htmlFor="verify-pin">{tr('Transaction PIN', '交易密码')}
+            <input id="verify-pin" className="num text-center !text-xl tracking-[0.6em]" type="password" inputMode="numeric" autoComplete="off" maxLength={6}
+              value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} />
           </label>
-        )}
 
-        <fieldset className="mt-5">
-          <legend className="text-sm font-semibold">{tr('Second check', '第二重验证')}</legend>
-          <div className="mt-1.5 grid grid-cols-2 gap-2">
-            <button type="button" aria-pressed={method === 'sms'} onClick={() => setMethod('sms')}
-              className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold ${method === 'sms' ? 'border-indigo bg-indigo-wash text-indigo' : 'border-rule text-ink2'}`}>
-              <MessageSquareText size={16} />{tr('SMS code', '短信验证码')}
-            </button>
-            <button type="button" aria-pressed={method === 'passkey'} disabled={!canPasskey} onClick={() => setMethod('passkey')}
-              className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-40 ${method === 'passkey' ? 'border-indigo bg-indigo-wash text-indigo' : 'border-rule text-ink2'}`}>
-              <Fingerprint size={16} />{tr('Passkey', '通行密钥')}
-            </button>
-          </div>
-          {!canPasskey && <p className="mt-1.5 text-xs text-ink3">{tr('Add a passkey (face or fingerprint unlock) under More → Security to use it here.', '在“更多 → 安全”中添加通行密钥（面容或指纹解锁）后可在此使用。')}</p>}
-        </fieldset>
+          {needs && (
+            <label className="auth-field !mb-0" htmlFor="verify-secret">{needs === 'new_pin' ? tr('New 6-digit PIN', '新的 6 位交易密码') : tr('New login password (10+ characters)', '新的登录密码（至少 10 位）')}
+              <input id="verify-secret" type="password" autoComplete="new-password" inputMode={needs === 'new_pin' ? 'numeric' : undefined}
+                value={secret} onChange={(e) => setSecret(needs === 'new_pin' ? e.target.value.replace(/\D/g, '').slice(0, 6) : e.target.value)} />
+            </label>
+          )}
 
-        {method === 'sms' && (
-          <div className="mt-4">
-            {!challenge ? (
-              <button type="button" className="btn btn-quiet w-full" onClick={sendCode}>{tr('Send code to my phone', '发送验证码到我的手机')}</button>
+          <fieldset>
+            <legend className="text-xs font-semibold">{tr('Second check', '第二重验证')}</legend>
+            <div className="auth-tabs !my-2">
+              <button type="button" aria-pressed={method === 'sms'} onClick={() => setMethod('sms')} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[5px] px-2 py-2 text-[13px] ${method === 'sms' ? 'bg-field font-semibold text-[var(--action)] shadow-[0_1px_3px_var(--shadow)]' : 'text-ink2'}`}>
+                <MessageSquareText size={15} />{tr('SMS code', '短信验证码')}
+              </button>
+              <button type="button" aria-pressed={method === 'passkey'} disabled={!canPasskey} onClick={() => setMethod('passkey')} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[5px] px-2 py-2 text-[13px] disabled:opacity-40 ${method === 'passkey' ? 'bg-field font-semibold text-[var(--action)] shadow-[0_1px_3px_var(--shadow)]' : 'text-ink2'}`}>
+                <Fingerprint size={15} />{tr('Passkey', '通行密钥')}
+              </button>
+            </div>
+            {!canPasskey && <p className="text-xs text-ink2">{tr('Add a passkey (face or fingerprint unlock) on the Controls page to use it here.', '在“控制台”添加通行密钥（面容或指纹解锁）后可在此使用。')}</p>}
+          </fieldset>
+
+          {method === 'sms' && (
+            !challenge ? (
+              <button type="button" className="btn btn-line w-full py-2" onClick={() => void sendCode()}>{tr('Send a code to my phone', '发送验证码到我的手机')}</button>
             ) : (
-              <>
-                <label className="block text-sm font-semibold">{tr(`Code sent to ${challenge.phone}`, `验证码已发送至 ${challenge.phone}`)}
-                  <input className="field num mt-1.5 text-center text-xl tracking-[0.6em]" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+              <div>
+                <label className="auth-field !mb-0" htmlFor="verify-code">{tr(`Code sent to ${challenge.phone}`, `验证码已发送至 ${challenge.phone}`)}
+                  <input id="verify-code" className="num text-center !text-xl tracking-[0.6em]" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
                     value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
                 </label>
                 {latest && (
-                  <div className="mt-3 rounded-xl bg-well px-3 py-2.5 text-xs text-ink2">
-                    <p className="font-semibold text-ink">{tr('Simulated phone (demo only)', '模拟手机短信（仅演示）')}</p>
+                  <div className="mt-3 border-l-2 border-ink2 bg-paper px-3 py-2 text-[0.85rem]">
+                    <p className="text-xs font-semibold text-ink2">{tr('Simulated phone (demo only)', '模拟手机短信（仅演示）')}</p>
                     <p className="mt-1">{lang === 'zh' ? latest.text : latest.text_en}</p>
                   </div>
                 )}
-              </>
-            )}
-          </div>
-        )}
-
-        {error && <p role="alert" className="mt-4 rounded-lg bg-vermilion-wash px-3 py-2 text-sm text-vermilion">{error}</p>}
-        <button className="btn btn-primary mt-5 w-full" disabled={!ready || busy}>{busy ? tr('Checking…', '验证中…') : tr('Verify and run', '验证并执行')}</button>
+              </div>
+            )
+          )}
+          {error && <p className="auth-message" role="alert">{error}</p>}
+        </div>
+        <div className="border-t border-rule px-4 py-3 sm:px-6">
+          <button className="site-button auth-submit" disabled={!ready || busy}>{busy ? tr('Checking…', '验证中…') : tr('Verify and run', '验证并执行')} <span aria-hidden>→</span></button>
+        </div>
       </form>
     </div>
   )

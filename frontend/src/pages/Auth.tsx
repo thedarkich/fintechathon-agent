@@ -1,114 +1,93 @@
-import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { LangSwitch, Mark, ThemeSwitch, TierChip } from '../components/Chrome'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom'
+import { Eye, EyeOff, LockKeyhole } from 'lucide-react'
+import { getAdminToken } from '../api/client'
 import { useLang } from '../i18n'
-import { call, errorText } from '../lib/api'
-import { useAuth, type User } from '../lib/auth'
+import { authRequest, landingFor, useAuth, workspaceDestination } from '../lib/auth'
+import { SiteHeader, SiteFooter } from '../components/SiteChrome'
 
-function ExampleSlip() {
-  const { tr } = useLang()
-  return (
-    <div className="space-y-3" aria-hidden="true">
-      <p className="ml-auto w-fit rounded-2xl rounded-br-md bg-indigo px-4 py-2 text-[15px] text-[var(--indigo-ink)]">{tr('Send Mom 200', '给妈妈转200')}</p>
-      <div className="slip tier-yellow">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-semibold text-ink2">{tr('Transfer', '转账')}</span>
-          <TierChip tier="yellow" />
-        </div>
-        <p className="num mt-1 text-3xl font-bold tracking-tight">¥200.00</p>
-        <p className="mt-1 text-sm text-ink2">{tr('To Wang Xiuying (Mom), ICBC ****7801', '收款人 王秀英（妈妈）中国工商银行 ****7801')}</p>
-        <div className="slip-perf flex items-center justify-between text-xs text-ink3">
-          <span>{tr("Today's payments stay at or under ¥1,000", '当日累计付款不超过 ¥1,000')}</span>
-          <span className="font-semibold text-indigo">{tr('Confirm', '确认执行')}</span>
-        </div>
-      </div>
-      <div className="slip tier-red">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-semibold text-ink2">{tr('Transfer', '转账')}</span>
-          <TierChip tier="red" />
-        </div>
-        <p className="num mt-1 text-3xl font-bold tracking-tight">¥3,200.00</p>
-        <p className="mt-1 text-sm text-ink2">{tr('Needs your PIN plus an SMS code or passkey', '需要交易密码加短信验证码或通行密钥')}</p>
-      </div>
-    </div>
-  )
-}
+const weakPin = (pin: string) => new Set(pin).size === 1 || '0123456789'.includes(pin) || '9876543210'.includes(pin)
 
 export default function AuthPage({ register = false }: { register?: boolean }) {
-  const { tr, lang } = useLang()
-  const { signedIn } = useAuth()
-  const navigate = useNavigate()
-  const [form, setForm] = useState({ name: '', email: '', password: '', pin: '' })
+  const { tr } = useLang()
+  const { user, loading, error: sessionError, signedIn, refresh } = useAuth()
+  const [params] = useSearchParams()
+  const location = useLocation()
+  const next = workspaceDestination(params.get('next'))
+  const suffix = params.get('next') ? '?next=' + encodeURIComponent(next) : ''
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [pin, setPin] = useState('')
+  const [visible, setVisible] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [key]: e.target.value })
-
-  async function submit(e: FormEvent) {
-    e.preventDefault()
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [message, setMessage] = useState('')
+  useEffect(() => {
+    setName(''); setEmail(''); setPassword(''); setConfirm(''); setPin(''); setErrors({}); setMessage(''); setVisible(false)
+    document.title = (register ? tr('Create account', '创建账户') : tr('Sign in', '登录')) + ' · ' + tr('Bank Agent', '银行代办')
+    window.scrollTo(0, 0)
+  }, [register, location.pathname, tr])
+  if (user) return <Navigate to={landingFor(user, next)} replace />
+  if (getAdminToken() && !user && !loading) return <Navigate to="/operator" replace />
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    if (busy) return
+    const invalid: Record<string, string> = {}
+    if (register && (name.trim().length < 2 || name.trim().length > 60)) invalid.name = tr('Use 2–60 characters for your name.', '姓名需为 2–60 个字符。')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || email.trim().length > 254) invalid.email = tr('Enter a valid email address.', '请输入有效的邮箱地址。')
+    if (password.length < 10 || password.length > 128) invalid.password = tr('Use 10–128 characters.', '密码需为 10–128 个字符。')
+    if (register && password !== confirm) invalid.confirm = tr('Your passwords do not match.', '两次输入的密码不一致。')
+    if (register && (!/^\d{6}$/.test(pin) || weakPin(pin))) invalid.pin = tr('Use 6 digits that are not repeated or sequential.', '请使用 6 位数字，不能是重复或连续数字。')
+    setErrors(invalid); setMessage('')
+    if (Object.keys(invalid).length) { document.getElementById(Object.keys(invalid)[0])?.focus(); return }
     setBusy(true)
-    setError('')
     try {
-      const body = register ? form : { email: form.email, password: form.password }
-      const { user } = await call<{ user: User }>(register ? '/api/register' : '/api/login', body)
-      signedIn(user)
-      navigate('/', { replace: true })
-    } catch (err) {
-      setError(errorText(err, lang))
-    } finally {
-      setBusy(false)
-    }
+      const body: Record<string, string> = register ? { name: name.trim(), email: email.trim(), password, pin } : { email: email.trim(), password }
+      const { response, result } = await authRequest(register ? '/api/register' : '/api/login', body)
+      if (response.ok && result.user) { setPassword(''); setConfirm(''); setPin(''); signedIn(result.user); return }
+      const messages: Record<number, string> = {
+        401: tr('Email or password is incorrect.', '邮箱或密码不正确。'),
+        403: tr('Refresh this page and try again.', '请刷新页面后重试。'),
+        409: tr('This email already has an account. Sign in instead.', '该邮箱已注册，请直接登录。'),
+        422: result.message_en ? tr(result.message_en, result.message_zh ?? result.message_en) : tr('Check your name, email, password and PIN.', '请检查姓名、邮箱、密码和交易密码。'),
+        429: tr('Too many attempts. Please retry in 15 minutes.', '尝试过于频繁，请在 15 分钟后重试。'),
+        503: tr('Accounts are temporarily unavailable.', '账户服务暂不可用。'),
+      }
+      setMessage(messages[response.status] ?? tr('Unable to sign in. Please retry.', '暂时无法登录，请重试。'))
+    } catch { setMessage(tr('Could not reach the server. Please retry.', '无法连接登录服务，请重试。')) }
+    finally { setBusy(false) }
   }
-
-  return (
-    <div className="min-h-dvh">
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-        <div className="flex items-center gap-2.5 font-bold"><Mark /><span>{tr('Banking AI Agent', '银行 AI 助手')}</span></div>
-        <div className="flex items-center gap-2"><LangSwitch /><ThemeSwitch /></div>
-      </header>
-      <main className="mx-auto grid max-w-5xl gap-10 px-4 pb-16 pt-6 md:grid-cols-[1.1fr_1fr] md:pt-14">
-        <div>
-          <h1 className="keep text-[34px] font-extrabold leading-[1.15] tracking-tight md:text-[44px]">
-            {tr('Say what you need. The assistant plans it. Fixed rules and you decide.', '说一句话，办成银行业务。助手负责规划，规则和你说了算。')}
-          </h1>
-          <p className="mt-4 max-w-md text-ink2">
-            {tr('Questions run straight away. Anything that moves money or changes a card shows you a slip first, and larger amounts need your PIN and a code.',
-              '查询类操作直接执行。动钱、改卡之前，先给你看清每一笔；大额还要交易密码和验证码。')}
-          </p>
-          <div className="mt-8 max-w-sm"><ExampleSlip /></div>
-        </div>
-        <form onSubmit={submit} className="h-fit rounded-2xl border border-rule bg-sheet p-6 md:mt-4" noValidate>
-          <h2 className="text-xl font-bold">{register ? tr('Open a demo account', '开通演示账户') : tr('Sign in', '登录')}</h2>
-          {register && <p className="mt-1 text-sm text-ink2">{tr('You get your own simulated bank with two years of history. No real money is involved.', '系统会为你生成一个独立的模拟银行账户，含近两年的交易记录，不涉及真实资金。')}</p>}
-          <div className="mt-5 space-y-3.5">
-            {register && (
-              <label className="block text-sm font-semibold">{tr('Name', '姓名')}
-                <input className="field mt-1.5 font-normal" value={form.name} onChange={set('name')} autoComplete="name" required minLength={2} />
-              </label>
-            )}
-            <label className="block text-sm font-semibold">{tr('Email', '邮箱')}
-              <input className="field mt-1.5 font-normal" type="email" value={form.email} onChange={set('email')} autoComplete="email" required />
-            </label>
-            <label className="block text-sm font-semibold">{tr('Password (10+ characters)', '登录密码（至少 10 位）')}
-              <input className="field mt-1.5 font-normal" type="password" value={form.password} onChange={set('password')} autoComplete={register ? 'new-password' : 'current-password'} required minLength={10} />
-            </label>
-            {register && (
-              <label className="block text-sm font-semibold">{tr('6-digit transaction PIN', '6 位交易密码')}
-                <input className="field num mt-1.5 font-normal tracking-[0.4em]" inputMode="numeric" pattern="\d{6}" maxLength={6} value={form.pin}
-                  onChange={(e) => setForm({ ...form, pin: e.target.value.replace(/\D/g, '').slice(0, 6) })} autoComplete="off" required />
-                <span className="mt-1 block text-xs font-normal text-ink3">{tr('Used for high-risk actions. Not repeated or sequential digits.', '用于高风险操作，不能是重复或连续数字。')}</span>
-              </label>
-            )}
-          </div>
-          {error && <p role="alert" className="mt-4 rounded-lg bg-vermilion-wash px-3 py-2 text-sm text-vermilion">{error}</p>}
-          <button className="btn btn-primary mt-5 w-full" disabled={busy}>
-            {busy ? tr('Please wait…', '请稍候…') : register ? tr('Open account', '开通账户') : tr('Sign in', '登录')}
-          </button>
-          <p className="mt-4 text-center text-sm text-ink2">
-            {register ? <>{tr('Already have an account?', '已有账户？')} <Link className="font-semibold text-indigo" to="/">{tr('Sign in', '登录')}</Link></>
-              : <>{tr('New here?', '第一次使用？')} <Link className="font-semibold text-indigo" to="/signup">{tr('Open a demo account', '开通演示账户')}</Link></>}
-          </p>
+  const fieldError = (key: string) => errors[key] && <p id={key + '-error'} className="auth-field-error">{errors[key]}</p>
+  return <div className="public-site"><SiteHeader />
+    <main className="auth-main" tabIndex={-1}>
+      <div className="auth-intro"><p className="mono-label">// {tr('SAY IT ONCE. THE RULES DECIDE.', '说一句话，规则来把关。')}</p><h1>{tr('AI plans the request.', 'AI 拆解请求。')}<br /><span>{tr('The bank’s rules call the shots.', '规则拍板。')}</span></h1><p>{tr('The AI turns what you say into steps. Fixed rules decide which run at once, which need your confirmation and which need your PIN and a code.', 'AI 把你的话拆成步骤，固定规则决定哪些直接办、哪些要你确认、哪些要交易密码和验证码。')}</p>
+        <div className="auth-flow"><div className="mono-label">{tr('THE REQUEST WORKFLOW', '办理流程')}</div>{[
+          [tr('You ask', '你提出需求'), tr('In Chinese or English, by text, voice or receipt photo', '中文或英文，文字、语音或小票照片')],
+          [tr('Rules check', '规则检查'), tr('Tiers, the ¥1,000 daily total and safety locks', '分级规则、¥1,000 当日累计与安全锁')],
+          [tr('You approve', '你来确认'), tr('A tap for small things, PIN and a code for large ones', '小事点一下，大事要交易密码和验证码')],
+        ].map(([title, text], i) => <div className="auth-flow-row" key={title}><span>{i === 2 ? '✓' : '0' + (i + 1)}</span><div><strong>{title}</strong><p>{text}</p></div></div>)}</div>
+        <p className="auth-local-note">{tr('Your simulated bank is private to your account · No real money moves', '你的模拟银行仅本账户可见 · 不涉及真实资金')}</p>
+      </div>
+      <section className="auth-card" aria-labelledby="auth-title"><p className="mono-label">{tr('LET’S GET YOU STARTED', '从这里开始')}</p><h2 id="auth-title">{register ? tr('Your bank starts here.', '开通你的银行。') : tr('Welcome back.', '欢迎回来。')}</h2><p className="auth-subtitle">{register ? tr('You get your own simulated bank with two years of history.', '系统会为你生成独立的模拟银行，含近两年的交易记录。') : tr('Sign in to your bank.', '登录你的银行。')}</p>
+        <nav className="auth-tabs" aria-label={tr('Account access mode', '账户访问方式')}><Link to={'/login' + suffix} aria-current={!register ? 'page' : undefined} className={!register ? 'is-active' : ''}>{tr('Sign in', '登录')}</Link><Link to={'/signup' + suffix} aria-current={register ? 'page' : undefined} className={register ? 'is-active' : ''}>{tr('Create account', '创建账户')}</Link></nav>
+        <form onSubmit={submit} noValidate aria-busy={busy}>
+          <fieldset disabled={busy || loading}>
+            {register && <label className="auth-field" htmlFor="name">{tr('Full name', '姓名')}<input id="name" autoComplete="name" maxLength={60} value={name} onChange={e => setName(e.target.value)} placeholder={tr('Your name', '你的姓名')} aria-invalid={!!errors.name} aria-describedby={errors.name ? 'name-error' : undefined} />{fieldError('name')}</label>}
+            <label className="auth-field" htmlFor="email">{tr('Email address', '邮箱地址')}<input id="email" type="email" autoComplete="username" maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" aria-invalid={!!errors.email} aria-describedby={errors.email ? 'email-error' : undefined} />{fieldError('email')}</label>
+            <div className="auth-field"><div className="auth-label-row"><label htmlFor="password">{tr('Password', '密码')}</label><span>{tr('10 characters minimum', '至少 10 个字符')}</span></div><div className="auth-password"><input id="password" type={visible ? 'text' : 'password'} autoComplete={register ? 'new-password' : 'current-password'} maxLength={128} value={password} onChange={e => setPassword(e.target.value)} placeholder={tr('Enter your password', '输入密码')} aria-invalid={!!errors.password} aria-describedby={errors.password ? 'password-error' : undefined} /><button type="button" aria-label={visible ? tr('Hide password', '隐藏密码') : tr('Show password', '显示密码')} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>{fieldError('password')}</div>
+            {register && <label className="auth-field" htmlFor="confirm">{tr('Confirm password', '确认密码')}<input id="confirm" type="password" autoComplete="new-password" maxLength={128} value={confirm} onChange={e => setConfirm(e.target.value)} placeholder={tr('Enter your password again', '再次输入密码')} aria-invalid={!!errors.confirm} aria-describedby={errors.confirm ? 'confirm-error' : undefined} />{fieldError('confirm')}</label>}
+            {register && <div className="auth-field"><div className="auth-label-row"><label htmlFor="pin">{tr('Transaction PIN', '交易密码')}</label><span>{tr('6 digits, for high-risk actions', '6 位数字，用于高风险操作')}</span></div><input id="pin" className="num tracking-[0.4em]" type="password" inputMode="numeric" autoComplete="off" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="••••••" aria-invalid={!!errors.pin} aria-describedby={errors.pin ? 'pin-error' : undefined} />{fieldError('pin')}</div>}
+            {message && <p className="auth-message" role="alert">{message}</p>}
+            <button type="submit" className="site-button auth-submit">{busy ? tr('Please wait…', '请稍候…') : register ? tr('Create account', '创建账户') : tr('Sign in', '登录')} <span aria-hidden>→</span></button>
+          </fieldset>
         </form>
-      </main>
-    </div>
-  )
+        {sessionError && <p className="auth-message" role="alert">{sessionError} <button type="button" onClick={() => void refresh()}>{tr('Retry', '重试')}</button></p>}
+        <p className="auth-switch">{register ? tr('Already have an account?', '已经有账户？') : tr('New here?', '第一次使用？')} <Link to={(register ? '/login' : '/signup') + suffix}>{register ? tr('Sign in', '登录') : tr('Create an account', '创建账户')}</Link></p>
+        <p className="auth-switch">{tr('Bank operator?', '银行工作人员？')} <Link to="/team-token">{tr('Use an operator token', '使用工作人员令牌')}</Link></p>
+        <div className="auth-access-note"><LockKeyhole size={18} /><p>{tr('This signs you in to your bank.', '这是你的银行登录。')}<br />{tr('Large payments still need your PIN and a code.', '大额操作仍需交易密码和验证码。')}</p></div>
+      </section>
+    </main><SiteFooter />
+  </div>
 }

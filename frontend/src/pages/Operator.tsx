@@ -1,30 +1,36 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Mark } from '../components/Chrome'
+import { api, errorText } from '../api/client'
 import { useLang } from '../i18n'
-import { call, errorText, type Message, type Plan } from '../lib/api'
+import { Header } from '../components/Header'
+import { OperatorGate, Panel } from '../components/bits'
+import { Icon } from '../components/Icon'
+import { SealMark } from '../components/Seal'
+import { markColor, markFor, statusLabel } from '../components/PlanView'
+import { clock } from '../lib/format'
 
-interface QueueItem { conversation_id: string; user: string; email: string; reason: string | null; locked: boolean }
-interface Detail {
-  conversation_id: string; escalated: boolean; user: { name: string; email: string }; messages: Message[]; plans: Plan[]
-  locks: { scope: string; reason: string }[]; audit: { seq: number; kind: string; at: string; data: Record<string, unknown> }[]
+/** Human takeover. Operators read, reply, cancel and lift locks; there is deliberately no approve button. */
+export default function OperatorPage() {
+  return (
+    <div className="workspace">
+      <Header />
+      <OperatorGate><Operator /></OperatorGate>
+    </div>
+  )
 }
 
-/** Human takeover: read the conversation, the plans and the audit trail; reply, cancel or unlock.
- * There is deliberately no approve button: approval and strong verification stay with the customer. */
-export default function Operator() {
-  const { tr, lang } = useLang()
+function Operator() {
+  const { tr, lang, t } = useLang()
   const qc = useQueryClient()
-  const queue = useQuery({ queryKey: ['operator'], queryFn: () => call<{ items: QueueItem[] }>('/api/operator/queue'), refetchInterval: 5000 })
+  const queue = useQuery({ queryKey: ['operator'], queryFn: api.queue, refetchInterval: 5000 })
   const [selected, setSelected] = useState<string | null>(null)
-  const detail = useQuery({ queryKey: ['operator', selected], queryFn: () => call<Detail>(`/api/operator/conversations/${selected}`), enabled: !!selected, refetchInterval: 4000 })
+  const detail = useQuery({ queryKey: ['operator', selected], queryFn: () => api.operatorDetail(selected!), enabled: !!selected, refetchInterval: 4000 })
   const [reply, setReply] = useState('')
   const [error, setError] = useState('')
-  const act = async (path: string, body: object = {}) => {
+  const act = async (task: () => Promise<unknown>) => {
     setError('')
     try {
-      await call(path, body)
+      await task()
       void qc.invalidateQueries({ queryKey: ['operator'] })
     } catch (err) {
       setError(errorText(err, lang))
@@ -32,74 +38,83 @@ export default function Operator() {
   }
   const send = async (e: FormEvent) => {
     e.preventDefault()
-    if (!reply.trim()) return
-    await act(`/api/operator/conversations/${selected}/reply`, { text: reply })
+    if (!reply.trim() || !selected) return
+    await act(() => api.operatorReply(selected, reply.trim()))
     setReply('')
   }
-  if (queue.error) return <p className="p-6 text-sm text-vermilion">{errorText(queue.error, lang)} <Link className="underline" to="/">{tr('Back', '返回')}</Link></p>
+  const items = queue.data?.items ?? []
+  const d = detail.data
   return (
-    <div className="min-h-dvh">
-      <header className="flex items-center gap-3 border-b border-rule bg-sheet px-5 py-3">
-        <Mark /><p className="flex-1 font-bold">{tr('Operator console', '客服工作台')}</p>
-        <Link className="text-sm font-semibold text-indigo" to="/">{tr('Back to the app', '返回应用')}</Link>
-      </header>
-      <div className="grid gap-5 p-5 md:grid-cols-[300px_1fr]">
-        <aside>
-          <h2 className="font-bold">{tr('Waiting', '待处理')}</h2>
-          <ul className="mt-2 space-y-2">
-            {queue.data?.items.length === 0 && <li className="text-sm text-ink2">{tr('No one is waiting.', '暂无待处理会话。')}</li>}
-            {queue.data?.items.map((item) => (
-              <li key={item.conversation_id}>
-                <button onClick={() => setSelected(item.conversation_id)} className={`w-full rounded-xl border px-3 py-2 text-left text-sm ${selected === item.conversation_id ? 'border-indigo bg-indigo-wash' : 'border-rule bg-sheet'}`}>
-                  <p className="font-semibold">{item.user}</p>
-                  <p className="text-xs text-ink3">{item.reason}{item.locked ? tr(', safety lock on', '，安全锁开启') : ''}</p>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </aside>
-        {detail.data && (
-          <section className="grid gap-5 lg:grid-cols-[1fr_320px]">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="flex-1 font-bold">{detail.data.user.name} <span className="font-normal text-ink3">{detail.data.user.email}</span></h2>
-                {detail.data.locks.length > 0 && <button className="btn btn-quiet" onClick={() => act(`/api/operator/users/${selected}/unlock`)}>{tr('Lift safety lock', '解除安全锁')}</button>}
-                {detail.data.escalated && <button className="btn btn-quiet" onClick={() => act(`/api/operator/conversations/${selected}/release`)}>{tr('Hand back to assistant', '交还助手')}</button>}
-              </div>
-              <ol className="mt-3 max-h-[60dvh] space-y-2 overflow-y-auto rounded-2xl border border-rule bg-sheet p-4">
-                {detail.data.messages.map((m) => (
-                  <li key={m.id} className="text-sm"><span className="font-semibold text-ink2">{m.role}: </span><span className="whitespace-pre-wrap">{m.text}</span></li>
+    <main tabIndex={-1} className="page-content ">
+      <h1 className="cond text-[2.4rem] font-extrabold leading-tight">{tr('Operator console', '客服工作台')}</h1>
+      <p className="max-w-[44rem] text-ink2">{tr('Conversations a customer handed over, and customers under a safety lock. You can reply, cancel a waiting plan, hand the customer back to the assistant or lift a lock. You can never approve a step for a customer.', '客户转人工的会话，以及被安全锁限制的客户。你可以回复、取消等待中的计划、交还助手或解除安全锁，但不能替客户确认任何步骤。')}</p>
+      <dl className="metric-grid mt-7">
+        <div className="metric-card"><dt>{tr('Waiting', '待处理')}<Icon name="inbox" size={17} /></dt><dd>{queue.isLoading ? '—' : items.length}</dd></div>
+        <div className="metric-card"><dt>{tr('Under a safety lock', '安全锁中')}<Icon name="lock" size={17} /></dt><dd className="text-cinnabar">{items.filter((i) => i.locked).length}</dd></div>
+        <div className="metric-card"><dt>{tr('Handed over', '转人工')}<Icon name="users" size={17} /></dt><dd>{items.filter((i) => i.reason !== 'safety lock').length}</dd></div>
+        <div className="metric-card"><dt>{tr('Approve on behalf', '代为确认')}<Icon name="shield" size={17} /></dt><dd className="!text-[1.3rem]">{tr('Not possible', '不可能')}</dd></div>
+      </dl>
+      {queue.error && <p role="alert" className="mt-4 font-semibold text-cinnabar">{errorText(queue.error, lang)}</p>}
+      <div className="mt-6 grid items-start gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <Panel title={tr('Queue', '队列')}>
+          {items.length === 0 ? <p className="px-4 py-4 text-ink2">{tr('No one is waiting.', '暂无待处理会话。')}</p> : (
+            <ul className="divide-y divide-rule">
+              {items.map((item) => (
+                <li key={item.conversation_id}>
+                  <button type="button" onClick={() => setSelected(item.conversation_id)} className={`w-full px-4 py-3 text-left ${selected === item.conversation_id ? 'bg-sheet shadow-[inset_3px_0_0_var(--ink)]' : 'hover:bg-sheet'}`}>
+                    <p className="font-semibold">{item.user}</p>
+                    <p className="text-xs text-ink2">{item.email}</p>
+                    <p className={`mt-1 text-xs ${item.locked ? 'font-semibold text-cinnabar' : 'text-ink2'}`}>{item.reason}{item.locked ? tr(', safety lock on', '，安全锁开启') : ''}</p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+        {!d ? <p className="ruled bg-field px-4 py-10 text-center text-ink2">{tr('Choose a conversation on the left.', '从左侧选择一个会话。')}</p> : (
+          <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
+            <Panel title={d.user.name} note={d.user.email} right={<span className="flex flex-wrap gap-2">
+              {d.locks.length > 0 && <button type="button" className="btn btn-line py-1.5" onClick={() => void act(() => api.operatorUnlock(d.conversation_id))}>{tr('Lift safety lock', '解除安全锁')}</button>}
+              {d.escalated && <button type="button" className="btn btn-line py-1.5" onClick={() => void act(() => api.operatorRelease(d.conversation_id))}>{tr('Hand back to assistant', '交还助手')}</button>}
+            </span>}>
+              <ol className="max-h-[55dvh] space-y-2 overflow-y-auto p-4">
+                {d.messages.map((m) => (
+                  <li key={m.id} className="text-sm"><span className="font-semibold text-ink2">{m.role === 'user' ? tr('Customer', '客户') : m.role === 'operator' ? tr('Operator', '客服') : m.role === 'system' ? tr('System', '系统') : tr('Assistant', '助手')}: </span><span className="whitespace-pre-wrap">{m.text}</span></li>
                 ))}
               </ol>
-              <form onSubmit={send} className="mt-3 flex gap-2">
+              <form onSubmit={send} className="flex gap-2 border-t border-rule p-3">
                 <input className="field" value={reply} onChange={(e) => setReply(e.target.value)} placeholder={tr('Reply to the customer', '回复客户')} aria-label={tr('Reply', '回复')} />
-                <button className="btn btn-primary">{tr('Send', '发送')}</button>
+                <button className="btn btn-ink shrink-0 py-1.5">{tr('Send', '发送')}</button>
               </form>
-              {error && <p className="mt-2 text-sm text-vermilion">{error}</p>}
-            </div>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-bold">{tr('Plans', '计划')}</h3>
-                <ul className="mt-2 space-y-2">
-                  {detail.data.plans.map((p) => (
-                    <li key={p.id} className="rounded-xl border border-rule bg-sheet px-3 py-2 text-sm">
-                      <p className="font-semibold">{p.request}</p>
-                      <p className="text-xs text-ink3">{p.status}, {p.tier}</p>
-                      {['awaiting_approval', 'scheduled', 'clarifying'].includes(p.status) && <button className="mt-1 text-xs font-semibold text-vermilion" onClick={() => act(`/api/operator/plans/${p.id}/cancel`)}>{tr('Cancel plan', '取消计划')}</button>}
-                    </li>
-                  ))}
+              {error && <p className="px-4 pb-3 text-sm text-cinnabar">{error}</p>}
+            </Panel>
+            <div className="space-y-5">
+              <Panel title={tr('Plans', '计划')}>
+                <ul className="divide-y divide-rule">
+                  {d.plans.map((p) => {
+                    const mark = markFor({ status: p.status, tier: p.tier, reason: p.steps.find((s) => s.error)?.error ?? null })
+                    return (
+                      <li key={p.id} className="flex items-start gap-2.5 px-4 py-2.5 text-sm">
+                        <SealMark kind={mark} size={24} />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold">{p.request}</p>
+                          <p className="text-xs" style={{ color: markColor(mark) }}>{statusLabel(p.status, t)}</p>
+                          {['awaiting_approval', 'scheduled', 'clarifying'].includes(p.status) && <button type="button" className="mt-1 text-xs font-semibold text-cinnabar underline decoration-rule underline-offset-4" onClick={() => void act(() => api.operatorCancel(p.id))}>{tr('Cancel plan', '取消计划')}</button>}
+                        </div>
+                      </li>
+                    )
+                  })}
                 </ul>
-              </div>
-              <div>
-                <h3 className="font-bold">{tr('Audit trail', '审计记录')}</h3>
-                <ul className="mt-2 max-h-80 space-y-1 overflow-y-auto text-xs">
-                  {detail.data.audit.map((e) => <li key={e.seq} className="text-ink2">#{e.seq} {e.kind} {e.at.slice(11, 19)}</li>)}
+              </Panel>
+              <Panel title={tr('Ledger', '账本')}>
+                <ul className="max-h-80 divide-y divide-rule overflow-y-auto">
+                  {d.audit.map((e) => <li key={e.seq} className="flex justify-between gap-2 px-4 py-1.5 text-xs"><span className="font-semibold">#{e.seq} {e.kind}</span><span className="font-mono text-ink2">{clock(e.at)}</span></li>)}
                 </ul>
-              </div>
+              </Panel>
             </div>
-          </section>
+          </div>
         )}
       </div>
-    </div>
+    </main>
   )
 }

@@ -3,20 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#f3f5f8" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0f1726" media="(prefers-color-scheme: dark)" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="description" content="银行 AI 助手：说一句话办成银行业务，每一步都由规则把关、由你确认。A banking assistant that plans, while fixed rules and you decide." />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <meta name="theme-color" content="#f5f6f5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b0e0c" media="(prefers-color-scheme: dark)" />
     <script>
+      // apply a saved theme before the first paint so dark mode never flashes white
       try {
         var t = localStorage.getItem('ba_theme')
         if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
       } catch (e) {}
     </script>
-    <title>银行 AI 助手 · Banking AI Agent</title>
+    <meta name="description" content="银行代办 Bank Agent: say what you need; the AI plans it, and the bank's fixed rules decide what runs, what needs your confirmation and what needs your PIN." />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=1" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=1" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png?v=1" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1" />
+    <title>银行代办 Bank Agent</title>
   </head>
   <body>
     <div id="root"></div>

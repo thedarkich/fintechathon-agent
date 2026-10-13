@@ -1,13 +1,13 @@
 {
-  "name": "银行 AI 助手 · Banking AI Agent",
-  "short_name": "银行助手",
-  "start_url": "/",
+  "name": "银行代办 Bank Agent",
+  "short_name": "银行代办",
+  "start_url": "/#/assistant",
   "display": "standalone",
-  "background_color": "#f3f5f8",
-  "theme_color": "#22408c",
+  "background_color": "#ffffff",
+  "theme_color": "#357366",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/favicon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/favicon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

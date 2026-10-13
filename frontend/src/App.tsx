@@ -1,13 +1,18 @@
 import { lazy, Suspense } from 'react'
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { HashRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ServerBanner } from './components/ServerBanner'
+import { Header } from './components/Header'
+import { SignedInGate } from './components/bits'
+import { isServerProblem, markServer } from './lib/net'
+import { AuthProvider } from './lib/auth'
+import { ChatProvider } from './lib/chat'
 import { LangProvider } from './i18n'
-import { AuthProvider, useAuth } from './lib/auth'
-import AuthPage from './pages/Auth'
-import Shell from './pages/Shell'
+import LandingPage from './pages/Landing'
 
 /** After a redeploy, an open tab asks for chunks that no longer exist: reload once to pick up the new build. */
-function page(load: () => Promise<{ default: React.ComponentType }>) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function page<P extends Record<string, any>>(load: () => Promise<{ default: React.ComponentType<P> }>) {
   return lazy(() => load().catch((error) => {
     try {
       if (!sessionStorage.getItem('ba_reloaded')) {
@@ -23,48 +28,42 @@ function page(load: () => Promise<{ default: React.ComponentType }>) {
   }))
 }
 
-const Chat = page(() => import('./pages/Chat'))
+const AuthPage = page(() => import('./pages/Auth'))
+const TeamAccess = page(() => import('./pages/TeamAccess'))
+const Assistant = page(() => import('./pages/Assistant'))
 const Accounts = page(() => import('./pages/Accounts'))
 const Bills = page(() => import('./pages/Bills'))
-const CardsPage = page(() => import('./pages/CardsPage'))
 const Wealth = page(() => import('./pages/Wealth'))
-const More = page(() => import('./pages/More'))
+const Controls = page(() => import('./pages/Controls'))
+const Ledger = page(() => import('./pages/Ledger'))
 const Operator = page(() => import('./pages/Operator'))
+const Register = () => <AuthPage register />
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 2000 } },
+  queryCache: new QueryCache({
+    onError: (err) => isServerProblem(err) && markServer(false),
+    onSuccess: () => markServer(true),
+  }),
+  defaultOptions: {
+    queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 1000 },
+  },
 })
 
 function Loading() {
-  return <div className="mx-auto mt-24 h-1.5 w-32 animate-pulse rounded-full bg-well" role="status" aria-label="Loading" />
+  return <div className="mx-auto mt-24 h-2 w-40 animate-pulse rounded-full bg-paper2" aria-label="Loading" />
 }
 
-function Gate() {
-  const { user, loading } = useAuth()
-  if (loading) return <Loading />
-  if (!user) {
-    return (
-      <Routes>
-        <Route path="/signup" element={<AuthPage register />} />
-        <Route path="*" element={<AuthPage />} />
-      </Routes>
-    )
-  }
+/** Every workspace page shares one header and one conversation, so asking from any page continues the same thread. */
+function Workspace() {
   return (
-    <Suspense fallback={<Loading />}>
-      <Routes>
-        <Route path="/operator" element={<Operator />} />
-        <Route element={<Shell />}>
-          <Route path="/" element={<Chat />} />
-          <Route path="/accounts" element={<Accounts />} />
-          <Route path="/bills" element={<Bills />} />
-          <Route path="/cards" element={<CardsPage />} />
-          <Route path="/wealth" element={<Wealth />} />
-          <Route path="/more" element={<More />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
+    <div className="workspace">
+      <Header />
+      <SignedInGate>
+        <ChatProvider>
+          <Suspense fallback={<Loading />}><Outlet /></Suspense>
+        </ChatProvider>
+      </SignedInGate>
+    </div>
   )
 }
 
@@ -72,9 +71,28 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <LangProvider>
+        <ServerBanner />
+        {/* hash routes: the server never needs an SPA fallback, and links survive WeChat's in-app browser */}
         <HashRouter>
           <AuthProvider>
-            <Gate />
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<AuthPage />} />
+                <Route path="/signup" element={<Register />} />
+                <Route path="/team-token" element={<TeamAccess />} />
+                <Route element={<Workspace />}>
+                  <Route path="/assistant" element={<Assistant />} />
+                  <Route path="/accounts" element={<Accounts />} />
+                  <Route path="/bills" element={<Bills />} />
+                  <Route path="/wealth" element={<Wealth />} />
+                  <Route path="/controls" element={<Controls />} />
+                  <Route path="/ledger" element={<Ledger />} />
+                </Route>
+                <Route path="/operator" element={<Operator />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
           </AuthProvider>
         </HashRouter>
       </LangProvider>

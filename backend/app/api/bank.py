@@ -196,12 +196,25 @@ async def audit_verify(request: Request, user_id: str = Depends(require_user)):
         return audit.verify(session, user_id)
 
 
+PAYMENT_ACTIONS = {"transfer", "schedule_transfer", "merchant_order", "wealth_subscribe"}
+
+
 @router.get("/plans")
-async def plans(request: Request, limit: int = Query(30, ge=1, le=100), user_id: str = Depends(require_user)):
+async def plans(request: Request, lang: Lang = "zh", limit: int = Query(50, ge=1, le=200),
+                user_id: str = Depends(require_user)):
     with Session(request.app.state.runtime.engine) as session:
         rows = session.exec(select(Plan).where(Plan.user_id == user_id).order_by(Plan.created_at.desc()).limit(limit)).all()
-        return {"items": [{"id": p.id, "status": p.status, "tier": p.tier, "request": p.request, "created_at": p.created_at,
-                           "source": p.source, "flags": p.flags, "steps": len(p.steps)} for p in rows]}
+        items = []
+        for p in rows:
+            failed = next((s for s in p.steps if s.get("status") == "failed" and s.get("error")), None)
+            items.append({
+                "id": p.id, "status": p.status, "tier": p.tier, "request": p.request, "created_at": p.created_at,
+                "source": p.source, "flags": p.flags, "steps": len(p.steps),
+                "actions": [s["action"] for s in p.steps],
+                "fen": sum((s.get("resolved") or {}).get("fen") or 0 for s in p.steps if s["action"] in PAYMENT_ACTIONS) or None,
+                "reason": (failed["error"]["zh"] if lang == "zh" else failed["error"]["en"]) if failed else None,
+            })
+        return {"items": items}
 
 
 # --- safety locks ---

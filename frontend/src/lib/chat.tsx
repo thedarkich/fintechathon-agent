@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../i18n'
-import { call, errorText, type ChatResult, type Message, type PlanResult } from './api'
+import { api, errorText } from '../api/client'
+import type { Message, PlanResult } from '../api/types'
 
 type Chat = {
   conversationId: string | null
@@ -19,6 +20,9 @@ type Chat = {
 }
 const ChatContext = createContext<Chat | null>(null)
 
+const BANK_QUERIES = ['overview', 'transactions', 'report', 'cards', 'subscriptions', 'wealth', 'scheduled', 'notifications', 'audit', 'phone', 'locks', 'plans', 'payees', 'anomalies', 'clock']
+
+/** One conversation shared by every workspace page, so a button on Controls can ask the assistant and land here. */
 export function ChatProvider({ children }: { children: ReactNode }) {
   const { lang } = useLang()
   const qc = useQueryClient()
@@ -31,13 +35,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [planId, setPlanId] = useState<string | null>(null)
 
   const refreshBank = useCallback(() => {
-    for (const key of ['overview', 'transactions', 'report', 'cards', 'subscriptions', 'wealth', 'scheduled', 'notifications', 'audit', 'phone', 'locks', 'plans']) {
-      void qc.invalidateQueries({ queryKey: [key] })
-    }
+    for (const key of BANK_QUERIES) void qc.invalidateQueries({ queryKey: [key] })
   }, [qc])
 
   const reload = useCallback(async () => {
-    const body = await call<ChatResult>(`/api/conversation${conversationId ? `?conversation_id=${conversationId}` : ''}`)
+    const body = await api.conversation(conversationId)
     setConversationId(body.conversation_id)
     setMessages(body.messages)
     setEscalated(body.escalated)
@@ -52,9 +54,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     if (!message || pending) return
     setPending(message)
     setError('')
-    navigate('/')
+    navigate('/assistant')
     try {
-      const body = await call<ChatResult>('/api/chat', { message, conversation_id: conversationId, lang, attachment_id: attachmentId ?? null })
+      const body = await api.chat(message, conversationId, lang, attachmentId)
       setConversationId(body.conversation_id)
       setEscalated(body.escalated)
       setMessages((current) => [...current, ...body.messages])
@@ -78,7 +80,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [lang, qc, refreshBank])
 
   const newConversation = useCallback(async () => {
-    const body = await call<ChatResult>('/api/conversation/new', {})
+    const body = await api.newConversation()
     setConversationId(body.conversation_id)
     setMessages([])
     setEscalated(false)

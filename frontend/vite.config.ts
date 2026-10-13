@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // `npm run dev` proxies /api to the FastAPI backend on :8000.
-// Set VITE_API_MODE=mock (see .env.mock) to run with the built-in mock API instead.
+// The production build in dist/ is served by the backend at /.
 export default defineConfig({
   plugins: [react()],
   base: './',

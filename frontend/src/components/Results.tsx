@@ -1,0 +1,297 @@
+import { useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { api, errorText } from '../api/client'
+import type { Card } from '../api/types'
+import { useLang } from '../i18n'
+import { useChat } from '../lib/chat'
+import { category, stamp, yuan } from '../lib/format'
+import { usePlan, markFor, markColor, statusLabel } from './PlanView'
+import { SealMark } from './Seal'
+import { TierTag } from './bits'
+
+/** A ruled table in the ledger's style. */
+export function Table({ head, children, minWidth = '30rem' }: { head: ReactNode[]; children: ReactNode; minWidth?: string }) {
+  return (
+    <div className="overflow-x-auto ruled bg-field">
+      <table className="w-full border-collapse text-left text-[0.9rem]" style={{ minWidth }}>
+        <thead>
+          <tr className="rule-b bg-paper text-[0.82rem] text-rule2">
+            {head.map((h, i) => <th key={i} className={`px-3 py-2 font-normal ${i === head.length - 1 ? 'text-right' : ''}`}>{h}</th>)}
+          </tr>
+        </thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
+  )
+}
+
+export function Bars({ rows }: { rows: { label: string; fen: number; hint?: string }[] }) {
+  const top = Math.max(1, ...rows.map((r) => r.fen))
+  return (
+    <ul className="space-y-2.5">
+      {rows.map((row) => (
+        <li key={row.label}>
+          <div className="flex items-baseline justify-between gap-3 text-sm">
+            <span className="truncate">{row.label}{row.hint && <span className="ml-1.5 text-xs text-ink2">{row.hint}</span>}</span>
+            <span className="num shrink-0 font-mono">{yuan(row.fen)}</span>
+          </div>
+          <div className="budget-track"><span style={{ width: `${Math.max(2, (row.fen / top) * 100)}%` }} /></div>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+export function Columns({ series }: { series: { label: string; fen: number }[] }) {
+  const { tr } = useLang()
+  const top = Math.max(1, ...series.map((s) => s.fen))
+  return (
+    <figure>
+      <div className="flex h-32 items-end gap-[3px]" role="img" aria-label={tr('Spending over time', '支出走势')}>
+        {series.map((s) => (
+          <div key={s.label} className="flex-1 rounded-t-[2px]" style={{ height: `${Math.max(2, (s.fen / top) * 100)}%`, background: 'var(--jade)', opacity: s.fen ? 0.85 : 0.18 }} title={`${s.label} ${yuan(s.fen)}`} />
+        ))}
+      </div>
+      <figcaption className="num mt-1 flex justify-between font-mono text-[11px] text-ink2">
+        <span>{series[0]?.label.slice(5)}</span>
+        <span>{series[series.length - 1]?.label.slice(5)}</span>
+      </figcaption>
+    </figure>
+  )
+}
+
+function Ask({ text }: { text: string }) {
+  const { send, pending } = useChat()
+  return <button type="button" disabled={!!pending} onClick={() => void send(text)} className="btn btn-line py-1 text-[0.85rem]">{text}</button>
+}
+
+/** A plan waiting for the customer, as one line in the conversation; the full form is in the plan panel. */
+function PlanLine({ planId }: { planId: string }) {
+  const { tr, t } = useLang()
+  const { setPlanId } = useChat()
+  const plan = usePlan(planId)
+  const p = plan.data
+  if (!p) return null
+  const mark = markFor({ status: p.status, tier: p.tier, reason: p.steps.find((s) => s.error)?.error ?? null })
+  const total = p.steps.filter((s) => s.fen && ['transfer', 'schedule_transfer', 'merchant_order', 'wealth_subscribe'].includes(s.action)).reduce((a, s) => a + (s.fen ?? 0), 0)
+  return (
+    <div className="flex flex-wrap items-center gap-3 ruled bg-field px-3 py-2.5">
+      <SealMark kind={mark} size={30} />
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold" style={{ color: markColor(mark) }}>{statusLabel(p.status, t)} <TierTag tier={p.status === 'awaiting_approval' ? p.tier : null} /></p>
+        <p className="text-[0.85rem] text-ink2">{tr(`${p.steps.length} step${p.steps.length > 1 ? 's' : ''}`, `${p.steps.length} 个步骤`)}{total ? ` · ${yuan(total)}` : ''}</p>
+      </div>
+      <button type="button" className={`btn py-1.5 ${p.status === 'awaiting_approval' ? 'btn-ink' : 'btn-line'}`} onClick={() => { setPlanId(planId); document.getElementById('plan-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
+        {p.status === 'awaiting_approval' ? tr('Review and approve', '查看并确认') : tr('Open the slip', '查看审批单')}
+      </button>
+    </div>
+  )
+}
+
+function Question({ card }: { card: Card }) {
+  const { lang, tr } = useLang()
+  const { apply } = useChat()
+  const [error, setError] = useState('')
+  const [answers, setAnswers] = useState<number[]>([])
+  const choose = async (value: unknown) => {
+    setError('')
+    try {
+      apply(await api.answer(card.plan_id, value, lang))
+    } catch (err) {
+      setError(errorText(err, lang))
+    }
+  }
+  if (card.field === 'answers') {
+    return (
+      <div className="ruled bg-field p-4">
+        <ol className="space-y-4">
+          {card.options.map((q: { question_zh: string; question_en: string; choices_zh: string[]; choices_en: string[] }, i: number) => (
+            <li key={i}>
+              <p className="text-sm font-semibold">{i + 1}. {lang === 'zh' ? q.question_zh : q.question_en}</p>
+              <div className="demo-options !my-2">
+                {(lang === 'zh' ? q.choices_zh : q.choices_en).map((choice, j) => (
+                  <button key={choice} type="button" aria-pressed={answers[i] === j + 1} onClick={() => { const next = [...answers]; next[i] = j + 1; setAnswers(next) }}>{choice}</button>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ol>
+        <button className="btn btn-ink mt-2 w-full py-2" disabled={answers.filter(Boolean).length < card.options.length} onClick={() => void choose(answers)}>{tr('Submit answers', '提交答案')}</button>
+        {error && <p className="mt-2 text-sm text-cinnabar">{error}</p>}
+      </div>
+    )
+  }
+  if (!card.options?.length) return null
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2">
+        {card.options.map((o: { value: string; label_zh: string; label_en: string }) => (
+          <button key={String(o.value)} type="button" onClick={() => void choose(o.value)} className="btn btn-line py-1.5 text-left text-[0.9rem]">
+            {lang === 'zh' ? o.label_zh : o.label_en}
+          </button>
+        ))}
+      </div>
+      {error && <p className="mt-2 text-sm text-cinnabar">{error}</p>}
+    </div>
+  )
+}
+
+export function Result({ card }: { card: Card }) {
+  const { lang, tr } = useLang()
+  const navigate = useNavigate()
+  switch (card.type) {
+    case 'approval':
+      return <PlanLine planId={card.plan_id} />
+    case 'question':
+      return <Question card={card} />
+    case 'lock':
+      return (
+        <div className="flex flex-wrap items-center gap-3 border-l-2 border-cinnabar bg-field px-3 py-2.5 text-sm">
+          <span className="flex-1">{tr('The assistant is paused by a safety lock. Verify your identity to resume.', '助手已被安全锁暂停，完成身份验证即可恢复。')}</span>
+          <button className="btn btn-cinnabar py-1.5" onClick={() => navigate('/controls#security')}>{tr('Verify', '去验证')}</button>
+        </div>
+      )
+    case 'receipt':
+      return (
+        <div className="flex items-center gap-3 ruled bg-field px-3 py-2.5">
+          <SealMark kind="done" size={30} />
+          <div><p className="font-semibold text-jade">{tr('Done', '已办成')} <span className="num font-mono text-ink">{yuan(card.fen)}</span></p>
+            {card.balance_fen !== undefined && <p className="num text-[0.85rem] text-ink2">{tr('Balance after', '交易后余额')} {yuan(card.balance_fen)}</p>}</div>
+        </div>
+      )
+    case 'balances':
+      return (
+        <Table head={[tr('Account', '账户'), tr('Number', '账号'), tr('Balance', '余额')]} minWidth="22rem">
+          {card.accounts.map((a: { id: string; name: string; number: string; fen: number }) => (
+            <tr key={a.id} className="rule-b last:border-b-0"><td className="px-3 py-2">{a.name}</td><td className="px-3 py-2 font-mono text-[0.82rem] text-ink2">{a.number}</td><td className="num px-3 py-2 text-right font-mono">{yuan(a.fen)}</td></tr>
+          ))}
+        </Table>
+      )
+    case 'transactions':
+      return (
+        <Table head={[tr('Time', '时间'), tr('Counterparty', '对方'), tr('Category', '类别'), tr('Amount', '金额')]}>
+          {card.items.map((x: { id: string; at: string; merchant: string; fen: number; status: string; category: string }) => (
+            <tr key={x.id} className={`rule-b last:border-b-0 ${x.status === 'declined' ? 'text-ink2' : ''}`}>
+              <td className="num px-3 py-2 font-mono text-[0.82rem] text-ink2">{stamp(x.at)}</td>
+              <td className="px-3 py-2">{x.merchant}{x.status === 'declined' && <span className="ml-1.5 text-xs text-cinnabar">{tr('declined', '已拒绝')}</span>}</td>
+              <td className="px-3 py-2 text-ink2">{category(x.category, lang)}</td>
+              <td className={`num px-3 py-2 text-right font-mono ${x.fen > 0 ? 'text-jade' : ''}`}>{x.fen > 0 ? '+' : ''}{yuan(x.fen)}</td>
+            </tr>
+          ))}
+        </Table>
+      )
+    case 'spending':
+      return <div className="ruled bg-field p-4"><Bars rows={card.categories.slice(0, 8).map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%` }))} /></div>
+    case 'report':
+      return (
+        <div className="ruled bg-field p-4">
+          <Columns series={card.series} />
+          <div className="mt-4"><Bars rows={card.categories.slice(0, 6).map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%` }))} /></div>
+        </div>
+      )
+    case 'anomalies':
+      return (
+        <ol className="divide-y divide-rule ruled bg-field">
+          {card.items.map((a: { txn_id: string | null; at: string; merchant: string | null; fen: number; reason_zh: string; reason_en: string; code: string; category?: string }) => (
+            <li key={`${a.code}-${a.txn_id ?? a.category}`} className="grid grid-cols-[auto_1fr_auto] gap-x-3 px-3 py-2.5">
+              <SealMark kind="flag" size={28} />
+              <div className="min-w-0">
+                <p className="font-semibold leading-snug">{a.merchant ?? category(a.category ?? 'other', lang)}</p>
+                <p className="text-[0.85rem] leading-snug text-ink2">{lang === 'zh' ? a.reason_zh : a.reason_en}</p>
+                {a.code !== 'CATEGORY_SPIKE' && <div className="mt-1.5"><Ask text={tr('Freeze the card it used', '冻结这笔交易用的卡')} /></div>}
+              </div>
+              <div className="text-right"><p className="num font-mono">{yuan(a.fen)}</p><p className="font-mono text-xs text-ink2">{a.at.slice(0, 10)}</p></div>
+            </li>
+          ))}
+        </ol>
+      )
+    case 'subscriptions':
+      return (
+        <div className="space-y-2">
+          <Table head={[tr('Merchant', '商户'), tr('Cycle', '周期'), tr('Next charge', '下次扣费'), tr('Amount', '金额')]}>
+            {card.items.map((s: { id: string; merchant: string; fen: number; cycle: string; status: string; next_charge_on: string; new: boolean }) => (
+              <tr key={s.id} className={`rule-b last:border-b-0 ${s.status === 'cancelled' ? 'text-ink2 line-through' : ''}`}>
+                <td className="px-3 py-2">{s.merchant}{s.new && <span className="ml-1.5 text-xs text-cinnabar">{tr('new', '新开通')}</span>}</td>
+                <td className="px-3 py-2 text-ink2">{s.cycle === 'monthly' ? tr('monthly', '每月') : tr('yearly', '每年')}</td>
+                <td className="num px-3 py-2 font-mono text-[0.82rem]">{s.next_charge_on}</td>
+                <td className="num px-3 py-2 text-right font-mono">{yuan(s.fen)}</td>
+              </tr>
+            ))}
+          </Table>
+          <p className="text-sm text-ink2">{tr('About', '约合每月')} <strong className="num text-ink">{yuan(card.monthly_fen)}</strong>{tr(' a month.', '。')}</p>
+          {card.overlaps.length > 0 && <div className="flex flex-wrap gap-2">{card.overlaps.flatMap((o: { merchants: string[] }) => o.merchants.slice(1).map((m) => <Ask key={m} text={tr(`Cancel ${m}`, `取消${m}`)} />))}</div>}
+        </div>
+      )
+    case 'cards':
+      return (
+        <Table head={[tr('Card', '卡片'), tr('Status', '状态'), tr('Daily limit', '日限额')]} minWidth="22rem">
+          {card.items.map((c: { id: string; name: string; last4: string; status: string; daily_limit_fen: number }) => (
+            <tr key={c.id} className="rule-b last:border-b-0"><td className="px-3 py-2">{c.name} <span className="font-mono text-[0.82rem] text-ink2">****{c.last4}</span></td><td className="px-3 py-2">{c.status}</td><td className="num px-3 py-2 text-right font-mono">{yuan(c.daily_limit_fen)}</td></tr>
+          ))}
+        </Table>
+      )
+    case 'holdings':
+      return (
+        <Table head={[tr('Product', '产品'), tr('Gain', '收益'), tr('Value', '市值')]} minWidth="24rem">
+          {card.items.map((h: { code: string; name: string; value_fen: number; gain_fen: number; return_pct: number }) => (
+            <tr key={h.code} className="rule-b last:border-b-0"><td className="px-3 py-2">{h.name}</td><td className="num px-3 py-2 font-mono text-jade">{yuan(h.gain_fen)} ({h.return_pct > 0 ? '+' : ''}{h.return_pct}%)</td><td className="num px-3 py-2 text-right font-mono">{yuan(h.value_fen)}</td></tr>
+          ))}
+        </Table>
+      )
+    case 'products':
+    case 'compare':
+      return (
+        <div className="space-y-1.5">
+          <Table head={[tr('Product', '产品'), tr('Risk', '风险'), tr('Return', '收益'), tr('Suitable', '适合')]}>
+            {card.items.map((p: { code: string; name: string; risk_level: number; yield_bp: number; return_1y_bp: number; max_drawdown_bp: number; suitable: boolean }) => (
+              <tr key={p.code} className="rule-b last:border-b-0">
+                <td className="px-3 py-2">{p.name}</td>
+                <td className="px-3 py-2 font-mono">R{p.risk_level}</td>
+                <td className="num px-3 py-2 font-mono text-[0.85rem]">{p.yield_bp ? `${(p.yield_bp / 100).toFixed(2)}% ${tr('7-day', '七日')}` : `${(p.return_1y_bp / 100).toFixed(2)}% ${tr('1 yr', '近一年')}`}</td>
+                <td className={`px-3 py-2 text-right font-semibold ${p.suitable ? 'text-jade' : 'text-cinnabar'}`}>{p.suitable ? tr('yes', '适合') : tr('above your level', '超出等级')}</td>
+              </tr>
+            ))}
+          </Table>
+          <p className="text-xs text-ink2">{tr('Simulated demo products, not investment advice.', '模拟产品，仅用于演示，不构成投资建议。')}</p>
+        </div>
+      )
+    case 'receipt_reading':
+      return card.reading.is_receipt ? (
+        <div className="space-y-1.5">
+          <Table head={[card.reading.merchant, yuan(card.reading.total_fen)]} minWidth="18rem">
+            {card.reading.items.slice(0, 12).map((item: { name: string; fen: number }, i: number) => (
+              <tr key={i} className="rule-b last:border-b-0"><td className="px-3 py-1.5">{item.name}</td><td className="num px-3 py-1.5 text-right font-mono">{yuan(item.fen)}</td></tr>
+            ))}
+          </Table>
+          {card.flags.length > 0 && <p className="border-l-2 border-cinnabar pl-2.5 text-sm text-cinnabar">{tr('Hidden text or instructions were found in this file and ignored.', '文件中发现隐藏文字或指令，已忽略。')}</p>}
+          <p className="text-xs text-ink2">{card.read_by === 'rules' ? tr('Read from the PDF text by fixed rules.', '由固定规则从 PDF 文字读取。') : tr('Read by the AI model into a fixed format.', '由 AI 模型按固定格式读取。')}</p>
+        </div>
+      ) : null
+    case 'analysis': {
+      const show = (v: number) => (card.unit === 'count' ? tr(`${v} times`, `${v} 次`) : card.unit === 'percent' ? `${v}%` : yuan(Math.round(v * 100)))
+      return (
+        <div className="space-y-2">
+          <div className="ruled bg-field p-4">
+            <p className="text-sm text-ink2">{card.title}</p>
+            {card.value !== null && <p className="num cond mt-1 text-[1.8rem] font-bold leading-none">{show(card.value)}</p>}
+            {card.rows.length > 0 && (
+              <ul className="mt-3 divide-y divide-rule">
+                {card.rows.slice(-8).map(([label, value]: [string, number]) => <li key={label} className="flex justify-between py-1.5 text-sm"><span className="font-mono text-ink2">{label}</span><span className="num font-mono">{show(value)}</span></li>)}
+              </ul>
+            )}
+          </div>
+          <details className="agent-detail !mt-0">
+            <summary>{tr('The generated code and the sandbox limits', '生成的代码与沙箱限制')}</summary>
+            <pre className="mt-2 max-h-64 overflow-auto rounded-box bg-[#0f1114] p-3 font-mono text-[11px] leading-relaxed text-[#eef6f1]">{card.code}</pre>
+            <p>
+              {tr(`Ran in ${card.ms} ms in a separate process: ${card.limits.memory_mb} MB memory, ${card.limits.cpu_seconds} s CPU, no files, imports limited to ${card.limits.imports.join(', ')}.`,
+                `在独立进程中运行 ${card.ms} 毫秒：内存 ${card.limits.memory_mb} MB，CPU ${card.limits.cpu_seconds} 秒，不能读写文件，仅允许导入 ${card.limits.imports.join('、')}。`)}
+            </p>
+          </details>
+        </div>
+      )
+    }
+    default:
+      return null
+  }
+}
