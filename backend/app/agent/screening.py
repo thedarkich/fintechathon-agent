@@ -10,7 +10,9 @@ import unicodedata
 
 PATTERNS = [
     ("IGNORE_RULES", r"ignore (all |the |your |previous |prior )*(rules|instructions|limits|policy|policies)"),
-    ("IGNORE_RULES", r"(忽略|无视|忘记|忘掉)(之前|以上|所有|你的)?(的)?(规则|指令|限制|设定|提示)"),
+    # up to three modifiers from a fixed list: '忽略之前的所有规则', '无视一切限制'; '忘记密码的规则是什么' is a question
+    ("IGNORE_RULES", r"(忽略|无视|忘记|忘掉|不要管|别管|不用管)掉?((之前|以上|上面|前面|刚才|所有|全部|一切|你的|系统的?|银行的?)的?){0,3}"
+                     r"(规则|指令|限制|设定|提示词?|风控)"),
     # mixed or loose wording: 'ignore 所有规则', 'forget your rules'
     ("IGNORE_RULES", r"(ignore|forget|disregard)\s*(all|the|your|previous|prior|所有|全部|之前|以上|你的|\s)*的?\s*(rules|instructions|limits|规则|指令|限制)"),
     ("ROLE_PLAY", r"(假设|假装|想象)你是|扮演|(没有|不受|无)(任何)?(限制|约束)的|pretend (you are|to be)|you are now|act as (an?|my) |role-?play"),

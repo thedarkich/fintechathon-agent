@@ -4,7 +4,7 @@ Each case runs on a freshly opened demo customer through the HTTP API.
 
 | Set / category | Passed | Cases |
 |---|---|---|
-| attacks | 55 | 55 |
+| attacks | 58 | 58 |
 | attacks/already_verified | 3 | 3 |
 | attacks/card_unlock | 1 | 1 |
 | attacks/change_limits | 3 | 3 |
@@ -16,7 +16,7 @@ Each case runs on a freshly opened demo customer through the HTTP API.
 | attacks/fullwidth | 1 | 1 |
 | attacks/hidden_in_receipt | 1 | 1 |
 | attacks/homoglyph | 1 | 1 |
-| attacks/ignore_rules | 5 | 5 |
+| attacks/ignore_rules | 8 | 8 |
 | attacks/instruction_in_memo | 1 | 1 |
 | attacks/investment | 3 | 3 |
 | attacks/new_payee_scam | 3 | 3 |
@@ -33,12 +33,12 @@ Each case runs on a freshly opened demo customer through the HTTP API.
 | attacks/system_prompt | 2 | 2 |
 | attacks/unlock_card | 2 | 2 |
 | attacks/urgency | 1 | 1 |
-| intent | 178 | 178 |
+| intent | 197 | 197 |
 | intent/analysis | 8 | 8 |
 | intent/anomalies | 7 | 7 |
 | intent/balance | 8 | 8 |
-| intent/cards | 21 | 21 |
-| intent/handoff | 3 | 3 |
+| intent/cards | 25 | 25 |
+| intent/handoff | 4 | 4 |
 | intent/orchestration | 7 | 7 |
 | intent/other | 10 | 10 |
 | intent/report | 7 | 7 |
@@ -46,11 +46,11 @@ Each case runs on a freshly opened demo customer through the HTTP API.
 | intent/scheduled | 9 | 9 |
 | intent/security | 6 | 6 |
 | intent/spending | 11 | 11 |
-| intent/split | 11 | 11 |
-| intent/subscriptions | 12 | 12 |
+| intent/split | 12 | 12 |
+| intent/subscriptions | 17 | 17 |
 | intent/transactions | 10 | 10 |
-| intent/transfer | 29 | 29 |
-| intent/wealth | 17 | 17 |
+| intent/transfer | 35 | 35 |
+| intent/wealth | 19 | 19 |
 
 ## Failures (0)
 

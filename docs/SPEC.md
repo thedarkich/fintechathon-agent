@@ -93,7 +93,7 @@ A step approved at one tier is checked again when it actually runs. If the tier 
 - **Stop**: a plan can be cancelled at any time before its last step; pending and scheduled steps are cancelled.
 - **Rollback**: each action declares a compensation. On failure or on request, finished steps are compensated in reverse order. A compensation never moves the account into a less safe state (a freeze is not undone automatically; a transfer that has arrived cannot be undone and the reply says so, while a delayed one can be cancelled until it arrives, §6a). Money for multi-step plans is set aside first (reserve) and spent last.
 - **Edit**: changing a pending step re-runs validation, resolution and policy and needs a new approval.
-- **Human takeover**: the customer can ask for a person at any time, and the system escalates after a safety lock or repeated clarification failures. An operator sees the conversation, the plan and the audit trail, and can answer, cancel or edit. An operator can never approve a red step on the customer's behalf.
+- **Human takeover**: the customer can ask for a person at any time; after two unclear messages in a row the assistant offers one, and a customer under a safety lock appears in the operator queue. While a person has the conversation, the assistant plans nothing. An operator sees the conversation, the plans and the audit trail, and can reply, cancel a plan, lift a lock and hand the conversation back. An operator can never approve a step on the customer's behalf.
 
 ## 6a. How the bank processes a transfer (simulated)
 

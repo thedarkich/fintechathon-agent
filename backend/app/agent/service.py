@@ -170,8 +170,14 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
         return conversation, out, None
     if not proposed.steps:
         question = proposed.ask or offline.ask(*offline.HELP).ask
-        out.append(add_message(session, ctx, conversation, "assistant", question.zh if ctx.lang == "zh" else question.en,
-                               summary=f"[asked] {question.en}"))
+        text = question.zh if ctx.lang == "zh" else question.en
+        last = session.exec(select(Message).where(Message.conversation_id == conversation.id, Message.role == "assistant")
+                            .order_by(Message.at.desc()).limit(1)).first()
+        if last is not None and (last.summary or "").startswith("[asked]"):
+            # the second unclear message in a row: offer a person rather than only asking again
+            text += ctx.t("\n如果不好说清楚，可以说“转人工”，由工作人员帮您。",
+                          "\nIf it's hard to put into words, say “talk to a person” and a member of staff will help.")
+        out.append(add_message(session, ctx, conversation, "assistant", text, summary=f"[asked] {question.en}"))
         session.commit()
         return conversation, out, None
 
