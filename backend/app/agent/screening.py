@@ -40,6 +40,23 @@ PATTERNS = [
     ("SPLIT_TO_EVADE", r"(split|break) (it )?(into|in) (several|many|small|multiple).*(under|below|avoid|so)"),
     ("SPLIT_TO_EVADE", r"(split|break) (it |this |the (payment|transfer) )?into (\d+|several|many|small|multiple) (payments|transfers)"),
     ("SPLIT_TO_EVADE", r"(拆成|分成|分开)\s*(\d+|几|多|[一二两三四五六七八九十])?\s*(笔|次)"),
+    # more ways to say the same things (all matched on lower-cased text)
+    ("IGNORE_RULES", r"(forget|disregard) (everything|all of|all that|what)|disregard (your|the|all|any) (guidelines|guardrails|safety|security)"
+                     r"|override (the |your |all |any )?(safety|security|bank'?s?)? ?(rules|checks|limits|controls|guardrails)"),
+    ("IGNORE_RULES", r"(不再|不用再|无需再)受(任何)?(规则|限制|约束)|(规则|限制|风控)(对你)?(已经)?(无效|失效|作废)"),
+    ("ROLE_PLAY", r"\byou are dan\b|do anything now|no longer (bound|restricted)|without (any )?(rules|restrictions|limits)\b"),
+    ("FAKE_AUTHORITY", r"^\s*(system|admin|developer|assistant)\s*:|\[(system|admin|override|developer)[^\]]{0,20}\]|admin override|override code"
+                       r"|(new|updated) instructions?\s*:"),
+    ("FAKE_AUTHORITY", r"作为(系统|银行|你的)?(管理员|开发者|行长|经理|主管|工作人员)|(我是|本人是)(银行)?(行长|总裁|董事长|经理)"
+                       r"|我(授权|命令|批准)你|你的新(指令|任务|规则)|以下是?系统(消息|通知|指令)"),
+    ("SKIP_APPROVAL", r"no time to (confirm|verify|check)|auto-?approve|approve (it |them |everything |all )?automatically"
+                      r"|(turn off|disable|remove|switch off) (all |the |my )*(confirmations?|verifications?|approvals?|2fa|mfa)"
+                      r"|stop asking (me )?(for )?(confirmation|approval)"),
+    ("SKIP_APPROVAL", r"(来不及|没时间|顾不上)(确认|验证|核对)|自动(确认|批准|通过)|(不要|别|不用)(再)?问我"
+                      r"|(验证|确认|审批|短信验证)(都|全)?(关掉|关了|关闭|取消|去掉)|(关掉|关闭|取消|去掉)(所有的?)?(验证|确认|审批)"),
+    ("SPLIT_TO_EVADE", r"分\s*(\d+|[两三四五六七八九十几]+)\s*次|每次(转|付)?\s*\d+.{0,8}(转|付)?\s*(\d+|[两三四五六七八九十几]+)\s*(次|天|笔)"
+                       r"|每天(转|付)\s*\d+.{0,12}(\d+|[两三四五六七八九十几]+)\s*天"),
+    ("SPLIT_TO_EVADE", r"(pay|send|transfer|wire)\b.{0,30}\b(\d+|two|three|four|five|six|seven|eight|nine|ten|several|many) times\b"),
 ]
 
 SECRET_WORDS = re.compile(r"(?i)(password|passcode|\bpin\b|密码|口令|验证码|\bcode\b)")
