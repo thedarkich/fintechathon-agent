@@ -27,6 +27,8 @@ RULE_TEXT = {
     "R_INVESTMENT": ("买理财必须确认是你本人", "Buying an investment must be you"),
     "R_CREDENTIAL": ("改密码必须确认是你本人", "Changing a password must be you"),
     "Y_TRANSFER_CANCEL": ("会撤销一笔还没到账的转账", "It cancels a transfer that hasn't arrived"),
+    "Y_SCHEDULE_CANCEL": ("会停止一笔预约转账", "It stops a scheduled transfer"),
+    "Y_STOP_PLAN": ("会停止一个还在等待执行的计划", "It stops a plan that is still waiting to run"),
 }
 SIGNAL_TEXT = {
     "S_NEW_PAYEE_LARGE": ("向 24 小时内新加的收款人累计付款超过 ¥500", "Over ¥500 in total to a payee added in the last 24 hours"),

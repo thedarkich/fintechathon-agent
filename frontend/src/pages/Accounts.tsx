@@ -86,9 +86,13 @@ export default function Accounts() {
                   {scheduled.data.transfers.map((s) => (
                     <li key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
                       <SealMark kind={s.status === 'done' ? 'done' : s.status === 'cancelled' ? 'cancelled' : s.status === 'waiting_approval' ? 'pending' : 'scheduled'} size={24} />
-                      <span className="font-semibold">{s.payee}</span>
+                      <span className="font-semibold">{lang === 'zh' ? s.payee : s.payee_en}</span>
                       <span className="font-mono text-[0.8rem] text-ink2">{stamp(s.run_at)}{s.repeat === 'monthly' ? tr(', monthly', '，每月') : ''}</span>
                       <strong className="num ml-auto font-mono">{yuan(s.fen)}</strong>
+                      {(s.status === 'scheduled' || s.status === 'waiting_approval') && (
+                        <button type="button" className="text-xs font-semibold text-[var(--action)]" disabled={!!pending}
+                          onClick={() => ask(tr(`Stop the scheduled transfer to ${s.payee_en}`, `取消给${s.payee}的预约转账`))}>{tr('Stop', '停止')}</button>
+                      )}
                     </li>
                   ))}
                 </ul>

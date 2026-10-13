@@ -141,10 +141,11 @@ async def scheduled(request: Request, user_id: str = Depends(require_user)):
     with Session(request.app.state.runtime.engine) as session:
         rows = session.exec(select(ScheduledTransfer).where(ScheduledTransfer.user_id == user_id)
                             .order_by(ScheduledTransfer.run_at)).all()
-        names = {p.id: p.name for p in session.exec(select(Payee).where(Payee.user_id == user_id))}
+        names = {p.id: (p.name, p.name_en or p.name) for p in session.exec(select(Payee).where(Payee.user_id == user_id))}
         collections = session.exec(select(Collection).where(Collection.user_id == user_id)
                                    .order_by(Collection.created_at.desc())).all()
-        return {"transfers": [{"id": s.id, "payee": names.get(s.payee_id, "?"), "fen": s.amount_fen, "run_at": s.run_at,
+        return {"transfers": [{"id": s.id, "payee": names.get(s.payee_id, ("?", "?"))[0], "payee_en": names.get(s.payee_id, ("?", "?"))[1],
+                               "fen": s.amount_fen, "run_at": s.run_at,
                                "repeat": s.repeat, "status": s.status} for s in rows],
                 "collections": [{"id": c.id, "title": c.title, "total_fen": c.total_fen, "status": c.status,
                                  "participants": c.participants} for c in collections]}

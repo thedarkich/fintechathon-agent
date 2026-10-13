@@ -1,5 +1,7 @@
 """End-to-end flows through the HTTP API with the offline planner (no AI key needed)."""
 
+from datetime import date
+
 from sqlmodel import Session, select
 
 from app.models import Card, Txn
@@ -315,3 +317,40 @@ def test_demo_account_opens_a_bank_in_one_click(tmp_path):
         assert bank.verify(plan, pin=pin).status_code == 200
         assert client.post("/api/register", json={"name": "Someone", "email": "x@example.com", "password": "a" * 12,
                                                   "pin": "246813"}, headers=ORIGIN).json()["user"]["demo"] is False
+
+
+def test_stop_a_monthly_transfer_in_words(bank):
+    bank.approve(plan_of(bank.chat("每月15号给妈妈转500")))
+    stop = plan_of(bank.chat("取消每月给妈妈的转账"))
+    assert stop["steps"][0]["action"] == "scheduled_cancel" and stop["tier"] == "yellow"
+    assert bank.approve(stop).status_code == 200
+    assert bank.get("/api/bank/scheduled").json()["transfers"][0]["status"] == "cancelled"
+    bank.post("/api/demo/advance", {"days": 40})
+    assert bank.get("/api/bank/scheduled").json()["transfers"][0]["status"] == "cancelled"  # it never ran
+    assert bank.chat("取消每月给妈妈的转账")["plan"]["status"] == "failed"  # nothing left to stop
+
+
+def test_stop_and_undo_the_birthday_plan_in_words(bank):
+    birthday = plan_of(bank.chat("下个月老婆生日，帮我预留1000元，提前两天订花和蛋糕"))
+    bank.approve(birthday)
+    stop = plan_of(bank.chat("取消生日计划，钱退回来"))
+    assert [s["action"] for s in stop["steps"]] == ["plan_cancel"] and stop["tier"] == "yellow"
+    assert bank.approve(stop).status_code == 200
+    after = bank.get(f"/api/plans/{birthday['id']}").json()
+    assert after["status"] == "rolled_back"
+    assert [s["status"] for s in after["steps"]][1:] == ["compensated", "cancelled", "cancelled"]
+    assert not [a for a in bank.get("/api/bank/overview").json()["accounts"] if a["kind"] == "reserve" and a["fen"]]
+
+
+def test_a_birthday_date_the_customer_says_wins(bank):
+    plan = plan_of(bank.chat("下周三是我爸生日，帮我订个蛋糕"))
+    order = next(s for s in plan["steps"] if s["action"] == "merchant_order")
+    delivered = next(d["value"] for d in order["details"] if d["label"] == "送达")
+    assert date.fromisoformat(delivered).weekday() == 2  # next week's Wednesday, not his birthday on the contact card
+    assert "李建国" in order["text"]
+
+
+def test_split_names_written_together(bank):
+    plan = plan_of(bank.chat("昨天吃饭花了600，和张伟王芳AA"))
+    assert plan["status"] == "awaiting_approval"
+    assert "张伟、王芳" in plan["steps"][0]["text"] and "200.00" in plan["steps"][0]["text"]

@@ -11,7 +11,7 @@
 {"id": "txn-05", "category": "transactions", "text": "show my payment history", "expect": {"actions": ["transactions"], "status": "done"}}
 {"id": "spd-01", "category": "spending", "text": "这个月花了多少钱", "expect": {"actions": ["spending"], "tier": "green", "status": "done"}}
 {"id": "spd-02", "category": "spending", "text": "上个月花了多少钱", "expect": {"actions": ["spending"], "status": "done"}}
-{"id": "spd-03", "category": "spending", "text": "上个月外卖花了多少", "expect": {"actions": ["spending"], "status": "done"}}
+{"id": "spd-03", "category": "spending", "text": "上个月外卖花了多少", "expect": {"actions": ["analyze"], "status": "done"}}
 {"id": "spd-04", "category": "spending", "text": "how much did I spend on dining last month", "expect": {"actions": ["spending"], "status": "done"}}
 {"id": "spd-05", "category": "spending", "text": "how much did I spend this year", "expect": {"actions": ["spending"], "status": "done"}}
 {"id": "spd-06", "category": "spending", "text": "今年交通花了多少", "expect": {"actions": ["spending"], "status": "done"}}
@@ -195,3 +195,25 @@
 {"id": "sub-17", "category": "subscriptions", "text": "爱奇艺续费前5天提醒我", "expect": {"actions": ["subscription_remind"], "tier": "yellow", "status": "awaiting_approval"}}
 {"id": "hnd-04", "category": "handoff", "text": "I want to talk to a person", "expect": {"actions": ["handoff"], "status": "done"}}
 {"id": "aa-12", "category": "split", "text": "和室友AA 300元电费", "expect": {"actions": ["collect"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "trf-36", "category": "transfer", "text": "给备注是房租的人转3200", "expect": {"actions": ["transfer"], "tier": "red", "status": "awaiting_approval"}}
+{"id": "trf-37", "category": "transfer", "text": "转500给我同学张伟", "expect": {"actions": ["transfer"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "trf-38", "category": "transfer", "text": "给尾号1123的那个人转100", "expect": {"actions": ["transfer"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "sch-10", "category": "scheduled", "text": "每个月1号自动给房东交房租3200", "expect": {"actions": ["schedule_transfer"], "tier": "red"}}
+{"id": "sch-11", "category": "scheduled", "text": "取消每月给妈妈的转账", "expect": {"actions": ["scheduled_cancel"], "not_done": true, "status": "failed"}}
+{"id": "sch-12", "category": "scheduled", "text": "Stop the monthly transfer to Mom", "expect": {"actions": ["scheduled_cancel"], "not_done": true, "status": "failed"}}
+{"id": "aa-13", "category": "split", "text": "昨天吃饭花了600，和张伟王芳AA", "expect": {"actions": ["collect"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "spd-12", "category": "spending", "text": "我在淘宝一共花了多少", "expect": {"actions": ["analyze"], "status": "done"}}
+{"id": "spd-13", "category": "spending", "text": "上周打车花了多少钱", "expect": {"actions": ["analyze"], "status": "done"}}
+{"id": "spd-14", "category": "spending", "text": "今年哪个月花得最多", "expect": {"actions": ["analyze"], "status": "done"}}
+{"id": "spd-15", "category": "spending", "text": "How much did I spend on Taobao?", "expect": {"actions": ["analyze"], "status": "done"}}
+{"id": "rpt-08", "category": "report", "text": "我上个月比前个月多花了多少", "expect": {"actions": ["report"], "status": "done"}}
+{"id": "wlt-20", "category": "wealth", "text": "货币基金和债券基金哪个好", "expect": {"actions": ["wealth_compare"], "tier": "green", "status": "done"}}
+{"id": "wlt-21", "category": "wealth", "text": "我能承受多大风险", "expect": {"actions": ["wealth_holdings"], "tier": "green", "status": "done"}}
+{"id": "wlt-22", "category": "wealth", "text": "买5000块的稳健理财", "expect": {"actions": ["wealth_recommend"], "tier": "green", "status": "done"}}
+{"id": "crd-26", "category": "cards", "text": "Someone used my card without permission", "expect": {"actions": ["anomalies"], "tier": "green", "status": "done"}}
+{"id": "bday-08", "category": "orchestration", "text": "下周三是我爸生日，帮我订个蛋糕", "expect": {"actions": ["contact_lookup", "reserve_create", "merchant_order"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "bday-09", "category": "orchestration", "text": "老婆生日提前一周订花", "expect": {"actions": ["contact_lookup", "reserve_create", "merchant_order"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "bday-10", "category": "orchestration", "text": "Stop the birthday plan", "expect": {"actions": ["plan_cancel"], "not_done": true, "status": "failed"}}
+{"id": "rsv-03", "category": "reserve", "text": "把1000元存到旅游基金里", "expect": {"actions": ["reserve_create"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "rsv-04", "category": "reserve", "text": "Put 1000 into a travel fund", "expect": {"actions": ["reserve_create"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "trf-39", "category": "transfer", "text": "Undo the last transfer", "expect": {"actions": ["transfer_cancel"], "not_done": true, "status": "failed"}}

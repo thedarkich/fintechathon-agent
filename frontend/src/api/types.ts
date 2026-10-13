@@ -220,7 +220,7 @@ export interface PayeeSms {
 }
 
 export interface Scheduled {
-  transfers: { id: string; payee: string; fen: number; run_at: string; repeat: string; status: string }[]
+  transfers: { id: string; payee: string; payee_en: string; fen: number; run_at: string; repeat: string; status: string }[]
   collections: { id: string; title: string; total_fen: number; status: string; participants: { name: string; name_en: string; share_fen: number; status: string }[] }[]
 }
 

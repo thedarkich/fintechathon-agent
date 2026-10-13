@@ -55,6 +55,11 @@ def _period(text: str, today: date) -> tuple[date, date, str]:
         return first, date(today.year, today.month, 1) - timedelta(days=1), "month"
     if "本月" in text or "这个月" in text or "this month" in low:
         return date(today.year, today.month, 1), today, "month"
+    if re.search(r"上周|上星期|上个星期|上礼拜|last week", low):
+        monday = today - timedelta(days=today.weekday() + 7)
+        return monday, monday + timedelta(days=6), "week"
+    if re.search(r"这周|本周|这个星期|this week", low):
+        return today - timedelta(days=today.weekday()), today, "week"
     if m := re.search(r"(?:最近|过去|近)\s*(\d+)\s*天|(?:last|past)\s*(\d+)\s*days", low):
         days = int(m.group(1) or m.group(2))
         return today - timedelta(days=days - 1), today, "days"
@@ -67,6 +72,10 @@ def is_analysis_question(text: str) -> bool:
     return bool(
         after is not None or before is not None
         or re.search(r"周末|工作日|weekend|weekday|几次|多少次|how many times|how often|平均|average|按月|每个月花|per month|by month|最多的一天|busiest", low)
+        or re.search(r"哪个月|which month", low)
+        # a named shop or habit with a total: '我在淘宝一共花了多少', 'how much did I spend on taxis last week'
+        or (any(w in low for words, _ in MERCHANT_WORDS for w in words)
+            and re.search(r"花了多少|花多少|一共|总共|how much (did|have) i spen|spent on|spend on", low))
     )
 
 
@@ -80,7 +89,7 @@ def from_question(text: str, today: date) -> str | None:
     weekend = True if re.search(r"周末|weekend", low) else False if re.search(r"工作日|weekday", low) else None
     start, end, _ = _period(text, today)
     mode = "count" if re.search(r"几次|多少次|how many times|how often", low) else \
-        "average" if re.search(r"平均|average", low) else "sum"
+        "average" if re.search(r"平均|average", low) else "top" if re.search(r"哪个月|which month", low) else "sum"
     title = text.strip()[:80]
     return f'''def answer(txns):
     merchants = {merchants!r}
@@ -108,6 +117,9 @@ def from_question(text: str, today: date) -> str | None:
         months[t["date"][:7]] = months.get(t["date"][:7], 0) + (1 if {mode!r} == "count" else -t["amount"])
     rows = [[month, round(value, 2)] for month, value in sorted(months.items())]
     total = -sum(t["amount"] for t in picked)
+    if {mode!r} == "top":
+        rows.sort(key=lambda row: -row[1])
+        return {{"title": {title!r} + (" — " + rows[0][0] if rows else ""), "value": rows[0][1] if rows else 0, "unit": "yuan", "rows": rows}}
     if {mode!r} == "count":
         return {{"title": {title!r}, "value": len(picked), "unit": "count", "rows": rows}}
     if {mode!r} == "average":

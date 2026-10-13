@@ -6,7 +6,7 @@ const ACTION: Record<string, [string, string]> = {
   payees: ['收款人', 'Payees'], cards: ['查卡片', 'Cards'], scheduled: ['查预约', 'Scheduled'],
   collections: ['查 AA', 'Split bills'], reserves: ['查预留', 'Reserves'], notifications: ['查提醒', 'Reminders'],
   contact_lookup: ['查联系人', 'Contact'], read_receipt: ['读小票', 'Receipt'], handoff: ['转人工', 'Handover'],
-  transfer: ['转账', 'Transfer'], transfer_cancel: ['撤销转账', 'Cancel transfer'], schedule_transfer: ['预约转账', 'Schedule'], merchant_order: ['下单', 'Order'],
+  transfer: ['转账', 'Transfer'], transfer_cancel: ['撤销转账', 'Cancel transfer'], scheduled_cancel: ['停预约', 'Stop schedule'], plan_cancel: ['停计划', 'Stop plan'], schedule_transfer: ['预约转账', 'Schedule'], merchant_order: ['下单', 'Order'],
   collect: ['AA 收款', 'Split bill'], payee_add: ['加收款人', 'Add payee'], reserve_create: ['预留资金', 'Set aside'],
   reserve_release: ['释放预留', 'Release'], card_apply: ['申请卡片', 'New card'], card_freeze: ['冻结卡片', 'Freeze'],
   card_unfreeze: ['解冻卡片', 'Unfreeze'], card_restrict: ['卡片开关', 'Card switches'], card_limit: ['调整限额', 'Card limit'],

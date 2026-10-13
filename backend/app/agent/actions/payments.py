@@ -1,5 +1,6 @@
 """Money that leaves or is set aside: transfers, scheduled transfers, split bills, orders, reserves."""
 
+import re
 from datetime import date, datetime, time, timedelta
 from typing import Literal
 
@@ -303,10 +304,26 @@ def load_receipt(ctx: Ctx, receipt_id: str, *, need_total: bool = True) -> Uploa
     return row
 
 
+def split_names(ctx: Ctx, text: str) -> list[str]:
+    """'张伟王芳' written without a separator: split it only into names the customer has saved, in order."""
+    if len(text) < 4 or not re.fullmatch(r"[一-龥]+", text):
+        return [text]
+    names = sorted({p.name for p in ctx.session.exec(select(Payee).where(Payee.user_id == ctx.user.id))}, key=len, reverse=True)
+    parts, rest = [], text
+    while rest:
+        name = next((n for n in names if rest.startswith(n)), None)
+        if name is None:
+            return [text]
+        parts.append(name)
+        rest = rest[len(name):]
+    return parts
+
+
 def collect_resolve(ctx: Ctx, args: CollectArgs) -> dict:
     people = []
-    for index, text in enumerate(args.payees):
-        payee = resolve_payee(ctx, text, f"payees.{index}")
+    named = [(index, part) for index, text in enumerate(args.payees) for part in split_names(ctx, text)]
+    for index, text in named:
+        payee = resolve_payee(ctx, text, f"payees.{index}")  # a question about a name answers its original entry
         if payee.id not in {p["payee_id"] for p in people}:
             people.append({"payee_id": payee.id, "name": payee.name, "name_en": payee.name_en or payee.name})
     source_txn = None

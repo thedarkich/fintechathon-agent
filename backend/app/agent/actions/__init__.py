@@ -3,6 +3,7 @@
 from app.agent.actions import (  # noqa: F401
     analysis,
     cards,
+    control,
     payments,
     queries,
     security,

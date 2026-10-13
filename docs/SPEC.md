@@ -51,6 +51,9 @@ The thresholds match the brief exactly. **Today's agent payments** = transfers +
 | `wealth_redeem` | yellow | `Y_WEALTH_REDEEM` |
 | `risk_assessment` | yellow | `Y_PROFILE_CHANGE` |
 | `payee_add` | yellow | `Y_PAYEE_ADD` |
+| `transfer_cancel` (a delayed transfer before it arrives) | yellow | `Y_TRANSFER_CANCEL` |
+| `scheduled_cancel` (a scheduled or monthly transfer) | yellow | `Y_SCHEDULE_CANCEL` |
+| `plan_cancel` (a plan with steps still waiting; `undo` also reverses finished steps) | yellow | `Y_STOP_PLAN` |
 | `wealth_subscribe` | red | `R_INVESTMENT` |
 | `password_change`, `pin_change` | red | `R_CREDENTIAL` |
 
@@ -90,7 +93,7 @@ A step approved at one tier is checked again when it actually runs. If the tier 
 
 - Plan states: `clarifying`, `awaiting_approval`, `running`, `scheduled`, `done`, `failed`, `cancelled`, `rolled_back`, `escalated`.
 - Step states: `pending`, `waiting` (for time or approval), `running`, `done`, `failed`, `skipped`, `cancelled`, `compensated`.
-- **Stop**: a plan can be cancelled at any time before its last step; pending and scheduled steps are cancelled.
+- **Stop**: a plan can be cancelled at any time before its last step; pending and scheduled steps are cancelled. The customer can do this from the plan's card or by saying so (`plan_cancel`: "停止生日计划"), and can stop a scheduled or monthly transfer the same way (`scheduled_cancel`).
 - **Rollback**: each action declares a compensation. On failure or on request, finished steps are compensated in reverse order. A compensation never moves the account into a less safe state (a freeze is not undone automatically; a transfer that has arrived cannot be undone and the reply says so, while a delayed one can be cancelled until it arrives, §6a). Money for multi-step plans is set aside first (reserve) and spent last.
 - **Edit**: changing a pending step re-runs validation, resolution and policy and needs a new approval.
 - **Human takeover**: the customer can ask for a person at any time; after two unclear messages in a row the assistant offers one, and a customer under a safety lock appears in the operator queue. While a person has the conversation, the assistant plans nothing. An operator sees the conversation, the plans and the audit trail, and can reply, cancel a plan, lift a lock and hand the conversation back. An operator can never approve a step on the customer's behalf.

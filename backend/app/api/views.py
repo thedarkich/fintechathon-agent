@@ -71,6 +71,18 @@ def details(ctx: Ctx, action: str, r: dict | None) -> list[dict]:
         return rows
     if action == "subscription_cancel":
         return [row("取消", "Cancel", r["merchant"]), row("每期", "Each charge", yuan(r["fen"]))]
+    if action == "scheduled_cancel":
+        when = r["run_at"][:16].replace("T", " ")
+        rows = [row("收款人", "To", r["payee"] if zh else r["payee_en"]), row("金额", "Amount", yuan(r["fen"])),
+                row("原定时间", "Was due", when)]
+        if r.get("repeat") == "monthly":
+            rows.append(row("以后", "After that", "每月的也不再转" if zh else "no more monthly transfers"))
+        return rows
+    if action == "plan_cancel":
+        rows = [row("计划", "Plan", f"“{r['request']}”"), row("不再执行", "Won't run", f"{r['waiting']} 步" if zh else f"{r['waiting']} step(s)")]
+        if r.get("undo") and r.get("done"):
+            rows.append(row("撤销", "Undone", f"已完成的 {r['done']} 步" if zh else f"{r['done']} finished step(s)"))
+        return rows
     if action == "transfer_cancel":
         return [row("撤销给", "Transfer to", r["payee"] if zh else r["payee_en"]), row("金额", "Amount", yuan(r["fen"]))]
     return []
