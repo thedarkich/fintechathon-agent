@@ -72,8 +72,11 @@ def fmt(value, unit: str, lang: str) -> str:
 
 def analyze_reply(ctx: Ctx, r: dict, res: dict) -> str:
     lines = [f"{res['title']}: {fmt(res['value'], res['unit'], ctx.lang)}" if res["value"] is not None else res["title"]]
-    for label, value in res["rows"][-6:]:
+    rows = res["rows"]
+    for label, value in rows[:12]:
         lines.append(f"· {label} {fmt(value, res['unit'], ctx.lang)}")
+    if len(rows) > 12:
+        lines.append(ctx.t(f"（另有 {len(rows) - 12} 行未列出）", f"({len(rows) - 12} more rows not listed)"))
     lines.append(ctx.t(f"（由生成的代码在隔离沙箱中计算，用时 {res['ms']} 毫秒；代码和结果已记入审计。）",
                        f"(Computed by generated code in an isolated sandbox in {res['ms']} ms; the code and result are in the audit log.)"))
     return "\n".join(lines)

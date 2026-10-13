@@ -1,10 +1,12 @@
 """The analysis sandbox: unsafe code never runs, runaway code is stopped, results are audited."""
 
 from datetime import date
+from types import SimpleNamespace
 
 import pytest
 from sqlmodel import Session, select
 
+from app.agent.actions.analysis import analyze_reply
 from app.models import AuditEntry
 from app.sandbox import runner, templates
 from app.sandbox.guard import CodeRejected, check
@@ -70,6 +72,7 @@ def test_open_question_in_chat_runs_in_sandbox_and_is_audited(bank):
     assert plan["steps"][0]["tier"] == "green"
     card = body["messages"][-1]["cards"][0]
     assert card["type"] == "analysis" and "def answer" in card["code"]
+    assert all(f"· {label} " in body["messages"][-1]["text"] for label, _ in card["rows"][:12])
     with Session(bank.runtime.engine) as session:
         run = session.exec(select(AuditEntry).where(AuditEntry.kind == "sandbox_run")).one()
         assert run.data["code_hash"] == card["code_hash"] and "error" not in run.data
@@ -79,3 +82,12 @@ def test_count_question(bank):
     body = bank.chat("how many times did I take a taxi after 10pm this year", lang="en")
     assert body["plan"]["steps"][0]["action"] == "analyze"
     assert body["messages"][-1]["cards"][0]["unit"] == "count"
+
+
+@pytest.mark.parametrize("count", [7, 14])
+def test_reply_lists_the_rows_behind_the_total(count):
+    ctx = SimpleNamespace(lang="en", t=lambda zh, en: en)
+    rows = [[f"2026-{m:02d}", 10.0] for m in range(1, count + 1)]
+    text = analyze_reply(ctx, {}, {"title": "Coffee", "value": 10.0 * count, "unit": "yuan", "rows": rows, "ms": 5})
+    assert all(f"· {label} " in text for label, _ in rows[:12])
+    assert ("2 more rows not listed" in text) == (count == 14)
