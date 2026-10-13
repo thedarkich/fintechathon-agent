@@ -13,6 +13,7 @@ Documents:
 - [Design contract](docs/SPEC.md)
 - [Project brief](docs/BRIEF.md) (Chinese and English, within 200 words)
 - [Evaluation report](docs/eval/report-offline.md)
+- Drafts for the defence: [demo video script](docs/DEMO.md) (5 minutes) and [pitch outline](docs/PITCH.md) (10 minutes)
 
 ## Status (13 October 2026)
 
