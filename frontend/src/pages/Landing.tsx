@@ -62,8 +62,9 @@ export default function LandingPage() {
   const demo = useStartDemo()
   // signed out, a click opens a fresh demo bank first: nothing to fill in before the first sentence
   const go = async (path: string) => {
-    if (!user && getAdminToken()) navigate('/operator')
-    else if (user || await demo.start()) navigate(path)
+    if (!user && getAdminToken()) { navigate('/operator'); return }
+    const outcome = user ? 'ok' : await demo.start()
+    if (outcome !== 'error') navigate(outcome === 'ok' ? path : '/signup')
   }
   const tryIt = (text: string) => void go(`/assistant?ask=${encodeURIComponent(text)}`)
   const cta = (

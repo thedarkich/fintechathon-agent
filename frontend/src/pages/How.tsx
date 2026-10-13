@@ -1,22 +1,28 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useLang } from '../i18n'
 import { SiteFooter, SiteHeader } from '../components/SiteChrome'
 import { Icon, type IconName } from '../components/Icon'
 import { TierTag } from '../components/bits'
-import { useAuth } from '../lib/auth'
+import { useAuth, useStartDemo } from '../lib/auth'
 import '../landing.css'
 
 /** How it stays safe: the one page with the inside view, for judges and the curious. */
 export default function How() {
   const { tr, t } = useLang()
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const demo = useStartDemo()
+  const tryIt = async () => {
+    const outcome = user ? 'ok' : await demo.start()
+    if (outcome !== 'error') navigate(outcome === 'ok' ? '/assistant' : '/signup')
+  }
   const [view, setView] = useState<'request' | 'rules' | 'result'>('request')
   useEffect(() => { document.title = tr(`${t.brand_en} · How it stays safe`, `${t.brand} · 安全原理`); window.scrollTo(0, 0) }, [tr, t])
   const plan = JSON.stringify({ steps: [{ id: 's1', action: 'transfer', args: { payee: '房东', amount_yuan: 3200, memo: '房租' } }] }, null, 2)
   const roles: [IconName, string, string][] = [
     ['chat', tr('You say what you need', '你说出需求'), tr('In Chinese or English, typed, spoken or with a receipt photo. A PIN or code typed by mistake is hidden at once.', '中文英文都行，打字、语音或拍小票。误打的密码和验证码会立刻被隐藏。')],
-    ['agents', tr('The AI turns it into steps', 'AI 把它拆成步骤'), tr('It may only choose from a fixed list of 41 bank actions. It never sees your account, can’t move money and can’t approve anything.', '只能从固定的 41 个银行操作里选。它看不到你的账户，不能动钱，也不能批准任何事。')],
+    ['agents', tr('The AI turns it into steps', 'AI 把它拆成步骤'), tr('It may only choose from a fixed list of 43 bank actions. It never sees your account, can’t move money and can’t approve anything.', '只能从固定的 43 个银行操作里选。它看不到你的账户，不能动钱，也不能批准任何事。')],
     ['shield', tr('The bank’s rules check every step', '银行规则逐步检查'), tr('Fixed code matches names to your own records and decides what each step needs: nothing, your OK, or your PIN and a code.', '固定代码把名字和你自己的记录核对，并决定每一步需要什么：直接办、你确认，还是交易密码加验证码。')],
     ['check', tr('You have the last word', '最后由你决定'), tr('You see exactly what will happen before it happens. Every step is kept in a record that can’t be quietly changed.', '办之前你会看清楚要办什么。每一步都记在无法被悄悄改动的记录里。')],
   ]
@@ -98,7 +104,7 @@ export default function How() {
       <section className="lp-section">
         <h2>{tr('Tested, not just promised', '经过测试，不只是承诺')}</h2>
         <div className="lp-grid">
-          {[['178', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['55', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['73', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
+          {[['219', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['69', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['85', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
             <article key={n} className="lp-point"><p className="cond text-[2.6rem] font-extrabold leading-none text-[var(--action)]">{n}</p><p className="mt-2">{text}</p></article>
           ))}
         </div>
@@ -108,7 +114,8 @@ export default function How() {
       <section className="lp-cta">
         <h2>{tr('See it for yourself.', '亲自试一试。')}</h2>
         <p>{tr('Try a large transfer to the seller added today, or tell it to ignore the rules, and watch what happens.', '试试给今天新加的卖家转一大笔钱，或者让它“忽略规则”，看看会发生什么。')}</p>
-        <Link to={user ? '/assistant' : '/signup'} className="site-button">{user ? tr('Open the assistant', '打开助手') : tr('Try it now', '马上试试')} <span aria-hidden>→</span></Link>
+        <button type="button" className="site-button" disabled={demo.busy} onClick={() => void tryIt()}>{user ? tr('Open the assistant', '打开助手') : tr('Try it now, no sign-up', '马上试试，不用注册')} <span aria-hidden>→</span></button>
+        {demo.error && <p role="alert" className="mt-3 text-sm text-cinnabar">{demo.error}</p>}
       </section>
     </main><SiteFooter />
   </div>

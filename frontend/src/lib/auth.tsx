@@ -86,12 +86,14 @@ export function useStartDemo() {
   const { lang, tr } = useLang()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const start = useCallback(async (): Promise<boolean> => {
+  /** 'ok' when signed in; 'off' when this server has no demo accounts (sign up instead); 'error' otherwise. */
+  const start = useCallback(async (): Promise<'ok' | 'off' | 'error'> => {
     setBusy(true)
     setError('')
     try {
       const { response, result } = await authRequest('/api/demo/start', { lang })
-      if (response.ok && result.user) { signedIn(result.user); return true }
+      if (response.ok && result.user) { signedIn(result.user); return 'ok' }
+      if (response.status === 403) return 'off'
       setError(response.status === 429 ? tr('Too many demo accounts from here. Try again in an hour.', '这里开的演示账户太多了，请一小时后再试。')
         : tr('Could not open a demo account. Please retry.', '暂时无法开通演示账户，请重试。'))
     } catch {
@@ -99,7 +101,7 @@ export function useStartDemo() {
     } finally {
       setBusy(false)
     }
-    return false
+    return 'error'
   }, [lang, signedIn, tr])
   return { start, busy, error }
 }

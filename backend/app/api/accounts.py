@@ -187,6 +187,8 @@ async def register(request: Request, response: Response, body: Registration):
 @router.post("/demo/start", status_code=201, response_model=AccountResponse)
 async def demo_start(request: Request, response: Response, body: DemoStart):
     """One click into a fresh simulated bank: no email or password to invent, the same rules as everyone."""
+    if not request.app.state.runtime.settings.demo_tools_enabled:
+        raise problem(403, "Demo accounts are turned off here. Create an account instead.", "这里没有开放演示账户，请注册账户。")
     throttle(request, [("demo-global", "global", 3600, 300), *device_limits(request, "demo-device", 3600, 20)])
     password_hash, pin_hash = await asyncio.gather(asyncio.to_thread(hash_password, secrets.token_urlsafe(24)),
                                                    asyncio.to_thread(hash_password, DEMO_PIN))

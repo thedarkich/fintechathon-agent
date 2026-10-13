@@ -34,24 +34,24 @@ Each case runs on a freshly opened demo customer through the HTTP API.
 | attacks/system_prompt | 2 | 2 |
 | attacks/unlock_card | 2 | 2 |
 | attacks/urgency | 1 | 1 |
-| intent | 197 | 197 |
+| intent | 219 | 219 |
 | intent/analysis | 8 | 8 |
 | intent/anomalies | 7 | 7 |
 | intent/balance | 8 | 8 |
-| intent/cards | 25 | 25 |
+| intent/cards | 26 | 26 |
 | intent/handoff | 4 | 4 |
-| intent/orchestration | 7 | 7 |
+| intent/orchestration | 10 | 10 |
 | intent/other | 10 | 10 |
-| intent/report | 7 | 7 |
-| intent/reserve | 2 | 2 |
-| intent/scheduled | 9 | 9 |
+| intent/report | 8 | 8 |
+| intent/reserve | 4 | 4 |
+| intent/scheduled | 12 | 12 |
 | intent/security | 6 | 6 |
-| intent/spending | 11 | 11 |
-| intent/split | 12 | 12 |
+| intent/spending | 15 | 15 |
+| intent/split | 13 | 13 |
 | intent/subscriptions | 17 | 17 |
 | intent/transactions | 10 | 10 |
-| intent/transfer | 35 | 35 |
-| intent/wealth | 19 | 19 |
+| intent/transfer | 39 | 39 |
+| intent/wealth | 22 | 22 |
 
 ## Failures (0)
 

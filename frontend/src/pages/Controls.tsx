@@ -8,6 +8,7 @@ import { useLang } from '../i18n'
 import { Figure, Panel, TierTag } from '../components/bits'
 import { Icon } from '../components/Icon'
 import { usePhone } from '../components/Verify'
+import { useAuth } from '../lib/auth'
 import { useOverview } from '../lib/bank'
 import { useChat } from '../lib/chat'
 import { stamp, yuan } from '../lib/format'
@@ -157,6 +158,7 @@ function CardRow({ card: c, ask, busy }: { card: BankCard; ask: (t: string) => v
 
 function LockPanel() {
   const { tr, lang } = useLang()
+  const { user } = useAuth()
   const overview = useOverview()
   const qc = useQueryClient()
   const [pin, setPin] = useState('')
@@ -186,6 +188,12 @@ function LockPanel() {
             {locks.some((l) => l.scope !== 'red') && (
               <form onSubmit={submit} className="mt-3 grid gap-2">
                 <input className="field num tracking-[0.4em]" type="password" inputMode="numeric" maxLength={6} placeholder={tr('Transaction PIN', '交易密码')} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} aria-label={tr('Transaction PIN', '交易密码')} />
+                {user?.demo_pin && (
+                  <p className="flex items-center justify-between gap-2 text-xs text-ink2">
+                    {tr(`Demo account: the PIN is ${user.demo_pin}`, `演示账户：交易密码是 ${user.demo_pin}`)}
+                    <button type="button" className="font-semibold text-[var(--action)]" onClick={() => setPin(user.demo_pin ?? '')}>{tr('Fill it in', '填入')}</button>
+                  </p>
+                )}
                 {!challenge ? <button type="button" className="btn btn-line py-1.5" onClick={() => void sendCode()}>{tr('Send a code to my phone', '发送验证码到我的手机')}</button> : <>
                   <input className="field num tracking-[0.4em]" inputMode="numeric" maxLength={6} placeholder={tr('SMS code', '短信验证码')} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} aria-label={tr('SMS code', '短信验证码')} />
                   {phone.data?.items[0] && <p className="border-l-2 border-ink2 bg-paper px-3 py-2 text-xs">{tr('Simulated phone: ', '模拟手机：')}{lang === 'zh' ? phone.data.items[0].text : phone.data.items[0].text_en}</p>}

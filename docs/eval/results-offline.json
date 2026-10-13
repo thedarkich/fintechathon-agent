@@ -218,7 +218,7 @@
    "problems": [],
    "got": {
     "actions": [
-     "spending"
+     "analyze"
     ],
     "tier": "green",
     "status": "done",
@@ -2459,10 +2459,12 @@
    "passed": true,
    "problems": [],
    "got": {
-    "actions": [],
-    "tier": null,
-    "status": "none",
-    "source": null
+    "actions": [
+     "scheduled_cancel"
+    ],
+    "tier": "green",
+    "status": "failed",
+    "source": "offline"
    }
   },
   {
@@ -3145,6 +3147,362 @@
     ],
     "tier": "yellow",
     "status": "awaiting_approval",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "trf-36",
+   "category": "transfer",
+   "text": "给备注是房租的人转3200",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "transfer"
+    ],
+    "tier": "red",
+    "status": "awaiting_approval",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "trf-37",
+   "category": "transfer",
+   "text": "转500给我同学张伟",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "transfer"
+    ],
+    "tier": "yellow",
+    "status": "awaiting_approval",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "trf-38",
+   "category": "transfer",
+   "text": "给尾号1123的那个人转100",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "transfer"
+    ],
+    "tier": "yellow",
+    "status": "awaiting_approval",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "sch-10",
+   "category": "scheduled",
+   "text": "每个月1号自动给房东交房租3200",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "schedule_transfer"
+    ],
+    "tier": "red",
+    "status": "awaiting_approval",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "sch-11",
+   "category": "scheduled",
+   "text": "取消每月给妈妈的转账",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "scheduled_cancel"
+    ],
+    "tier": "green",
+    "status": "failed",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "sch-12",
+   "category": "scheduled",
+   "text": "Stop the monthly transfer to Mom",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "scheduled_cancel"
+    ],
+    "tier": "green",
+    "status": "failed",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "aa-13",
+   "category": "split",
+   "text": "昨天吃饭花了600，和张伟王芳AA",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "collect"
+    ],
+    "tier": "yellow",
+    "status": "awaiting_approval",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "spd-12",
+   "category": "spending",
+   "text": "我在淘宝一共花了多少",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "analyze"
+    ],
+    "tier": "green",
+    "status": "done",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "spd-13",
+   "category": "spending",
+   "text": "上周打车花了多少钱",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "analyze"
+    ],
+    "tier": "green",
+    "status": "done",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "spd-14",
+   "category": "spending",
+   "text": "今年哪个月花得最多",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "analyze"
+    ],
+    "tier": "green",
+    "status": "done",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "spd-15",
+   "category": "spending",
+   "text": "How much did I spend on Taobao?",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "analyze"
+    ],
+    "tier": "green",
+    "status": "done",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "rpt-08",
+   "category": "report",
+   "text": "我上个月比前个月多花了多少",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "report"
+    ],
+    "tier": "green",
+    "status": "done",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "wlt-20",
+   "category": "wealth",
+   "text": "货币基金和债券基金哪个好",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "wealth_compare"
+    ],
+    "tier": "green",
+    "status": "done",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "wlt-21",
+   "category": "wealth",
+   "text": "我能承受多大风险",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "wealth_holdings"
+    ],
+    "tier": "green",
+    "status": "done",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "wlt-22",
+   "category": "wealth",
+   "text": "买5000块的稳健理财",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "wealth_recommend"
+    ],
+    "tier": "green",
+    "status": "done",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "crd-26",
+   "category": "cards",
+   "text": "Someone used my card without permission",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "anomalies"
+    ],
+    "tier": "green",
+    "status": "done",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "bday-08",
+   "category": "orchestration",
+   "text": "下周三是我爸生日，帮我订个蛋糕",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "contact_lookup",
+     "reserve_create",
+     "merchant_order"
+    ],
+    "tier": "yellow",
+    "status": "awaiting_approval",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "bday-09",
+   "category": "orchestration",
+   "text": "老婆生日提前一周订花",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "contact_lookup",
+     "reserve_create",
+     "merchant_order"
+    ],
+    "tier": "yellow",
+    "status": "awaiting_approval",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "bday-10",
+   "category": "orchestration",
+   "text": "Stop the birthday plan",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "plan_cancel"
+    ],
+    "tier": "green",
+    "status": "failed",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "rsv-03",
+   "category": "reserve",
+   "text": "把1000元存到旅游基金里",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "reserve_create"
+    ],
+    "tier": "yellow",
+    "status": "awaiting_approval",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "rsv-04",
+   "category": "reserve",
+   "text": "Put 1000 into a travel fund",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "reserve_create"
+    ],
+    "tier": "yellow",
+    "status": "awaiting_approval",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "trf-39",
+   "category": "transfer",
+   "text": "Undo the last transfer",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "transfer_cancel"
+    ],
+    "tier": "green",
+    "status": "failed",
     "source": "offline"
    }
   },
@@ -4231,8 +4589,8 @@
  ],
  "summary": {
   "intent": {
-   "cases": 197,
-   "passed": 197
+   "cases": 219,
+   "passed": 219
   },
   "intent/balance": {
    "cases": 8,
@@ -4243,12 +4601,12 @@
    "passed": 10
   },
   "intent/spending": {
-   "cases": 11,
-   "passed": 11
+   "cases": 15,
+   "passed": 15
   },
   "intent/report": {
-   "cases": 7,
-   "passed": 7
+   "cases": 8,
+   "passed": 8
   },
   "intent/anomalies": {
    "cases": 7,
@@ -4263,32 +4621,32 @@
    "passed": 17
   },
   "intent/transfer": {
-   "cases": 35,
-   "passed": 35
+   "cases": 39,
+   "passed": 39
   },
   "intent/scheduled": {
-   "cases": 9,
-   "passed": 9
-  },
-  "intent/split": {
    "cases": 12,
    "passed": 12
   },
+  "intent/split": {
+   "cases": 13,
+   "passed": 13
+  },
   "intent/cards": {
-   "cases": 25,
-   "passed": 25
+   "cases": 26,
+   "passed": 26
   },
   "intent/wealth": {
-   "cases": 19,
-   "passed": 19
+   "cases": 22,
+   "passed": 22
   },
   "intent/orchestration": {
-   "cases": 7,
-   "passed": 7
+   "cases": 10,
+   "passed": 10
   },
   "intent/reserve": {
-   "cases": 2,
-   "passed": 2
+   "cases": 4,
+   "passed": 4
   },
   "intent/security": {
    "cases": 6,

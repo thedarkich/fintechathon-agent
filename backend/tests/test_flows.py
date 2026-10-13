@@ -354,3 +354,15 @@ def test_split_names_written_together(bank):
     plan = plan_of(bank.chat("昨天吃饭花了600，和张伟王芳AA"))
     assert plan["status"] == "awaiting_approval"
     assert "张伟、王芳" in plan["steps"][0]["text"] and "200.00" in plan["steps"][0]["text"]
+
+
+def test_demo_accounts_follow_the_demo_tools_switch(tmp_path):
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+    from app.runtime import Runtime
+    from tests.conftest import ORIGIN, settings
+
+    runtime = Runtime(settings(tmp_path, demo_tools_enabled=False), background=False)
+    with TestClient(create_app(runtime=runtime)) as client:
+        assert client.post("/api/demo/start", json={"lang": "zh"}, headers=ORIGIN).status_code == 403

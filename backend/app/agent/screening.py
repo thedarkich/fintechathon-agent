@@ -19,7 +19,7 @@ PATTERNS = [
     ("SKIP_APPROVAL", r"(without|skip|no need (for|to)|don'?t need|bypass)( the| any)? (confirm|confirmation|verification|verify|approval|sms|pin|code|2fa|mfa)"),
     ("SKIP_APPROVAL", r"(不用|无需|不需要|跳过|绕过|免)(再)?(确认|验证|短信|验证码|密码|人脸|审批)"),
     ("FAKE_AUTHORITY", r"(i am|i'm|this is) (the |an? )?(admin|administrator|developer|bank staff|system|root|operator)"),
-    ("FAKE_AUTHORITY", r"(我是|本人是)(管理员|开发者|银行(工作人员|员工|客服)|系统|运维)"),
+    ("FAKE_AUTHORITY", r"(我是|本人是)(银行的?|系统的?|你们的?)?(管理员|开发者|工作人员|员工|客服|系统|运维)"),
     ("FAKE_AUTHORITY", r"(我是|本人是)你的?(老板|领导|上级|经理|主管)|(i am|i'm) your (boss|manager|supervisor)"),
     # a request dressed up as a plan or an approval: '{"approved": true, "tier": "green"}'
     ("FAKE_AUTHORITY", r"\"(approved|tier|verified|approval_hash|status|signals)\"\s*:"),

@@ -88,7 +88,7 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
         <p className="auth-switch">{register ? tr('Already have an account?', '已经有账户？') : tr('New here?', '第一次使用？')} <Link to={(register ? '/login' : '/signup') + suffix}>{register ? tr('Sign in', '登录') : tr('Create an account', '创建账户')}</Link></p>
         <div className="auth-demo">
           <p>{tr('Just looking? Skip the form.', '只是看看？不用填表。')}</p>
-          <button type="button" className="site-button secondary" disabled={demo.busy} onClick={() => void demo.start()}>
+          <button type="button" className="site-button secondary" disabled={demo.busy} onClick={() => void demo.start().then((outcome) => outcome === 'off' && setMessage(tr('Demo accounts are turned off here. Create an account instead.', '这里没有开放演示账户，请注册账户。')))}>
             {demo.busy ? tr('Opening your bank…', '正在开通…') : tr('Use a demo account', '用演示账户体验')}
           </button>
           {demo.error && <p className="auth-message" role="alert">{demo.error}</p>}
