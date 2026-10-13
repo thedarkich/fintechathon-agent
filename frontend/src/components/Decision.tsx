@@ -1,6 +1,6 @@
 import type { Plan, PlanStep } from '../api/types'
 import { useLang } from '../i18n'
-import { actionLabel } from './StepRow'
+import { actionLabel } from '../lib/actions'
 
 const MARK = {
   green: { glyph: '✓', color: 'var(--jade)' },

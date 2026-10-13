@@ -36,7 +36,7 @@ export function SiteHeader({ workspace = false, status }: { workspace?: boolean;
       <div className="site-actions">
         <LangSwitch /><ThemeSwitch />
         {signedIn ? <>
-          <span className="account-label" title={user?.email}>{user ? user.name : tr('Operator token', '工作人员令牌')}</span>
+          <span className="account-label" title={user?.email}>{user ? (user.demo ? tr(`${user.name} · demo`, `${user.name} · 演示`) : user.name) : tr('Operator token', '工作人员令牌')}</span>
           {workspace ? <button type="button" className="site-button secondary" disabled={busy} onClick={() => void signOut()}>{busy ? tr('Signing out…', '正在退出…') : tr('Sign out', '退出登录')}</button>
             : <Link className="site-button" to={home}>{tr('Open the assistant', '打开助手')} <span aria-hidden>→</span></Link>}
         </> : <>

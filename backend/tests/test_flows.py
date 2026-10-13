@@ -291,3 +291,27 @@ def test_card_state_after_report_lost(bank):
     with Session(bank.runtime.engine) as session:
         cards = session.exec(select(Card)).all()
         assert any(c.status == "lost" and c.last4 == "0428" for c in cards)
+
+
+def test_demo_account_opens_a_bank_in_one_click(tmp_path):
+    """No email or password to invent; the PIN is shown, and red steps still need PIN plus a one-time code."""
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+    from app.runtime import Runtime
+    from tests.conftest import ORIGIN, Bank, settings
+
+    runtime = Runtime(settings(tmp_path), background=False)
+    with TestClient(create_app(runtime=runtime)) as client:
+        user = client.post("/api/demo/start", json={"lang": "en"}, headers=ORIGIN).json()["user"]
+        assert user["demo"] is True and user["name"] == "Li Ming"
+        pin = user["demo_pin"]
+        assert client.get("/api/me").json()["user"]["demo_pin"] == pin
+        bank = Bank(client, runtime)
+        plan = plan_of(bank.chat("给房东转3000"))
+        assert plan["tier"] == "red"
+        assert bank.approve(plan).status_code != 200  # a tap is not enough for red
+        assert bank.verify(plan, pin="000000").status_code != 200
+        assert bank.verify(plan, pin=pin).status_code == 200
+        assert client.post("/api/register", json={"name": "Someone", "email": "x@example.com", "password": "a" * 12,
+                                                  "pin": "246813"}, headers=ORIGIN).json()["user"]["demo"] is False

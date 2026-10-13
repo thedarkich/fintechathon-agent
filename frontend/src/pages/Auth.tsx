@@ -3,7 +3,7 @@ import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, LockKeyhole } from 'lucide-react'
 import { getAdminToken } from '../api/client'
 import { useLang } from '../i18n'
-import { authRequest, landingFor, useAuth, workspaceDestination } from '../lib/auth'
+import { authRequest, landingFor, useAuth, useStartDemo, workspaceDestination } from '../lib/auth'
 import { SiteHeader, SiteFooter } from '../components/SiteChrome'
 
 const weakPin = (pin: string) => new Set(pin).size === 1 || '0123456789'.includes(pin) || '9876543210'.includes(pin)
@@ -11,6 +11,7 @@ const weakPin = (pin: string) => new Set(pin).size === 1 || '0123456789'.include
 export default function AuthPage({ register = false }: { register?: boolean }) {
   const { tr } = useLang()
   const { user, loading, error: sessionError, signedIn, refresh } = useAuth()
+  const demo = useStartDemo()
   const [params] = useSearchParams()
   const location = useLocation()
   const next = workspaceDestination(params.get('next'))
@@ -85,6 +86,13 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
         </form>
         {sessionError && <p className="auth-message" role="alert">{sessionError} <button type="button" onClick={() => void refresh()}>{tr('Retry', '重试')}</button></p>}
         <p className="auth-switch">{register ? tr('Already have an account?', '已经有账户？') : tr('New here?', '第一次使用？')} <Link to={(register ? '/login' : '/signup') + suffix}>{register ? tr('Sign in', '登录') : tr('Create an account', '创建账户')}</Link></p>
+        <div className="auth-demo">
+          <p>{tr('Just looking? Skip the form.', '只是看看？不用填表。')}</p>
+          <button type="button" className="site-button secondary" disabled={demo.busy} onClick={() => void demo.start()}>
+            {demo.busy ? tr('Opening your bank…', '正在开通…') : tr('Use a demo account', '用演示账户体验')}
+          </button>
+          {demo.error && <p className="auth-message" role="alert">{demo.error}</p>}
+        </div>
         <p className="auth-switch">{tr('Bank operator?', '银行工作人员？')} <Link to="/team-token">{tr('Use an operator token', '使用工作人员令牌')}</Link></p>
         <div className="auth-access-note"><LockKeyhole size={18} /><p>{tr('This signs you in to your bank.', '这是你的银行登录。')}<br />{tr('Large payments still need your PIN and a code.', '大额操作仍需交易密码和验证码。')}</p></div>
       </section>

@@ -123,6 +123,9 @@ html { scroll-padding-top: 24px; }
 .auth-message button { text-decoration: underline; margin-left: 6px; }
 .auth-switch { text-align: center; color: var(--ink-2); font-size: 11px; margin-top: 22px; }
 .auth-switch a { color: var(--action); font-weight: 600; margin-left: 6px; }
+.auth-demo { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--rule); text-align: center; }
+.auth-demo p { font-size: 12px; color: var(--ink-2); margin-bottom: 10px; }
+.auth-demo .site-button { width: 100%; justify-content: center; }
 .auth-access-note { display: flex; gap: 12px; align-items: center; justify-content: center; border-top: 1px solid var(--rule); padding-top: 22px; margin-top: 28px; font-size: 11px; line-height: 1.8; color: var(--ink-2); }
 .session-state { width: min(460px, calc(100% - 40px)); margin: 20vh auto; text-align: center; color: var(--ink-2); }
 .page-content { max-width: 1200px; padding-top: 32px; }

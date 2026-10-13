@@ -11,6 +11,8 @@ export interface User {
   phone: string
   operator: boolean
   has_pin: boolean
+  demo?: boolean
+  demo_pin?: string | null
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

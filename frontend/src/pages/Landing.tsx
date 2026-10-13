@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang } from '../i18n'
 import { SiteHeader, SiteFooter } from '../components/SiteChrome'
 import { Icon, type IconName } from '../components/Icon'
 import { Seal } from '../components/Seal'
 import { getAdminToken } from '../api/client'
-import { useAuth } from '../lib/auth'
+import { useAuth, useStartDemo } from '../lib/auth'
 import '../landing.css'
 
 const reduceMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -58,8 +58,19 @@ export default function LandingPage() {
   const { tr, t } = useLang()
   const { user } = useAuth()
   const signedIn = !!user || !!getAdminToken()
-  const start = user ? '/assistant' : getAdminToken() ? '/operator' : '/signup'
-  const tryIt = (text: string) => (user ? `/assistant?ask=${encodeURIComponent(text)}` : '/signup')
+  const navigate = useNavigate()
+  const demo = useStartDemo()
+  // signed out, a click opens a fresh demo bank first: nothing to fill in before the first sentence
+  const go = async (path: string) => {
+    if (!user && getAdminToken()) navigate('/operator')
+    else if (user || await demo.start()) navigate(path)
+  }
+  const tryIt = (text: string) => void go(`/assistant?ask=${encodeURIComponent(text)}`)
+  const cta = (
+    <button type="button" className="site-button" disabled={demo.busy} onClick={() => void go('/assistant')}>
+      {demo.busy ? tr('Opening your bank…', '正在开通…') : signedIn ? tr('Open the assistant', '打开助手') : tr('Try it now, no sign-up', '马上试试，不用注册')} <span aria-hidden>→</span>
+    </button>
+  )
   const [params] = useSearchParams()
   useEffect(() => {
     document.title = tr(`${t.brand_en} · Say it once. We do it.`, `${t.brand} · 你说一句，我来办`)
@@ -91,17 +102,19 @@ export default function LandingPage() {
           <h1>{tr('Say it once.', '你说一句，')}<br /><span>{tr('We do it.', '我来办。')}</span></h1>
           <p className="lp-lead">{tr('Send money, check your spending, freeze a card, cancel a subscription or plan a birthday, in Chinese or English. Before any money moves, you see exactly what will happen and say yes.', '转账、查账、冻结卡片、取消订阅、准备生日，用中文或英文说一句就行。动钱之前，你会看清楚要办什么，由你来点头。')}</p>
           <div className="lp-actions">
-            <Link to={start} className="site-button">{signedIn ? tr('Open the assistant', '打开助手') : tr('Try it now', '马上试试')} <span aria-hidden>→</span></Link>
+            {cta}
             <Link to="/how" className="lp-link">{tr('How it stays safe', '它为什么安全')}</Link>
           </div>
-          <p className="lp-note">{tr('A simulated bank for the competition. No real money moves.', '参赛演示用的模拟银行，不涉及真实资金。')}</p>
+          {demo.error && <p role="alert" className="lp-note !text-[var(--cinnabar)]">{demo.error}</p>}
+          <p className="lp-note">{signedIn ? tr('A simulated bank for the competition. No real money moves.', '参赛演示用的模拟银行，不涉及真实资金。')
+            : tr('Opens a demo account with its own simulated bank. No real money moves.', '会为你开一个演示账户，自带一个模拟银行，不涉及真实资金。')}</p>
         </div>
         <PhoneDemo />
       </section>
 
       <section className="lp-try" aria-label={tr('Things to say', '可以这样说')}>
         <p>{tr('Try saying', '试着说')}</p>
-        <div>{examples.map((text) => <Link key={text} to={tryIt(text)} className="lp-chip">{text}</Link>)}</div>
+        <div>{examples.map((text) => <button type="button" key={text} disabled={demo.busy} onClick={() => tryIt(text)} className="lp-chip">{text}</button>)}</div>
       </section>
 
       <section className="lp-section" id="features">
@@ -132,7 +145,8 @@ export default function LandingPage() {
       <section className="lp-cta">
         <h2>{tr('Try one sentence now.', '现在就说一句试试。')}</h2>
         <p>{tr('Every new account gets its own simulated bank with two years of history.', '每个新账户都有一个自带两年流水的模拟银行。')}</p>
-        <Link to={start} className="site-button">{signedIn ? tr('Open the assistant', '打开助手') : tr('Try it now', '马上试试')} <span aria-hidden>→</span></Link>
+        {cta}
+        {!signedIn && <p className="mt-4 text-sm"><Link to="/signup" className="lp-link">{tr('Or create your own account', '或者注册自己的账户')}</Link></p>}
       </section>
     </main><SiteFooter />
   </div>

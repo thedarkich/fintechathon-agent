@@ -44,6 +44,7 @@ class UserAccount(SQLModel, table=True):
     pin_hash: str | None = None
     phone: str = ""
     operator: bool = False
+    demo: bool | None = None  # a one-click demo account: no email, PIN shown on screen
     created_at: str = Field(default_factory=now_iso)
 
 

@@ -3,17 +3,6 @@ export const zh = {
   brand: '银行代办',
   brand_en: 'Bank Agent',
   tagline: '你说一句，我来办；动钱之前，先问你。',
-  nav_label: '导航',
-  copied: '已复制',
-
-  // the sign-off row (审批栏) of a plan
-  route_title: '审批栏',
-  route_sub: '每一步都要过规则这一关',
-  step_done: '已签',
-  step_running: '进行中',
-  step_waiting: '等待',
-  step_skipped: '跳过',
-  step_pending: '待你确认',
 
   // plan outcomes
   outcome_done: '已办成',
@@ -27,10 +16,7 @@ export const zh = {
 
   // tables
   col_time: '时间',
-  col_request: '请求',
   col_event: '结果',
-  col_reason: '原因',
-  col_amount: '金额',
   col_detail: '内容',
   col_hash: '哈希',
 
@@ -45,16 +31,6 @@ export const en: Strings = {
   brand: '银行代办',
   brand_en: 'Bank Agent',
   tagline: 'Say it once. We do it. Money only moves when you say yes.',
-  nav_label: 'Main',
-  copied: 'copied',
-
-  route_title: 'Sign-off row',
-  route_sub: 'Every step has to pass the rules',
-  step_done: 'signed',
-  step_running: 'running',
-  step_waiting: 'waiting',
-  step_skipped: 'skipped',
-  step_pending: 'needs you',
 
   outcome_done: 'Done',
   outcome_awaiting: 'Waiting for you',
@@ -66,10 +42,7 @@ export const en: Strings = {
   outcome_running: 'Running',
 
   col_time: 'Time',
-  col_request: 'Request',
   col_event: 'Result',
-  col_reason: 'Reason',
-  col_amount: 'Amount',
   col_detail: 'Detail',
   col_hash: 'Hash',
 

@@ -80,6 +80,30 @@ export function useAuth() {
   return ctx
 }
 
+/** One click into a fresh demo bank: no email or password to invent; its PIN is shown where it is needed. */
+export function useStartDemo() {
+  const { signedIn } = useAuth()
+  const { lang, tr } = useLang()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const start = useCallback(async (): Promise<boolean> => {
+    setBusy(true)
+    setError('')
+    try {
+      const { response, result } = await authRequest('/api/demo/start', { lang })
+      if (response.ok && result.user) { signedIn(result.user); return true }
+      setError(response.status === 429 ? tr('Too many demo accounts from here. Try again in an hour.', '这里开的演示账户太多了，请一小时后再试。')
+        : tr('Could not open a demo account. Please retry.', '暂时无法开通演示账户，请重试。'))
+    } catch {
+      setError(tr('Could not reach the server. Please retry.', '无法连接服务器，请重试。'))
+    } finally {
+      setBusy(false)
+    }
+    return false
+  }, [lang, signedIn, tr])
+  return { start, busy, error }
+}
+
 /** The operator console: an operator account, or the server's admin token. */
 export const isOperator = (user: User | null) => !!getAdminToken() || !!user?.operator
 

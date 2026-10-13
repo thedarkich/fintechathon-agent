@@ -10,6 +10,7 @@ import re
 import secrets
 import time
 import unicodedata
+from typing import Literal
 
 from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel, Field
@@ -27,6 +28,9 @@ from app.models import RateBucket, UserAccount, UserSession
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 SCRYPT = {"n": 2**14, "r": 8, "p": 1, "dklen": 32, "maxmem": 64 * 1024 * 1024}
 LOGIN_WINDOW = 900
+# Demo accounts are sandboxes for judges and visitors: the PIN is shown on screen, so it protects nothing
+# real. Strong verification still runs in full (PIN plus a one-time code or a passkey).
+DEMO_PIN = "135790"
 
 router = APIRouter(prefix="/api")
 
@@ -48,6 +52,12 @@ class AccountView(BaseModel):
     phone: str
     operator: bool = False
     has_pin: bool = True
+    demo: bool = False
+    demo_pin: str | None = None
+
+
+class DemoStart(BaseModel):
+    lang: Literal["zh", "en"] = "zh"
 
 
 class AccountResponse(BaseModel):
@@ -97,7 +107,7 @@ def clean_name(value: str) -> str:
 def view(user: UserAccount) -> AccountView:
     return AccountView(id=user.id, name=user.name, email=user.email, operator=user.operator,
                        phone=user.phone[:3] + "****" + user.phone[-4:] if user.phone else "",
-                       has_pin=bool(user.pin_hash))
+                       has_pin=bool(user.pin_hash), demo=bool(user.demo), demo_pin=DEMO_PIN if user.demo else None)
 
 
 def throttle(request: Request, limits):
@@ -168,6 +178,25 @@ async def register(request: Request, response: Response, body: Registration):
             raise problem(409, "This email already has an account. Sign in instead.", "该邮箱已注册，请直接登录。") from None
         seed_customer(session, user, clock.now(session, user.id))
         audit.append(session, user.id, "account_opened", {"seeded": True})
+        session.commit()
+        result = view(user)
+    start_session(request, response, result.id)
+    return {"user": result}
+
+
+@router.post("/demo/start", status_code=201, response_model=AccountResponse)
+async def demo_start(request: Request, response: Response, body: DemoStart):
+    """One click into a fresh simulated bank: no email or password to invent, the same rules as everyone."""
+    throttle(request, [("demo-global", "global", 3600, 300), *device_limits(request, "demo-device", 3600, 20)])
+    password_hash, pin_hash = await asyncio.gather(asyncio.to_thread(hash_password, secrets.token_urlsafe(24)),
+                                                   asyncio.to_thread(hash_password, DEMO_PIN))
+    with Session(request.app.state.runtime.engine) as session:
+        user = UserAccount(email=f"demo-{secrets.token_hex(8)}@demo.invalid", name="李明" if body.lang == "zh" else "Li Ming",
+                           password_hash=password_hash, pin_hash=pin_hash, demo=True)
+        session.add(user)
+        session.flush()
+        seed_customer(session, user, clock.now(session, user.id))
+        audit.append(session, user.id, "account_opened", {"seeded": True, "demo": True})
         session.commit()
         result = view(user)
     start_session(request, response, result.id)

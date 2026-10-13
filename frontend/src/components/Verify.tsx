@@ -4,6 +4,7 @@ import { Fingerprint, MessageSquareText, ShieldCheck } from 'lucide-react'
 import { api, errorText } from '../api/client'
 import type { Plan } from '../api/types'
 import { useLang } from '../i18n'
+import { useAuth } from '../lib/auth'
 import { useChat } from '../lib/chat'
 import { assertPasskey, passkeysSupported } from '../lib/passkey'
 
@@ -19,6 +20,7 @@ export function usePhone(enabled: boolean) {
 export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPasskey: boolean; onClose: () => void }) {
   const { tr, lang } = useLang()
   const { apply } = useChat()
+  const { user } = useAuth()
   const canPasskey = hasPasskey && passkeysSupported()
   const [method, setMethod] = useState<'sms' | 'passkey'>(canPasskey ? 'passkey' : 'sms')
   const [pin, setPin] = useState('')
@@ -94,6 +96,12 @@ export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPas
             <input id="verify-pin" className="num text-center !text-xl tracking-[0.6em]" type="password" inputMode="numeric" autoComplete="off" maxLength={6}
               value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} />
           </label>
+          {user?.demo_pin && (
+            <p className="-mt-3 flex items-center justify-between gap-2 text-xs text-ink2">
+              {tr(`Demo account: the PIN is ${user.demo_pin}`, `演示账户：交易密码是 ${user.demo_pin}`)}
+              <button type="button" className="font-semibold text-[var(--action)]" onClick={() => setPin(user.demo_pin ?? '')}>{tr('Fill it in', '填入')}</button>
+            </p>
+          )}
 
           {needs && (
             <label className="auth-field !mb-0" htmlFor="verify-secret">{needs === 'new_pin' ? tr('New 6-digit PIN', '新的 6 位交易密码') : tr('New login password (10+ characters)', '新的登录密码（至少 10 位）')}
@@ -112,7 +120,7 @@ export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPas
                 <Fingerprint size={15} />{tr('Passkey', '通行密钥')}
               </button>
             </div>
-            {!canPasskey && <p className="text-xs text-ink2">{tr('Add a passkey (face or fingerprint unlock) on the Controls page to use it here.', '在“控制台”添加通行密钥（面容或指纹解锁）后可在此使用。')}</p>}
+            {!canPasskey && <p className="text-xs text-ink2">{tr('Add a passkey (face or fingerprint unlock) on the Cards & security page to use it here.', '在“卡片与安全”页添加通行密钥（面容或指纹解锁）后可在此使用。')}</p>}
           </fieldset>
 
           {method === 'sms' && (
@@ -136,7 +144,7 @@ export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPas
           {error && <p className="auth-message" role="alert">{error}</p>}
         </div>
         <div className="border-t border-rule px-4 py-3 sm:px-6">
-          <button className="site-button auth-submit" disabled={!ready || busy}>{busy ? tr('Checking…', '验证中…') : tr('Verify and run', '验证并执行')} <span aria-hidden>→</span></button>
+          <button className="site-button auth-submit" disabled={!ready || busy}>{busy ? tr('Checking…', '验证中…') : tr('Verify and confirm', '验证并确认')} <span aria-hidden>→</span></button>
         </div>
       </form>
     </div>
