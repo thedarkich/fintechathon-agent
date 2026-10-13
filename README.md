@@ -74,7 +74,7 @@ To use a model, set `LLM_ENABLED=true`, `AI_BASE_URL`, `AI_API_KEY` and `AI_MODE
 cd backend && uv run pytest -q
 ```
 
-85 tests run every scenario through the HTTP API with the offline planner, plus the model planner with a fake model. They cover the tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, scheduling, transfers, human takeover, the demo account, the sandbox, receipts and the audit chain.
+86 tests run every scenario through the HTTP API with the offline planner, plus the model planner with a fake model. They cover the tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, scheduling, transfers, human takeover, the demo account, the sandbox, receipts and the audit chain.
 
 ### Evaluation sets
 
