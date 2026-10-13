@@ -66,7 +66,7 @@ export function Problem({ text }: { text: string | null | undefined }) {
   return text ? <p role="alert" className="mt-2 text-sm font-semibold text-cinnabar">{text}</p> : null
 }
 
-/** A titled card, as on the wallet page: a numbered title, a one-line purpose, then the content. */
+/** A titled card, as on the Accounts page: a numbered title, a one-line purpose, then the content. */
 export function Card({ title, sub, right, children, id }: { title: string; sub?: string; right?: ReactNode; children: ReactNode; id?: string }) {
   return (
     <section className="ruled bg-field p-4" id={id}>

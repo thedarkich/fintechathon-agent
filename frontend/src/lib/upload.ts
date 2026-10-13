@@ -1,5 +1,5 @@
 // Phone photos are often 4–12 MB. The backend takes 5 MB at most, so big images are
-// shrunk in the browser first. 2400 px on the long edge keeps small invoice print readable.
+// shrunk in the browser first. 2400 px on the long edge keeps small receipt print readable.
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 const SHRINK_ABOVE = 1.5 * 1024 * 1024
 const LONG_EDGE = 2400

@@ -6,7 +6,7 @@ from pathlib import Path
 
 def write_private_bytes(path: Path, data: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    # Set permissions at creation, not after writing invoice contents. Keep open
+    # Set permissions at creation, not after writing the upload. Keep open
     # outside the cleanup block: an existing file must never be removed on failure.
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     try:

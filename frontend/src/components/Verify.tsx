@@ -14,7 +14,7 @@ export function usePhone(enabled: boolean) {
 
 /**
  * Strong verification for red steps: the 6-digit PIN plus an SMS code or a passkey.
- * Laid out like the invoice detail window. The assistant never sees what is typed here.
+ * A modal over the page, like every other detail window here. The assistant never sees what is typed here.
  */
 export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPasskey: boolean; onClose: () => void }) {
   const { tr, lang } = useLang()

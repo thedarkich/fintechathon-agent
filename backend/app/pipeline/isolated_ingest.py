@@ -17,7 +17,7 @@ from app.pipeline.ingest import MAX_BYTES, MAX_PAGES, MAX_TEXT, Document, InputE
 WALL_SECONDS = 12
 MAX_RESULT_BYTES = 24 * 1024 * 1024
 BACKEND = Path(__file__).resolve().parents[2]
-# All command arguments are application constants, never invoice text or filenames.
+# All command arguments are application constants, never receipt text or filenames.
 BOOTSTRAP = (
     "import runpy,sys;sys.path.insert(0,sys.argv[1]);"
     "runpy.run_module('app.pipeline.ingest_worker',run_name='__main__')"
