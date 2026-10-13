@@ -6,7 +6,13 @@ Entry for the 2026 Shenzhen International FinTech Competition (FinTechathon), **
 
 A customer says what they need in Chinese or English ("给妈妈转200", "冻结我的虚拟卡", "下个月老婆生日，帮我预留1000，提前两天订花和蛋糕"). The planner turns it into a plan: steps from a fixed catalogue of 41 bank actions, arranged as a dependency graph. Code then matches every name, card and merchant to the customer's own records, gives each step a permission tier, runs read-only steps at once, shows everything else on a confirmation slip and asks for strong verification when the rules require it. Every stage is written to a hash-chained audit log.
 
-The design is in [docs/SPEC.md](docs/SPEC.md).
+Documents:
+
+- [Technical documentation](docs/ARCHITECTURE.md): architecture diagram, request flow, core algorithms
+- [Security design and self-assessment](docs/SECURITY.md): how the permission tiers and the brief's security mechanisms are implemented, evidence, and known risks
+- [Design contract](docs/SPEC.md)
+- [Project brief](docs/BRIEF.md) (Chinese and English, within 200 words)
+- [Evaluation report](docs/eval/report-offline.md)
 
 ## Status (13 October 2026)
 
