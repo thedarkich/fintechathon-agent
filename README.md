@@ -8,8 +8,8 @@ A customer says what they need in Chinese or English ("给妈妈转200", "冻结
 
 Documents:
 
-- [Technical documentation](docs/ARCHITECTURE.md): architecture diagram, request flow, core algorithms
-- [Security design and self-assessment](docs/SECURITY.md): how the permission tiers and the brief's security mechanisms are implemented, evidence, and known risks
+- [Technical documentation](docs/ARCHITECTURE.md) ([中文](docs/ARCHITECTURE.zh.md)): architecture diagram, request flow, core algorithms
+- [Security design and self-assessment](docs/SECURITY.md) ([中文](docs/SECURITY.zh.md)): how the permission tiers and the brief's security mechanisms are implemented, evidence, and known risks
 - [Design contract](docs/SPEC.md)
 - [Project brief](docs/BRIEF.md) (Chinese and English, within 200 words)
 - [Evaluation report](docs/eval/report-offline.md)
