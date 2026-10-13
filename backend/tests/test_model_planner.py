@@ -122,3 +122,21 @@ def test_model_written_code_must_pass_the_sandbox_check(tmp_path):
     assert body["plan"]["steps"][0]["error_code"] == "CODE_REJECTED"
     with Session(bank.runtime.engine) as session:
         assert session.exec(select(AuditEntry).where(AuditEntry.kind == "sandbox_run")).first() is None
+
+
+def test_every_prompt_example_is_a_valid_plan():
+    """The examples teach the model the format; each must pass the same validation as a real answer."""
+    import json
+
+    from app.agent import planner
+    from app.sandbox import guard
+
+    lines = planner.PROMPT.split("Examples:")[1].strip().splitlines()
+    assert len(lines) >= 10
+    for line in lines:
+        request, _, answer = line.partition(" → ")
+        plan = PlanOut.model_validate(json.loads(answer))
+        assert validate(plan, request.strip(chr(34))) == [], request
+        for step in plan.steps:
+            if step.action == "analyze":
+                guard.check(step.args["code"])  # raises if the sandbox would refuse it
