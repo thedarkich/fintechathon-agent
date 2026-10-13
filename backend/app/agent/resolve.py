@@ -110,16 +110,18 @@ def card_label(c: Card, lang: str) -> str:
 def find_subscription(session: Session, user_id: str, text: str) -> Found:
     subs = [s for s in session.exec(select(Subscription).where(Subscription.user_id == user_id))
             if s.status == "active"]
-    query = norm(text)
-    aliases = {"iqiyi": "爱奇艺", "tencentvideo": "腾讯视频", "tencent": "腾讯视频", "neteasemusic": "网易云音乐",
+    query = re.sub(r"^(那个|这个|那|这|that|this)", "", norm(text))
+    aliases = {"music": "音乐", "video": "视频", "streaming": "视频", "iqiyi": "爱奇艺", "tencentvideo": "腾讯视频", "tencent": "腾讯视频", "neteasemusic": "网易云音乐",
                "netease": "网易云音乐", "qqmusic": "qq音乐", "baidu": "百度网盘", "baidunetdisk": "百度网盘",
                "gym": "健身", "jd": "京东plus", "jdplus": "京东plus", "wps": "wps", "mobile": "中国移动",
                "chinamobile": "中国移动", "broadband": "宽带", "chinatelecom": "中国电信"}
     query = aliases.get(query, query)
     scored = []
+    if not query:
+        return Found()
     for s in subs:
         name = norm(s.merchant)
-        if query and (query in name or name in query):
+        if query in name or name in query:
             scored.append((100, s))
         else:
             score = fuzz.partial_ratio(query, name)

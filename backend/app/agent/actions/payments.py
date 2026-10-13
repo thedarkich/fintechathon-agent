@@ -356,16 +356,20 @@ def collect_compensate(ctx: Ctx, r: dict, res: dict) -> dict:
 def collect_describe(ctx: Ctx, r: dict) -> str:
     names = "、".join(p["name"] for p in r["people"]) if ctx.lang == "zh" else ", ".join(p["name_en"] for p in r["people"])
     me = ctx.t("（含我）", " (including me)") if r["heads"] > len(r["people"]) else ""
-    return ctx.t(f"“{r['title']}”共 {yuan(r['total_fen'])}，{r['heads']} 人平摊{me}，向 {names} 各发起收款 {yuan(r['share_fen'])}",
-                 f"Split “{r['title']}” ({yuan(r['total_fen'])}) {r['heads']} ways{me}: request {yuan(r['share_fen'])} each from {names}")
+    each_zh, each_en = ("各", " each") if len(r["people"]) > 1 else ("", "")
+    return ctx.t(f"“{r['title']}”共 {yuan(r['total_fen'])}，{r['heads']} 人平摊{me}，向 {names} {each_zh}发起收款 {yuan(r['share_fen'])}",
+                 f"Split “{r['title']}” ({yuan(r['total_fen'])}) {r['heads']} ways{me}: ask {names} for {yuan(r['share_fen'])}{each_en}")
 
 
 register(Action(
     name="collect", args=CollectArgs,
     help="Split a bill (AA): request equal shares from payees. total_yuan, or receipt (an attached receipt id), or from_merchant to use a recent payment there; include_me; title.",
     resolve=collect_resolve, run=collect_run, describe=collect_describe,
-    reply=lambda ctx, r, res: ctx.t(f"已向 {res['count']} 人发起收款，每人 {yuan(res['share_fen'])}。对方付款后会自动到账。",
-                                    f"Sent requests to {res['count']} people for {yuan(res['share_fen'])} each. Payments arrive automatically."),
+    reply=lambda ctx, r, res: ctx.t(
+        f"已向 {res['count']} 人发起收款，每人 {yuan(res['share_fen'])}。对方付款后会自动到账。" if res["count"] > 1
+        else f"已向 {r['people'][0]['name']} 发起收款 {yuan(res['share_fen'])}。对方付款后会自动到账。",
+        f"Sent {res['count']} payment requests for {yuan(res['share_fen'])} each. Payments arrive automatically." if res["count"] > 1
+        else f"Asked {r['people'][0]['name_en']} for {yuan(res['share_fen'])}. The payment arrives automatically."),
     rule="Y_COLLECTION", compensate=collect_compensate,
     examples=["昨晚海底捞和张伟、王芳AA", "split 300 with Liu Yang"],
 ))
@@ -421,7 +425,7 @@ register(Action(
     name="payee_add", args=PayeeAddArgs, help="Save a new payee: name plus phone (11 digits) or account_no; optional bank, alias, note.",
     resolve=payee_add_resolve, run=payee_add_run,
     describe=lambda ctx, r: ctx.t(f"新增收款人 {r['name']}（{r['bank']} ****{r['account_no'][-4:]}）",
-                                  f"Add payee {r['name']} ({r['bank']} ****{r['account_no'][-4:]})"),
+                                  f"Add payee {r['name']} ({transfers.bank_en(r['bank'])} ****{r['account_no'][-4:]})"),
     reply=lambda ctx, r, res: ctx.t(f"已添加收款人 {res['name']}。新收款人 24 小时内的大额付款需要强验证。",
                                     f"Added {res['name']}. Large payments to a new payee need strong verification for 24 hours."),
     rule="Y_PAYEE_ADD", compensate=payee_add_compensate,

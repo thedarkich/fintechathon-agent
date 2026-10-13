@@ -126,6 +126,15 @@ def test_subscriptions_query_is_yellow_and_finds_overlaps(bank):
     assert "音乐会员" in text  # overlap tip
 
 
+def test_repeat_purchases_are_not_subscriptions(bank):
+    """A yearly fee is a subscription; a delivery app or café that repeats a price a year later is not."""
+    plan = plan_of(bank.chat("我有哪些自动续费"))
+    items = bank.approve(plan).json()["messages"][0]["cards"][0]["items"]
+    yearly = [s["merchant"] for s in items if s["cycle"] == "yearly"]
+    assert any("京东PLUS" in m for m in yearly)
+    assert not any(word in s["merchant"] for s in items for word in ("美团外卖", "瑞幸", "肯德基", "饿了么", "12306"))
+
+
 def test_cancelled_subscription_does_not_charge(bank):
     plan = plan_of(bank.chat("取消爱奇艺会员"))
     cancelled_at = bank.get("/api/demo/clock").json()["now"]

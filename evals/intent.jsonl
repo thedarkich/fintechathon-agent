@@ -176,3 +176,22 @@
 {"id": "oth-08", "category": "other", "text": "贷款利率是多少", "expect": {"ask": true}}
 {"id": "oth-09", "category": "other", "text": "what's the exchange rate for USD", "expect": {"ask": true}}
 {"id": "oth-10", "category": "other", "text": "我上个月的工资到账了吗", "expect": {"tier": "green", "status": "done"}}
+{"id": "crd-22", "category": "cards", "text": "关闭境外交易", "expect": {"actions": ["card_restrict"], "ask": true}}
+{"id": "crd-23", "category": "cards", "text": "Turn off overseas payments", "expect": {"actions": ["card_restrict"], "ask": true}}
+{"id": "crd-24", "category": "cards", "text": "把借记卡的网上支付关了", "expect": {"actions": ["card_restrict"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "crd-25", "category": "cards", "text": "Report my debit card lost", "expect": {"actions": ["card_report_lost"], "tier": "red", "status": "awaiting_approval"}}
+{"id": "wlt-18", "category": "wealth", "text": "比较一下我能买的理财产品", "expect": {"actions": ["wealth_products"], "tier": "green", "status": "done"}}
+{"id": "wlt-19", "category": "wealth", "text": "Compare the products I can buy", "expect": {"actions": ["wealth_products"], "tier": "green", "status": "done"}}
+{"id": "trf-30", "category": "transfer", "text": "Who can I pay?", "expect": {"actions": ["payees"], "tier": "green", "status": "done", "reply_has": ["Wang Xiuying"]}}
+{"id": "trf-31", "category": "transfer", "text": "Send Zhou Kai 800", "expect": {"actions": ["transfer"], "tier": "red", "status": "awaiting_approval"}}
+{"id": "trf-32", "category": "transfer", "text": "Send Xiao Zhang 100", "expect": {"actions": ["transfer"], "ask": true}}
+{"id": "trf-33", "category": "transfer", "text": "添加收款人 王小明 13800001111 招商银行", "expect": {"actions": ["payee_add"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "trf-34", "category": "transfer", "text": "Add payee Wang Xiaoming, phone 13800001111, China Merchants Bank", "expect": {"actions": ["payee_add"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "trf-35", "category": "transfer", "text": "添加收款人", "expect": {"ask": true}}
+{"id": "sub-13", "category": "subscriptions", "text": "Am I paying twice for anything?", "expect": {"actions": ["subscriptions"], "tier": "yellow"}}
+{"id": "sub-14", "category": "subscriptions", "text": "取消那个音乐会员", "expect": {"actions": ["subscription_cancel"], "ask": true}}
+{"id": "sub-15", "category": "subscriptions", "text": "Cancel the music subscription", "expect": {"actions": ["subscription_cancel"], "ask": true}}
+{"id": "sub-16", "category": "subscriptions", "text": "会员续费前提醒我", "expect": {"actions": ["subscription_remind"], "ask": true}}
+{"id": "sub-17", "category": "subscriptions", "text": "爱奇艺续费前5天提醒我", "expect": {"actions": ["subscription_remind"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "hnd-04", "category": "handoff", "text": "I want to talk to a person", "expect": {"actions": ["handoff"], "status": "done"}}
+{"id": "aa-12", "category": "split", "text": "和室友AA 300元电费", "expect": {"actions": ["collect"], "tier": "yellow", "status": "awaiting_approval"}}

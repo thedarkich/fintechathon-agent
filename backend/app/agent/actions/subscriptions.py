@@ -44,7 +44,7 @@ def subscriptions_reply(ctx: Ctx, r: dict, res: dict) -> str:
 
 register(Action(
     name="subscriptions", args=Args,
-    help="List recurring charges / direct debits found in transactions, with overlaps and recently started ones.",
+    help="List recurring charges / direct debits found in transactions, with overlaps (paying twice) and recently started ones.",
     resolve=lambda ctx, a: {}, run=subscriptions_run,
     describe=lambda ctx, r: ctx.t("查看自动扣费与订阅（涉及扣款授权，按规则需确认）", "Show subscriptions and direct debits (debit authorisations, so this needs confirmation)"),
     reply=subscriptions_reply, rule="Y_SUBSCRIPTION",
@@ -54,16 +54,23 @@ register(Action(
 
 
 class SubArgs(Args):
-    merchant: str = Field(min_length=1, max_length=40)
+    merchant: str | None = Field(default=None, max_length=40)
 
 
-def pick(ctx: Ctx, text: str) -> Subscription:
-    found = find_subscription(ctx.session, ctx.user.id, text)
+def pick(ctx: Ctx, text: str | None) -> Subscription:
+    found = find_subscription(ctx.session, ctx.user.id, text or "")
+    if not text and found.value is None:
+        found.options = list(analysis.refresh_subscriptions(ctx.session, ctx.user.id, ctx.today))
+        found.options = [s for s in found.options if s.status == "active"]
+        if len(found.options) == 1:
+            return found.options[0]
     if found.ambiguous:
         raise Ask("merchant", "是哪一项订阅？", "Which subscription?",
                   [{"value": s.merchant, "label_zh": f"{s.merchant} {yuan(s.amount_fen)}", "label_en": f"{s.merchant} {yuan(s.amount_fen)}"}
                    for s in found.options])
     if found.value is None:
+        if not text:
+            raise Refuse("SUB_NOT_FOUND", "没有正在扣费的订阅。", "There are no active subscriptions.")
         raise Refuse("SUB_NOT_FOUND", f"没有找到正在扣费的“{text}”。", f"No active subscription matches “{text}”.")
     return found.value
 
@@ -81,7 +88,7 @@ def cancel_run(ctx: Ctx, r: dict) -> dict:
 
 
 register(Action(
-    name="subscription_cancel", args=SubArgs, help="Cancel a recurring charge / direct debit by merchant name.",
+    name="subscription_cancel", args=SubArgs, help="Cancel a recurring charge / direct debit by merchant name or kind (music, video); without one the bank asks which.",
     resolve=lambda ctx, a: sub_fields(pick(ctx, a.merchant)), run=cancel_run,
     describe=lambda ctx, r: ctx.t(f"取消 {r['merchant']} 的自动扣费（{yuan(r['fen'])}，{label(r['category'], 'zh')}），{r['next_charge_on']} 起不再扣款",
                                   f"Cancel the {r['merchant']} recurring charge ({yuan(r['fen'])}); no charge from {r['next_charge_on']}"),
@@ -93,7 +100,7 @@ register(Action(
 
 
 class RemindArgs(Args):
-    merchant: str = Field(min_length=1, max_length=40)
+    merchant: str | None = Field(default=None, max_length=40)
     days_before: int = Field(default=3, ge=1, le=30)
 
 
@@ -112,7 +119,7 @@ def remind_compensate(ctx: Ctx, r: dict, res: dict) -> dict:
 
 
 register(Action(
-    name="subscription_remind", args=RemindArgs, help="Remind before a subscription renews. merchant, days_before 1-30.",
+    name="subscription_remind", args=RemindArgs, help="Remind before a subscription renews. merchant (or kind, or none to be asked), days_before 1-30.",
     resolve=lambda ctx, a: {**sub_fields(pick(ctx, a.merchant)), "days_before": a.days_before}, run=remind_run,
     describe=lambda ctx, r: ctx.t(f"{r['merchant']} 续费前 {r['days_before']} 天提醒我", f"Remind me {r['days_before']} days before {r['merchant']} renews"),
     reply=lambda ctx, r, res: ctx.t(f"好的，{r['merchant']} 续费前 {r['days_before']} 天会提醒您（下次扣费 {r['next_charge_on']}）。",

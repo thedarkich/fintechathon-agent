@@ -14,7 +14,7 @@ RULE_TEXT = {
     "G_QUERY": ("只是查询，直接办好", "Just a question, answered right away"),
     "Y_SMALL_PAYMENT": ("今天累计付款不超过 ¥1,000", "Today's payments stay at or under ¥1,000"),
     "R_LARGE_PAYMENT": ("今天累计付款将超过 ¥1,000", "Today's payments would go over ¥1,000"),
-    "Y_SUBSCRIPTION": ("会改动你的订阅", "It changes a subscription"),
+    "Y_SUBSCRIPTION": ("涉及你的自动扣费授权", "It involves your automatic payments"),
     "Y_COLLECTION": ("会向朋友发起收款", "It asks your friends for money"),
     "Y_CARD_APPLY": ("会为你申请一张新卡", "It applies for a new card"),
     "Y_RISK_REDUCING": ("会让卡片更安全", "It makes a card safer"),

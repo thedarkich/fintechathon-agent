@@ -9,7 +9,7 @@ from sqlmodel import select
 from app import clock
 from app.agent.core import Action, Args, Ask, Ctx, Refuse, register
 from app.agent.resolve import find_payee, payee_label
-from app.bank import analysis
+from app.bank import analysis, transfers
 from app.bank.categories import LABELS, label
 from app.models import BankAccount, Card, Collection, Notification, Payee, ScheduledTransfer, Txn
 from app.money import to_fen, yuan
@@ -161,10 +161,11 @@ def txn_scope(ctx: Ctx, r: dict) -> str:
 
 def transactions_reply(ctx: Ctx, r: dict, result: dict) -> str:
     span = f"{r['start']} ~ {r['end']}{txn_scope(ctx, r)}"
+    span_en = f"{r['start']} to {r['end']}{txn_scope(ctx, r)}"
     if not result["count"]:
-        return ctx.t(f"{span} 没有符合条件的交易。", f"No matching transactions between {span}.")
+        return ctx.t(f"{span} 没有符合条件的交易。", f"No matching transactions from {span_en}.")
     head = ctx.t(f"{span} 共 {result['count']} 笔，支出 {yuan(result['out_fen'])}，收入 {yuan(result['in_fen'])}。",
-                 f"{result['count']} transactions between {span}: {yuan(result['out_fen'])} out, {yuan(result['in_fen'])} in.")
+                 f"{result['count']} transactions from {span_en}: {yuan(result['out_fen'])} out, {yuan(result['in_fen'])} in.")
     lines = [f"· {item['at'][5:16].replace('T', ' ')} {item['merchant']} {yuan(item['fen'])}"
              + (ctx.t("（已拒绝）", " (declined)") if item["status"] == "declined" else "")
              for item in result["items"]]
@@ -213,7 +214,7 @@ def spending_run(ctx: Ctx, r: dict) -> dict:
 
 
 def spending_reply(ctx: Ctx, r: dict, res: dict) -> str:
-    span = f"{res['start']} ~ {res['end']}"
+    span = f"{res['start']} ~ {res['end']}" if ctx.lang == "zh" else f"{res['start']} to {res['end']}"
     if r["category"]:
         return ctx.t(f"{span}，{label(r['category'], 'zh')}共支出 {yuan(res['spend_fen'])}（{res['count']} 笔）。",
                      f"{span}: {yuan(res['spend_fen'])} on {label(r['category'], 'en')} ({res['count']} payments).")
@@ -321,7 +322,8 @@ def payees_run(ctx: Ctx, r: dict) -> dict:
     if r["query"]:
         found = find_payee(ctx.session, ctx.user.id, r["query"])
         rows = [found.value] if found.value else found.options
-    return {"items": [{"id": p.id, "name": p.name, "name_en": p.name_en, "note": p.note, "bank": p.bank,
+    return {"items": [{"id": p.id, "name": p.name, "name_en": p.name_en, "note": p.note, "note_en": transfers.note_en(p.note),
+                       "bank": p.bank, "bank_en": transfers.bank_en(p.bank),
                        "account_tail": p.account_no[-4:], "phone": p.phone[:3] + "****" + p.phone[-4:],
                        "relationship": p.relationship, "created_at": p.created_at} for p in rows]}
 
@@ -329,9 +331,11 @@ def payees_run(ctx: Ctx, r: dict) -> dict:
 def payees_reply(ctx: Ctx, r: dict, res: dict) -> str:
     if not res["items"]:
         return ctx.t("没有找到收款人。", "No payees found.")
-    return "\n".join(f"· {p['name'] if ctx.lang == 'zh' else (p['name_en'] or p['name'])}"
-                     f"{'（' + p['note'] + '）' if p['note'] else ''} {p['bank']} ****{p['account_tail']}"
-                     for p in res["items"])
+    if ctx.lang == "zh":
+        return "\n".join(f"· {p['name']}{'（' + p['note'] + '）' if p['note'] else ''} {p['bank']} ****{p['account_tail']}"
+                         for p in res["items"])
+    return "\n".join(f"· {p['name_en'] or p['name']}{' (' + p['note_en'] + ')' if p.get('note_en') else ''}, "
+                     f"{p['bank_en']} ****{p['account_tail']}" for p in res["items"])
 
 
 register(Action(

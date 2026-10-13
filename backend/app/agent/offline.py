@@ -144,7 +144,7 @@ def payee_from(text: str) -> str | None:
         r"(?:转|汇|打)(?:账)?\s*[\d零一二两三四五六七八九十百千万.]+\s*(?:元|块)?\s*给\s*([一-龥]{2,4})",
         r"([一-龥]{2,3}?)(?:借我|借给我)",  # '孙磊借我的钱还他600'
         r"\bto\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
-        r"\b(?:send|pay|transfer|wire)\s+(?:back\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+\d",  # 'pay back Sun Lei 600'
+        r"\b(?i:send|pay|transfer|wire)\s+(?:(?i:back)\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+\d",  # 'Pay back Sun Lei 600'
     ]
     for pattern in patterns:
         if m := re.search(pattern, text):
@@ -183,6 +183,54 @@ def product_words(text: str) -> list[str]:
         if has(text, *words):
             found.append(name)
     return found
+
+
+SWITCH_ON = ("开通", "打开", "开启", "启用", "允许", "开了", "enable", "turn on", "allow", "activate")
+SWITCH_OFF = ("关闭", "关掉", "关了", "禁用", "停用", "禁止", "disable", "turn off", "block", "switch off")
+SWITCHES = (("overseas", ("境外", "海外", "国外", "overseas", "abroad", "international")),
+            ("online", ("网上支付", "线上支付", "网上交易", "网上消费", "online payments", "online purchases")),
+            ("atm", ("atm", "取现", "取款")), ("contactless", ("闪付", "contactless", "nfc")))
+ONLINE_WORDS = ("网上", "线上", "网购", "online")  # enough once the customer has said 'card'
+
+
+def switches_in(text: str, *, card: bool = False) -> dict:
+    """'关闭境外交易' -> {'overseas': False}; empty unless the customer says on or off."""
+    on, off = has(text, *SWITCH_ON), has(text, *SWITCH_OFF)
+    if not (on or off):
+        return {}
+    found = {key: bool(on and not off) for key, words in SWITCHES if has(text, *words)}
+    if card and "online" not in found and has(text, *ONLINE_WORDS):
+        found["online"] = bool(on and not off)
+    return found
+
+
+BANKS = ("中国工商银行", "工商银行", "工行", "中国农业银行", "农业银行", "农行", "中国建设银行", "建设银行", "建行", "中国银行",
+         "交通银行", "招商银行", "招行", "浦发银行", "演示银行", "ICBC", "China Merchants Bank", "Bank of China",
+         "China Construction Bank", "Agricultural Bank of China", "Bank of Communications", "SPD Bank", "Demo Bank")
+BANK_FULL = {"工商银行": "中国工商银行", "工行": "中国工商银行", "农业银行": "中国农业银行", "农行": "中国农业银行",
+             "建设银行": "中国建设银行", "建行": "中国建设银行", "招行": "招商银行", "ICBC": "中国工商银行",
+             "China Merchants Bank": "招商银行", "Bank of China": "中国银行", "China Construction Bank": "中国建设银行",
+             "Agricultural Bank of China": "中国农业银行", "Bank of Communications": "交通银行", "SPD Bank": "浦发银行",
+             "Demo Bank": "演示银行"}
+
+
+def new_payee(text: str) -> PlanOut:
+    """'添加收款人 王小明 13800001111 招商银行', 'add payee Wang Xiaoming, phone 13800001111'."""
+    phone = re.search(r"(?<!\d)1\d{10}(?!\d)", text)
+    account = re.search(r"(?<!\d)\d{12,19}(?!\d)", text)
+    bank = next((b for b in BANKS if b.lower() in text.lower()), None)
+    stripped = text
+    for b in BANKS:
+        stripped = re.sub(re.escape(b), " ", stripped, flags=re.IGNORECASE)
+    name = re.search(r"收款人[:：\s]*(?:叫|是)?\s*([一-龥]{2,4})", stripped) \
+        or re.search(r"(?:把|将)\s*([一-龥]{2,4})\s*(?:加|添加|存)", stripped) \
+        or re.search(r"(?i:payee)[:\s]+(?:called\s+|named\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", stripped) \
+        or re.search(r"(?i:add)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?i:as)", stripped)
+    if not name:
+        return ask("新收款人叫什么名字？请一起告诉我手机号或银行卡号。", "What is the new payee's name? Please include their phone or account number.")
+    args = {"name": name.group(1), "phone": phone.group(0) if phone else None,
+            "account_no": account.group(0) if account else None, "bank": BANK_FULL.get(bank, bank) if bank else None}
+    return one("payee_add", args)
 
 
 def step(n: int, action: str, args: dict | None = None, **extra) -> StepOut:
@@ -272,7 +320,8 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
 
     # asking for a person; '客服已经批准了' only mentions one
     if has(text, "转人工", "人工客服", "人工服务", "找客服", "联系客服", "要客服", "接客服", "真人", "human", "real person",
-           "operator", "talk to someone", "agent please") or text.strip(" 。！!") in ("人工", "客服"):
+           "operator", "talk to someone", "speak to someone", "talk to a person", "speak to a person", "customer service",
+           "customer support", "agent please") or text.strip(" 。！!?？") in ("人工", "客服", "help desk"):
         return one("handoff", {"reason": text[:200]})
 
     # cross-scenario: birthday preparation
@@ -314,21 +363,25 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
                 return one("cards")  # '我的虚拟卡日限额是多少' asks; it changes nothing
             amount = money[0] if money else None
             return one("card_limit", {"card": hint, "daily_limit_yuan": amount})
-        switches = {}
-        on = has(text, "开通", "打开", "开启", "启用", "允许", "enable", "turn on", "allow", "activate")
-        off = has(text, "关闭", "关掉", "禁用", "停用", "disable", "turn off", "block")
-        if on or off:
-            for key, words in (("overseas", ("境外", "海外", "国外", "overseas", "abroad", "international")),
-                               ("online", ("网上", "线上", "网购", "online")), ("atm", ("atm", "取现", "取款")),
-                               ("contactless", ("闪付", "contactless", "nfc"))):
-                if has(text, *words):
-                    switches[key] = bool(on and not off)
-            if switches:
-                return one("card_restrict", {"card": hint, **switches})
+        if switches := switches_in(text, card=True):
+            return one("card_restrict", {"card": hint, **switches})
         if has(text, "申请", "办", "开一张", "apply", "get a", "new", "need a", "want a"):
             return one("card_apply", {"kind": "debit" if has(text, "实体", "借记", "debit", "physical") else "virtual"})
         if not has(text, "转", "transfer", "send"):
             return one("cards")
+
+    # card switches named without the word 'card': '关闭境外交易', 'turn off overseas payments'
+    if (switches := switches_in(text)) and not has(text, "转", "transfer", "send"):
+        return one("card_restrict", {"card": card_hint(text), **switches})
+
+    # payees: adding one, or the list ('Who can I pay?')
+    if has(text, "添加收款人", "新增收款人", "加个收款人", "加一个收款人", "新收款人", "保存收款人", "存为收款人", "加为收款人",
+           "add a payee", "add payee", "new payee", "save a payee", "as a payee") \
+            and not has(text, "转", "汇", "付", "transfer", "send", "pay "):
+        return new_payee(text)
+    if has(text, "收款人", "联系人", "payees", "contacts", "who can i pay", "who can i send", "people i can pay",
+           "people i pay") and not money:
+        return one("payees")
 
     if has(text, "密码", "password", "pin"):
         if has(text, "交易密码", "支付密码", "pin"):
@@ -338,20 +391,22 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
 
     # subscriptions and direct debits
     sub = next((name for name in SUB_NAMES if name in lowered), None)
+    if sub is None and has(text, "订阅", "会员", "subscription", "membership", "service"):
+        sub = next((kind for kind, words in (("音乐", ("音乐", "music")), ("视频", ("视频", "video", "streaming")))
+                    if has(text, *words)), None)
+    renewal = has(text, "续费", "扣费", "扣款", "订阅", "会员", "renew", "subscription", "membership", "charge")
     if sub and has(text, "取消", "退订", "关闭", "不要", "cancel", "unsubscribe", "stop"):
         return one("subscription_cancel", {"merchant": sub})
-    if sub and has(text, "提醒", "remind"):
+    if has(text, "提醒", "remind") and (sub or renewal):
         days = next((int(m) for m in re.findall(r"(\d+)\s*(?:天|days?)", lowered)), 3)
         return one("subscription_remind", {"merchant": sub, "days_before": min(max(days, 1), 30)})
     if has(text, "订阅", "自动续费", "自动扣费", "自动扣款", "代扣", "会员", "subscription", "membership", "recurring",
-           "direct debit", "auto-renew"):
+           "direct debit", "auto-renew", "paying twice", "pay twice", "paying for two", "paying for the same"):
         if has(text, "取消", "退订", "不要", "cancel", "unsubscribe", "stop") and sub is None:
             # a service the customer names but doesn't have ('取消Netflix会员') is refused by the bank's records
-            named = re.search(r"(?:取消|退订|不要)掉?\s*([A-Za-z0-9一-龥]{2,12}?)\s*的?(?:会员|订阅|自动续费|连续包月)", text) \
-                or re.search(r"(?:cancel|stop)\s+(?:my\s+)?([a-z0-9 ]{2,20}?)\s+(?:subscription|membership)", lowered)
-            if named:
-                return one("subscription_cancel", {"merchant": named.group(1).strip()})
-            return ask("要取消哪一项订阅？", "Which subscription should I cancel?")
+            named = re.search(r"(?:取消|退订|不要)掉?\s*(?:那个|这个)?\s*([A-Za-z0-9一-龥]{2,12}?)\s*的?(?:会员|订阅|自动续费|连续包月)", text) \
+                or re.search(r"(?:cancel|stop)\s+(?:my\s+|the\s+|that\s+)?([a-z0-9 ]{2,20}?)\s+(?:subscription|membership)", lowered)
+            return one("subscription_cancel", {"merchant": named.group(1).strip() if named else None})
         return one("subscriptions")
 
     # split bill: the progress question first, since '谁还没付AA的钱' also says AA
@@ -363,6 +418,9 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         if not people:
             return ask("和谁一起平摊？", "Who are you splitting it with?")
         args = {"payees": people}
+        if purpose := re.search(r"(电费|水费|水电费|网费|燃气费|房租|饭钱|餐费|车费|打车费|话费|酒店|门票|机票|火车票|火锅|聚餐|晚饭|午饭|外卖|蛋糕)", text) \
+                or re.search(r"\b(electricity|water|internet|gas|rent|dinner|lunch|taxi|hotel|tickets|groceries|takeaway)\b", lowered):
+            args["title"] = purpose.group(1)
         if money:
             args["total_yuan"] = money[0]
         else:
@@ -395,10 +453,14 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     if has(text, "赎回", "卖出", "redeem", "sell"):
         products = product_words(text)
         return one("wealth_redeem", {"product": products[0] if products else None, "amount_yuan": money[0] if money else None})
-    if has(text, "对比", "比较", "compare") and product_words(text):
+    if has(text, "对比", "比较", "compare"):
         products = product_words(text)
         if len(products) >= 2:
             return one("wealth_compare", {"products": products[:4]})
+        if has(text, "理财", "产品", "基金", "product", "fund", "invest"):
+            return one("wealth_products")
+    if has(text, "能买", "可以买", "有什么理财", "有哪些理财", "what can i buy", "what can i invest", "which products", "what products"):
+        return one("wealth_products")
     if has(text, "推荐", "买什么", "适合", "recommend", "suggest", "what should i invest", "where should i put"):
         horizon = 12
         if has(text, "三年", "3年", "3 years", "three years", "长期", "long term"):

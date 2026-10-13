@@ -81,10 +81,10 @@ PAYEES = [
          phone="13886051123", bank="演示银行", account_no="6225880145671123",
          birthday=None, note="家人"),
     dict(key="zhangwei", name="张伟", name_en="Zhang Wei", relationship="friend",
-         aliases=["小张", "伟哥"], phone="13912345678", bank="中国建设银行",
+         aliases=["小张", "伟哥", "xiao zhang"], phone="13912345678", bank="中国建设银行",
          account_no="6217003310045678", note="大学同学"),
     dict(key="zhangwei2", name="张薇", name_en="Zhang Wei", relationship="colleague",
-         aliases=["小张"], phone="13698765432", bank="交通银行",
+         aliases=["小张", "xiao zhang"], phone="13698765432", bank="交通银行",
          account_no="6222600512349876", note="同事，财务部"),
     dict(key="roommate", name="刘洋", name_en="Liu Yang", relationship="roommate",
          aliases=["室友", "roommate"], phone="15527301190", bank="演示银行",
@@ -100,7 +100,7 @@ PAYEES = [
          account_no="6217921200182240", note="高中同学"),
     dict(key="newseller", name="周凯", name_en="Zhou Kai", relationship=None,
          aliases=[], phone="17085523307", bank="某村镇银行",
-         account_no="6230580000673307", note="二手相机卖家（今天新加）"),
+         account_no="6230580000673307", note="二手相机卖家，今天新加"),
 ]
 
 

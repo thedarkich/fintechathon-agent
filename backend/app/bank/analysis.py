@@ -201,9 +201,11 @@ def merchant_key(name: str) -> str:
 def detect_recurring(txns: list[Txn], today: date) -> list[dict]:
     """Outgoing charges of the same amount to the same merchant at a monthly or yearly rhythm."""
     groups: dict[tuple[str, int], list[Txn]] = defaultdict(list)
+    per_merchant: Counter = Counter()
     for t in txns:
         if t.status == "posted" and t.amount_fen < 0 and t.kind in {"card", "direct_debit"}:
             groups[(merchant_key(t.counterparty), t.amount_fen)].append(t)
+            per_merchant[merchant_key(t.counterparty)] += 1
     found = []
     for (key, amount), charges in groups.items():
         charges.sort(key=lambda t: t.at)
@@ -212,7 +214,8 @@ def detect_recurring(txns: list[Txn], today: date) -> list[dict]:
         if len(charges) >= 3 and gaps and all(25 <= g <= 35 for g in gaps[-3:]):
             cycle, length = "monthly", 31
             next_day = clock.add_months(days[-1], 1)
-        elif len(charges) >= 2 and gaps and all(350 <= g <= 380 for g in gaps[-1:]):
+        elif len(charges) >= 2 and gaps and all(350 <= g <= 380 for g in gaps) and per_merchant[key] == len(charges):
+            # a shop seen for other purchases (a café, a delivery app) that happens to repeat a price is not a subscription
             cycle, length = "yearly", 366
             next_day = clock.add_months(days[-1], 12)
         else:

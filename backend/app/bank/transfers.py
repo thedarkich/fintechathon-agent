@@ -56,7 +56,8 @@ def bank_en(bank: str) -> str:
 # left out of English screens rather than shown untranslated.
 NOTE_EN = {"家人": "family", "大学同学": "university friend", "同事，财务部": "colleague, finance",
            "室友，水电网费AA": "roommate, splits bills", "房租": "rent", "羽毛球球友": "badminton friend",
-           "高中同学": "school friend", "二手相机卖家（今天新加）": "used-camera seller (added today)"}
+           "高中同学": "school friend", "二手相机卖家（今天新加）": "used-camera seller, added today",
+           "二手相机卖家，今天新加": "used-camera seller, added today"}
 
 
 def note_en(note: str | None) -> str | None:

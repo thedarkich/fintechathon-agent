@@ -48,7 +48,8 @@ def details(ctx: Ctx, action: str, r: dict | None) -> list[dict]:
             rows.append(row("备注", "Note", r["memo"]))
         return rows
     if action == "merchant_order":
-        rows = [row("商品", "Item", f"{r['item_name'] if zh else r['item_name_en']}（{r['shop'] if zh else r['shop_en']}）"),
+        item = f"{r['item_name']}（{r['shop']}）" if zh else f"{r['item_name_en']} ({r['shop_en']})"
+        rows = [row("商品", "Item", item),
                 row("金额", "Amount", yuan(r["fen"])), row("送达", "Delivered", r["deliver_on"])]
         if r.get("recipient"):
             rows.append(row("收货人", "For", r["recipient"]["name"] if zh else r["recipient"]["name_en"]))
@@ -80,7 +81,7 @@ def plan_view(plan: Plan, ctx: Ctx) -> dict:
     for s in plan.steps:
         action = REGISTRY.get(s["action"])
         resolved = s.get("resolved")
-        text = action.describe(ctx, resolved) if action and resolved else s["action"]
+        text = action.describe(ctx, resolved) if action and resolved is not None else s["action"]
         error = s.get("error")
         steps.append({
             "id": s["id"], "action": s["action"], "status": s.get("status") or "new", "tier": s.get("tier"),

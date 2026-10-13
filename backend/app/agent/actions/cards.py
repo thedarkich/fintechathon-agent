@@ -96,7 +96,8 @@ register(Action(
     name="card_freeze", args=CardArgs, help="Temporarily freeze a card (instantly reversible later with strong verification). card = last 4 digits or kind (virtual/debit).",
     resolve=lambda ctx, a: card_fields(ctx, pick_card(ctx, a.card, {"active"}, "冻结", "freeze")), run=freeze_run,
     describe=lambda ctx, r: ctx.t(f"临时冻结 {r['card']}，冻结期间所有交易都会被拒绝", f"Freeze {r['card_en']}; every payment is declined while frozen"),
-    reply=lambda ctx, r, res: ctx.t(f"{r['card']} 已冻结。解冻需要强验证。", f"{r['card_en']} is frozen. Unfreezing needs strong verification."),
+    reply=lambda ctx, r, res: ctx.t(f"{r['card']} 已冻结。解冻需要强验证。如果卡找不回来，可以说“挂失尾号{r['last4']}的卡”。",
+                                    f"{r['card_en']} is frozen. Unfreezing needs strong verification. If it's gone for good, say “report card {r['last4']} lost”."),
     rule="Y_RISK_REDUCING",
     examples=["冻结我的虚拟卡", "freeze card 0428"],
 ))
