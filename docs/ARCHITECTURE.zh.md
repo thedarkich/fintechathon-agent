@@ -6,6 +6,10 @@
 
 ## 一、系统架构
 
+![系统架构：请求经过八个环节，只有规划器是 AI，其余都是固定代码；周围是模拟银行、隔离进程、安全锁和哈希链审计日志](img/architecture.svg)
+
+同一结构的文字版：
+
 ```mermaid
 flowchart LR
   subgraph 渠道

@@ -65,7 +65,10 @@ export default function Assistant() {
     void send(value, id)
   }
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) submit()
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault()  // otherwise the newline lands in the emptied box
+      submit()
+    }
   }
   async function attach(file: File | undefined) {
     if (!file) return
@@ -178,7 +181,7 @@ export default function Assistant() {
             </div>
           )}
           {uploadError && <p role="alert" className="mb-2 text-xs font-semibold text-cinnabar">{uploadError}</p>}
-          <div className="flex items-end gap-2 rounded-2xl border border-rule2 bg-field p-1.5 shadow-[0_6px_24px_var(--shadow)]">
+          <div className="flex items-end gap-2 rounded-2xl border border-rule2 bg-field p-1.5 shadow-[0_6px_24px_var(--shadow)] focus-within:border-[var(--action)]">
             <input ref={fileRef} type="file" accept=".pdf,.png,.jpg,.jpeg" className="sr-only" onChange={(e) => void attach(e.target.files?.[0])} />
             <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-ink2 hover:bg-paper2" aria-label={tr('Attach a receipt', '添加小票')} title={tr('Attach a receipt photo or PDF', '添加小票照片或 PDF')}>
               <Paperclip size={18} className={uploading ? 'step-live' : ''} />
@@ -190,7 +193,7 @@ export default function Assistant() {
             )}
             <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1} maxLength={2000}
               placeholder={tr('What do you need?', '说说你要办的事…')}
-              aria-label={tr('Message', '消息')} className="max-h-32 min-h-[40px] min-w-0 flex-1 resize-none bg-transparent px-1 py-2 text-[0.97rem] outline-none" />
+              aria-label={tr('Message', '消息')} className="max-h-32 min-h-[40px] min-w-0 flex-1 resize-none bg-transparent px-1 py-2 text-[0.97rem] outline-none focus-visible:outline-none" />
             <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--action)] text-[var(--action-ink)] disabled:opacity-40" disabled={(!text.trim() && !attachment) || !!pending} aria-label={tr('Send', '发送')}><SendHorizontal size={18} /></button>
           </div>
           <p className="mt-1.5 text-center text-[0.72rem] text-ink2">{tr('Simulated bank. Money only moves after you confirm.', '模拟银行。只有你确认后，钱才会动。')}</p>

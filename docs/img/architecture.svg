@@ -1,0 +1,240 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 940" width="1600" height="940" font-family="'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC','Helvetica Neue',Arial,sans-serif">
+  <title>银行代办 · 系统架构 / Bank Agent · System architecture</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#357366"/>
+    </marker>
+    <marker id="arrow-grey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#98a29f"/>
+    </marker>
+    <style>
+      .box { fill: #ffffff; stroke: #cdd9d4; stroke-width: 1.5; }
+      .t { font-size: 17px; font-weight: 700; fill: #101820; }
+      .te { font-size: 12px; font-weight: 600; fill: #68716f; }
+      .z { font-size: 13px; fill: #101820; }
+      .e { font-size: 11.5px; fill: #68716f; }
+      .n { font-size: 12px; font-weight: 700; fill: #ffffff; }
+      .flow { stroke: #357366; stroke-width: 2; fill: none; }
+      .audit { stroke: #98a29f; stroke-width: 1.5; stroke-dasharray: 5 5; fill: none; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="940" fill="#ffffff"/>
+
+  <!-- title -->
+  <text x="48" y="58" font-size="30" font-weight="800" fill="#101820">银行代办 · 系统架构 <tspan font-size="20" font-weight="600" fill="#68716f">System architecture</tspan></text>
+  <text x="48" y="90" font-size="16" fill="#357366" font-weight="600">AI 只提议，固定代码做决定并陈述事实，你来点头 · <tspan fill="#68716f" font-weight="500">The AI proposes; fixed code decides and states every fact; you approve</tspan></text>
+
+  <!-- fixed-code region -->
+  <rect x="310" y="148" width="920" height="352" rx="16" fill="#f4f9f7" stroke="#e2e8e5"/>
+  <text x="1218" y="492" text-anchor="end" font-size="12.5" font-weight="600" fill="#68716f">固定代码做决定 · fixed code decides</text>
+
+  <!-- AI zone around the planner -->
+  <rect x="548" y="160" width="214" height="150" rx="14" fill="#eff9f5" stroke="#357366" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="555" y="330" font-size="13" font-weight="700" fill="#357366">AI 只在这里：提议，不做决定 <tspan font-weight="500" fill="#68716f">· AI only proposes</tspan></text>
+
+  <!-- customer -->
+  <rect class="box" x="48" y="170" width="230" height="300" rx="14"/>
+  <text class="t" x="66" y="202">客户 <tspan class="te">Customer</tspan></text>
+  <text class="z" x="66" y="234">网页应用，中文 / English</text>
+  <text class="z" x="66" y="256">打字 · 语音 · 拍小票</text>
+  <text class="z" x="66" y="278">一键开通演示账户</text>
+  <text class="e" x="66" y="304">web app · text, voice, receipts</text>
+  <text class="e" x="66" y="322">one-click demo account</text>
+  <rect x="66" y="350" width="194" height="98" rx="10" fill="#eff9f5" stroke="#cdd9d4"/>
+  <text x="80" y="374" font-size="13" font-weight="700" fill="#101820">确认卡 <tspan class="e">confirm card</tspan></text>
+  <text class="z" x="80" y="396">收款人 · 金额 · 到账时间</text>
+  <text class="z" x="80" y="416">一句话原因 · 确认 / 取消</text>
+  <text class="e" x="80" y="436">who, how much, when, why</text>
+
+  <!-- row 1: screening, planner, validation, resolution -->
+  <g>
+    <rect class="box" x="330" y="170" width="190" height="130" rx="12"/>
+    <circle cx="350" cy="194" r="11" fill="#357366"/><text class="n" x="350" y="198" text-anchor="middle">1</text>
+    <text class="t" x="368" y="200">筛查 <tspan class="te">Screening</tspan></text>
+    <text class="z" x="346" y="228">标记绕过规则的尝试</text>
+    <text class="z" x="346" y="248">隐藏输入的密码验证码</text>
+    <text class="e" x="346" y="272">flags bypass attempts,</text>
+    <text class="e" x="346" y="288">hides typed secrets</text>
+  </g>
+  <g>
+    <rect class="box" x="560" y="170" width="190" height="130" rx="12"/>
+    <circle cx="580" cy="194" r="11" fill="#357366"/><text class="n" x="580" y="198" text-anchor="middle">2</text>
+    <text class="t" x="598" y="200">规划 <tspan class="te">Planner</tspan></text>
+    <text class="z" x="576" y="228">大模型或离线中英文规则</text>
+    <text class="z" x="576" y="248">只能从 43 个操作中选</text>
+    <text class="e" x="576" y="272">LLM or offline rules;</text>
+    <text class="e" x="576" y="288">43 fixed actions only</text>
+  </g>
+  <g>
+    <rect class="box" x="790" y="170" width="190" height="130" rx="12"/>
+    <circle cx="810" cy="194" r="11" fill="#357366"/><text class="n" x="810" y="198" text-anchor="middle">3</text>
+    <text class="t" x="828" y="200">校验 <tspan class="te">Validation</tspan></text>
+    <text class="z" x="806" y="228">严格格式，未知字段拒绝</text>
+    <text class="z" x="806" y="248">有向无环图，最多 8 步</text>
+    <text class="e" x="806" y="272">strict schema, a DAG,</text>
+    <text class="e" x="806" y="288">at most 8 steps</text>
+  </g>
+  <g>
+    <rect class="box" x="1020" y="170" width="190" height="130" rx="12"/>
+    <circle cx="1040" cy="194" r="11" fill="#357366"/><text class="n" x="1040" y="198" text-anchor="middle">4</text>
+    <text class="t" x="1058" y="200">匹配 <tspan class="te">Resolution</tspan></text>
+    <text class="z" x="1036" y="228">姓名、卡片、商户</text>
+    <text class="z" x="1036" y="248">与本人记录核对，不明就问</text>
+    <text class="e" x="1036" y="272">matched to own records;</text>
+    <text class="e" x="1036" y="288">unclear → a question</text>
+  </g>
+
+  <!-- row 2: policy, approval, executor, replies (right to left) -->
+  <g>
+    <rect class="box" x="1020" y="350" width="190" height="130" rx="12"/>
+    <circle cx="1040" cy="374" r="11" fill="#357366"/><text class="n" x="1040" y="378" text-anchor="middle">5</text>
+    <text class="t" x="1058" y="380">规则定级 <tspan class="te">Policy</tspan></text>
+    <text class="z" x="1036" y="406">当日累计以 ¥1,000 为界</text>
+    <rect x="1036" y="418" width="50" height="22" rx="11" fill="#ffffff" stroke="#377c69" stroke-width="1.5"/>
+    <text x="1061" y="434" text-anchor="middle" font-size="12" font-weight="700" fill="#377c69">直接办</text>
+    <rect x="1092" y="418" width="50" height="22" rx="11" fill="#101820"/>
+    <text x="1117" y="434" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">需确认</text>
+    <rect x="1148" y="418" width="50" height="22" rx="11" fill="#b83f42"/>
+    <text x="1173" y="434" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">需验证</text>
+    <text class="e" x="1036" y="466">risk signals only raise a tier</text>
+  </g>
+  <g>
+    <rect class="box" x="790" y="350" width="190" height="130" rx="12"/>
+    <circle cx="810" cy="374" r="11" fill="#357366"/><text class="n" x="810" y="378" text-anchor="middle">6</text>
+    <text class="t" x="828" y="380">确认与验证 <tspan class="te">Approval</tspan></text>
+    <text class="z" x="806" y="408">确认绑定确切内容的哈希</text>
+    <text class="z" x="806" y="428">交易密码 + 短信或通行密钥</text>
+    <text class="e" x="806" y="452">approval bound to a hash;</text>
+    <text class="e" x="806" y="468">PIN + SMS code or passkey</text>
+  </g>
+  <g>
+    <rect class="box" x="560" y="350" width="190" height="130" rx="12"/>
+    <circle cx="580" cy="374" r="11" fill="#357366"/><text class="n" x="580" y="378" text-anchor="middle">7</text>
+    <text class="t" x="598" y="380">执行 <tspan class="te">Executor</tspan></text>
+    <text class="z" x="576" y="408">按依赖顺序，到点再检查</text>
+    <text class="z" x="576" y="428">可停止、可撤销、转人工</text>
+    <text class="e" x="576" y="452">DAG order, re-check on run;</text>
+    <text class="e" x="576" y="468">stop, undo, hand over</text>
+  </g>
+  <g>
+    <rect class="box" x="330" y="350" width="190" height="130" rx="12"/>
+    <circle cx="350" cy="374" r="11" fill="#357366"/><text class="n" x="350" y="378" text-anchor="middle">8</text>
+    <text class="t" x="368" y="380">回复 <tspan class="te">Replies</tspan></text>
+    <text class="z" x="346" y="408">每个数字由代码写出</text>
+    <text class="z" x="346" y="428">AI 不写金额、余额和结果</text>
+    <text class="e" x="346" y="452">every fact is written</text>
+    <text class="e" x="346" y="468">by code, not the AI</text>
+  </g>
+
+  <!-- request flow -->
+  <path class="flow" d="M278,235 L326,235" marker-end="url(#arrow)"/>
+  <path class="flow" d="M520,235 L556,235" marker-end="url(#arrow)"/>
+  <path class="flow" d="M750,235 L786,235" marker-end="url(#arrow)"/>
+  <path class="flow" d="M980,235 L1016,235" marker-end="url(#arrow)"/>
+  <path class="flow" d="M1115,300 L1115,346" marker-end="url(#arrow)"/>
+  <path class="flow" d="M1020,415 L984,415" marker-end="url(#arrow)"/>
+  <path class="flow" d="M790,415 L754,415" marker-end="url(#arrow)"/>
+  <path class="flow" d="M560,415 L524,415" marker-end="url(#arrow)"/>
+  <path class="flow" d="M330,415 L282,415" marker-end="url(#arrow)"/>
+
+  <!-- model provider (optional) -->
+  <path d="M655,160 L655,128 L1416,128 L1416,166" stroke="#357366" stroke-width="1.8" stroke-dasharray="6 5" fill="none" marker-end="url(#arrow)"/>
+  <text x="1040" y="121" text-anchor="middle" font-size="12" fill="#357366" font-weight="600">只发送客户的原话 · only the customer's words</text>
+  <rect class="box" x="1280" y="170" width="272" height="130" rx="12"/>
+  <text class="t" x="1298" y="200">大模型服务 <tspan class="te">LLM, optional</tspan></text>
+  <text class="z" x="1298" y="228">任意 OpenAI 兼容接口，可用境内</text>
+  <text class="z" x="1298" y="248">看不到账户数据和工具结果</text>
+  <text class="e" x="1298" y="272">any OpenAI-compatible model;</text>
+  <text class="e" x="1298" y="288">never sees account data or tool output</text>
+
+  <!-- safety lock -->
+  <path class="flow" d="M1214,415 L1276,415" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <rect class="box" x="1280" y="350" width="272" height="130" rx="12"/>
+  <text class="t" x="1298" y="380">安全锁 <tspan class="te">Safety lock (circuit breaker)</tspan></text>
+  <text class="z" x="1298" y="408">多次验证失败、多次试图绕过规则、</text>
+  <text class="z" x="1298" y="428">短时间多次付款给新收款人 → 自动上锁</text>
+  <text class="e" x="1298" y="452">failed checks, bypass attempts or</text>
+  <text class="e" x="1298" y="468">payments to new payees lock it</text>
+
+  <!-- simulated bank -->
+  <path class="flow" d="M655,480 L655,546" marker-end="url(#arrow)"/>
+  <text x="664" y="520" font-size="12" fill="#357366" font-weight="600">只经账本动钱 · money moves only through the ledger</text>
+  <rect x="310" y="550" width="920" height="170" rx="16" fill="#ffffff" stroke="#357366" stroke-width="1.5"/>
+  <text x="326" y="578" font-size="16" font-weight="700" fill="#101820">模拟银行，每位客户一个 <tspan class="te">Simulated bank, one per customer</tspan></text>
+  <g>
+    <rect x="326" y="594" width="168" height="112" rx="10" fill="#f4f9f7" stroke="#e2e8e5"/>
+    <text x="340" y="620" font-size="15" font-weight="700" fill="#101820">账本 <tspan class="te">Ledger</tspan></text>
+    <text class="z" x="340" y="644">账户 · 交易 · 预留</text>
+    <text class="z" x="340" y="664">金额以整数“分”记账</text>
+    <text class="e" x="340" y="690">accounts, transactions</text>
+  </g>
+  <g>
+    <rect x="506" y="594" width="168" height="112" rx="10" fill="#f4f9f7" stroke="#e2e8e5"/>
+    <text x="520" y="620" font-size="15" font-weight="700" fill="#101820">转账清算 <tspan class="te">Transfers</tspan></text>
+    <text class="z" x="520" y="644">行内 / 超级网银</text>
+    <text class="z" x="520" y="664">实时 · 2 小时 · 次日</text>
+    <text class="e" x="520" y="690">name check, returns</text>
+  </g>
+  <g>
+    <rect x="686" y="594" width="168" height="112" rx="10" fill="#f4f9f7" stroke="#e2e8e5"/>
+    <text x="700" y="620" font-size="15" font-weight="700" fill="#101820">卡片 · 订阅 · 理财</text>
+    <text class="z" x="700" y="644">限额 · 开关 · 挂失</text>
+    <text class="z" x="700" y="664">订阅识别 · 适当性</text>
+    <text class="e" x="700" y="690">cards, subscriptions, wealth</text>
+  </g>
+  <g>
+    <rect x="866" y="594" width="168" height="112" rx="10" fill="#f4f9f7" stroke="#e2e8e5"/>
+    <text x="880" y="620" font-size="15" font-weight="700" fill="#101820">账单分析 <tspan class="te">Analysis</tspan></text>
+    <text class="z" x="880" y="644">分类 · 异常交易</text>
+    <text class="z" x="880" y="664">周期扣费 · 月报年报</text>
+    <text class="e" x="880" y="690">categories, anomalies</text>
+  </g>
+  <g>
+    <rect x="1046" y="594" width="168" height="112" rx="10" fill="#f4f9f7" stroke="#e2e8e5"/>
+    <text x="1060" y="620" font-size="15" font-weight="700" fill="#101820">调度 <tspan class="te">Scheduler</tspan></text>
+    <text class="z" x="1060" y="644">预约步骤到点执行</text>
+    <text class="z" x="1060" y="664">执行前再定级一次</text>
+    <text class="e" x="1060" y="690">re-check on run, demo clock</text>
+  </g>
+
+  <!-- isolated workers -->
+  <path class="flow" d="M1230,650 L1276,650" marker-end="url(#arrow)"/>
+  <rect class="box" x="1280" y="550" width="272" height="170" rx="12"/>
+  <text class="t" x="1298" y="580">隔离进程 <tspan class="te">Isolated workers</tspan></text>
+  <text class="z" x="1298" y="608">分析沙箱：AST 白名单，</text>
+  <text class="z" x="1298" y="628">256 MB · 2 秒 CPU · 无网络无文件</text>
+  <text class="z" x="1298" y="654">小票读取：独立进程解析，</text>
+  <text class="z" x="1298" y="674">隐藏文字和指令会被标记</text>
+  <text class="e" x="1298" y="700">sandbox for generated code · receipt reader</text>
+
+  <!-- operator -->
+  <path d="M163,470 L163,546" stroke="#357366" stroke-width="1.8" stroke-dasharray="6 5" fill="none" marker-end="url(#arrow)"/>
+  <text x="172" y="514" font-size="12" fill="#357366" font-weight="600">转人工 · handoff</text>
+  <rect class="box" x="48" y="550" width="230" height="170" rx="12"/>
+  <text class="t" x="66" y="580">人工客服 <tspan class="te">Operator</tspan></text>
+  <text class="z" x="66" y="608">接管对话 · 回复</text>
+  <text class="z" x="66" y="630">取消计划 · 解除安全锁</text>
+  <text x="66" y="656" font-size="13" font-weight="700" fill="#b83f42">永远不能代客户确认</text>
+  <text class="e" x="66" y="680">take over, reply, cancel, unlock;</text>
+  <text class="e" x="66" y="698">never approves for the customer</text>
+
+  <!-- audit -->
+  <path class="audit" d="M163,720 L163,766" marker-end="url(#arrow-grey)"/>
+  <path class="audit" d="M770,720 L770,766" marker-end="url(#arrow-grey)"/>
+  <path class="audit" d="M1416,720 L1416,766" marker-end="url(#arrow-grey)"/>
+  <path class="audit" d="M1240,500 L1260,500 L1260,766" marker-end="url(#arrow-grey)"/>
+  <rect x="48" y="770" width="1504" height="86" rx="14" fill="#101820"/>
+  <text x="70" y="802" font-size="18" font-weight="800" fill="#ffffff">哈希链审计日志 <tspan font-size="13" font-weight="600" fill="#a2b4ab">Hash-chained audit log · every stage, verifiable by recomputing the chain</tspan></text>
+  <text x="70" y="828" font-size="13.5" fill="#eff5f1">请求 · 筛查 · 提出与被拒的计划 · 匹配 · 每次规则判定 · 确认与验证 · 每一步执行与撤销 · 转账每个阶段 · 上锁与解锁 · 人工操作</text>
+  <text x="70" y="846" font-size="12" fill="#a2b4ab">hash = sha256(previous hash + entry) · PINs, codes and passwords are never written</text>
+
+  <!-- legend -->
+  <g font-size="12.5" fill="#68716f">
+    <path class="flow" d="M48,898 L88,898" marker-end="url(#arrow)"/><text x="98" y="903">请求流向 request flow</text>
+    <rect x="262" y="888" width="34" height="20" rx="5" fill="#eff9f5" stroke="#357366" stroke-width="1.6" stroke-dasharray="5 4"/><text x="306" y="903">AI（只提议） AI, proposes only</text>
+    <rect x="512" y="888" width="34" height="20" rx="5" fill="#ffffff" stroke="#cdd9d4" stroke-width="1.5"/><text x="556" y="903">固定代码 fixed code</text>
+    <path class="audit" d="M716,898 L756,898" marker-end="url(#arrow-grey)"/><text x="766" y="903">写入审计 written to the audit log</text>
+    <text x="1552" y="903" text-anchor="end">FinTechathon 2026 · 银行 AI 智能体赛道 · Banking AI Agent</text>
+  </g>
+</svg>

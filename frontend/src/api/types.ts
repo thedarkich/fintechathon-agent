@@ -73,6 +73,7 @@ export interface PlanRow {
   actions: string[]
   fen: number | null
   reason: string | null
+  outcome: 'returned' | 'cancelled' | 'waiting' | null  // what the bank did with a finished plan's transfer
 }
 
 export interface ChatResult {

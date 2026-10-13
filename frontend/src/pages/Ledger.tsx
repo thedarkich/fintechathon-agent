@@ -16,6 +16,10 @@ const KINDS: Record<string, { mark: MarkKind; zh: string; en: string; group: Exc
   plan_rejected: { mark: 'refused', zh: '计划被拒', en: 'Plan rejected', group: 'security' },
   resolution: { mark: 'query', zh: '匹配记录', en: 'Matched to records', group: 'requests' },
   clarification: { mark: 'pending', zh: '追问细节', en: 'Asked a question', group: 'requests' },
+  account_opened: { mark: 'done', zh: '开通账户', en: 'Account opened', group: 'security' },
+  passkey_added: { mark: 'done', zh: '添加通行密钥', en: 'Passkey added', group: 'security' },
+  demo_clock: { mark: 'change', zh: '演示：银行时钟前进', en: 'Demo: bank clock moved', group: 'actions' },
+  demo_reset: { mark: 'change', zh: '演示：重置银行', en: 'Demo: bank reset', group: 'actions' },
   edited: { mark: 'change', zh: '修改步骤', en: 'Step edited', group: 'requests' },
   policy: { mark: 'change', zh: '规则判定', en: 'Rule decided', group: 'decisions' },
   approval_requested: { mark: 'pending', zh: '等待确认', en: 'Waiting for approval', group: 'decisions' },
@@ -78,6 +82,12 @@ function detail(e: AuditEntry, lang: 'zh' | 'en'): string {
     }
     case 'cancelled': return `${lang === 'zh' ? '停止' : 'stopped'} ${s(d.stopped)} · ${lang === 'zh' ? '撤销' : 'undone'} ${s(d.compensated)}`
     case 'notification': return s(d.key)
+    case 'demo_transfer': return d.outcome === 'return' ? (lang === 'zh' ? '对方银行退回' : 'the payee bank returns it') : (lang === 'zh' ? '立即清算' : 'cleared now')
+    case 'demo_clock': {
+      const hours = Math.round(Number(d.advanced_seconds) / 3600)
+      return hours % 24 === 0 ? (lang === 'zh' ? `前进 ${hours / 24} 天` : `${hours / 24} day(s) forward`) : (lang === 'zh' ? `前进 ${hours} 小时` : `${hours} hour(s) forward`)
+    }
+    case 'account_opened': return d.demo ? (lang === 'zh' ? '演示账户，自带模拟银行' : 'demo account with its own simulated bank') : (lang === 'zh' ? '模拟银行已开通' : 'simulated bank opened')
     case 'transfer': return `${s(d.status)} · ${s(d.route)} · ${s(d.arrival)} · ¥${(Number(d.fen) / 100).toFixed(2)}${d.reason ? ` · ${s(d.reason)}` : ''}`
     default: return JSON.stringify(d).slice(0, 140)
   }

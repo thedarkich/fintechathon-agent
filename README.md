@@ -6,6 +6,15 @@ Entry for the 2026 Shenzhen International FinTech Competition (FinTechathon), **
 
 A customer says what they need in Chinese or English: “给妈妈转200”, “冻结我的虚拟卡”, “下个月老婆生日，帮我预留1000，提前两天订花和蛋糕”. The planner turns it into a plan: steps from a fixed catalogue of 43 bank actions, arranged as a dependency graph. Code then matches every name, card and merchant to the customer's own records and gives each step a permission tier. Questions are answered at once; anything else is shown on a confirm card (who, how much, when it arrives, and why it needs a yes), and large or risky steps need the transaction PIN plus an SMS code or a passkey. Every stage is written to a hash-chained audit log.
 
+<p align="center">
+  <img src="docs/img/screens/03-confirm-yellow.jpg" width="200" alt="A yellow confirm card: who, which account, how much, when it arrives, and why">
+  <img src="docs/img/screens/05-confirm-red.jpg" width="200" alt="A red card: a large payment to a payee added today needs the PIN and a code, and arrives two hours later">
+  <img src="docs/img/screens/07-transfer-returned.jpg" width="200" alt="The transfer's stages: accepted, clearing, then returned by the payee's bank because the name did not match">
+  <img src="docs/img/screens/08-history.jpg" width="200" alt="History: everything asked for, and the hash-chained audit log">
+</p>
+
+![System architecture](docs/img/architecture.svg)
+
 ## Try it
 
 Run it locally (below), open http://localhost:8000 and press **马上试试 / Try it now**. You get a demo account with its own simulated bank (about 22 months of history, family and friend payees, two cards, subscriptions, investments) and land in the assistant. Nothing to fill in. Things to say:

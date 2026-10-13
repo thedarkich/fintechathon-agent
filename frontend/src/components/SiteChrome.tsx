@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { clearAdminToken, getAdminToken } from '../api/client'
 import { isOperator, useAuth } from '../lib/auth'
@@ -14,6 +14,22 @@ export function SiteHeader({ workspace = false, status }: { workspace?: boolean;
   const queries = useQueryClient()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const nav = useRef<HTMLElement>(null)
+  const { pathname } = useLocation()
+  // on a phone the menu scrolls sideways; keep the current page's link in view
+  useEffect(() => {
+    const show = () => {
+      const bar = nav.current?.getBoundingClientRect()
+      const link = nav.current?.querySelector('.is-active')?.getBoundingClientRect()
+      if (nav.current && bar && link) nav.current.scrollLeft += link.left + link.width / 2 - (bar.left + bar.width / 2)
+    }
+    // link widths keep changing while fonts and data load, so follow them rather than guess when they settle
+    show()
+    const watcher = new ResizeObserver(show)
+    if (nav.current) watcher.observe(nav.current)  // the bar narrows when the page's scrollbar appears
+    nav.current?.querySelectorAll('a').forEach((link) => watcher.observe(link))
+    return () => watcher.disconnect()
+  }, [pathname, workspace, user?.id])  // the active link appears once the account has loaded
   const signedIn = !!user || !!getAdminToken()
   async function signOut() {
     setBusy(true); setError('')
@@ -46,7 +62,7 @@ export function SiteHeader({ workspace = false, status }: { workspace?: boolean;
       </div>
     </div>
     <div className="site-subbar">
-      <nav aria-label={tr('Main navigation', '主导航')}>
+      <nav ref={nav} aria-label={tr('Main navigation', '主导航')}>
         {links.map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => workspace && isActive ? 'is-active' : ''}>{label}</NavLink>)}
       </nav>
       {workspace && status && <span className="site-network"><span className="status-dot" />{status}</span>}

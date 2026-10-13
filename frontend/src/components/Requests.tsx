@@ -39,7 +39,9 @@ function RequestList({ rows, loading, selected, onSelect }: { rows: PlanRow[]; l
   return (
     <ul className="ruled divide-y divide-[var(--rule)] bg-field">
       {rows.map((p) => {
-        const mark = markFor(p)
+        const mark = p.outcome === 'returned' || p.outcome === 'cancelled' ? 'undone' : p.outcome === 'waiting' ? 'scheduled' : markFor(p)
+        const label = p.outcome === 'returned' ? tr('Returned', '已退回') : p.outcome === 'cancelled' ? tr('Cancelled', '已撤销')
+          : p.outcome === 'waiting' ? tr('On its way', '等待到账') : statusLabel(p.status, t)
         const active = p.id === selected
         return (
           <li key={p.id}>
@@ -49,7 +51,7 @@ function RequestList({ rows, loading, selected, onSelect }: { rows: PlanRow[]; l
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold" title={p.request}>{p.request}</span>
                 <span className="block truncate text-xs text-ink2" title={p.reason ?? undefined}>
-                  <span className="font-semibold" style={{ color: markColor(mark) }}>{statusLabel(p.status, t)}</span>
+                  <span className="font-semibold" style={{ color: p.outcome === 'returned' ? 'var(--cinnabar)' : markColor(mark) }}>{label}</span>
                   {' · '}{stamp(p.created_at)}{p.reason ? ` · ${p.reason}` : ''}
                 </span>
               </span>

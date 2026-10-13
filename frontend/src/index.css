@@ -233,7 +233,8 @@ button {
 .workspace th { padding-top: 12px; padding-bottom: 12px; }
 .workspace td { padding-top: 14px; padding-bottom: 14px; }
 .workspace tbody tr:hover { background: var(--sheet); }
-.tab-scroll { max-width: 100%; overflow-x: auto; }
+.tab-scroll { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.tab-scroll::-webkit-scrollbar { display: none; }
 .tab-scroll > * { flex-shrink: 0; }
 .skip-link { position: fixed; top: -100px; left: 16px; z-index: 100; background: var(--action); color: var(--action-ink); padding: 10px 16px; border-radius: 8px; }
 .skip-link:focus { top: 10px; }

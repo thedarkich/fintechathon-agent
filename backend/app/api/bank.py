@@ -225,6 +225,26 @@ async def audit_verify(request: Request, user_id: str = Depends(require_user)):
 PAYMENT_ACTIONS = {"transfer", "schedule_transfer", "merchant_order", "wealth_subscribe"}
 
 
+def bank_outcome(session: Session, plan: Plan, lang: str) -> tuple[str | None, str | None]:
+    """A finished plan's transfer can still be returned by the payee's bank or cancelled before it arrives;
+    the customer's history says what happened to the money, not only that the step ran."""
+    for step in plan.steps:
+        transfer_id = (step.get("result") or {}).get("transfer_id")
+        row = session.get(Transfer, transfer_id) if step["action"] == "transfer" and transfer_id else None
+        if row is None:
+            continue
+        zh = lang == "zh"
+        if row.status == "returned":
+            why = transfers.RETURN_REASONS[row.reason][0 if zh else 1] if row.reason else ""
+            return "returned", (f"对方银行退回：{why}" if zh else f"Returned by the payee's bank: {why}")
+        if row.status == "cancelled":
+            return "cancelled", ("到账前已撤销，钱已退回" if zh else "Cancelled before it arrived; the money is back")
+        if row.status in ("accepted", "clearing"):
+            return "waiting", (f"预计 {row.arrive_at[5:16].replace('T', ' ')} 到账" if zh
+                               else f"Arriving around {row.arrive_at[5:16].replace('T', ' ')}")
+    return None, None
+
+
 @router.get("/plans")
 async def plans(request: Request, lang: Lang = "zh", limit: int = Query(50, ge=1, le=200),
                 user_id: str = Depends(require_user)):
@@ -233,12 +253,14 @@ async def plans(request: Request, lang: Lang = "zh", limit: int = Query(50, ge=1
         items = []
         for p in rows:
             failed = next((s for s in p.steps if s.get("status") == "failed" and s.get("error")), None)
+            outcome, outcome_text = bank_outcome(session, p, lang) if p.status == "done" else (None, None)
             items.append({
                 "id": p.id, "status": p.status, "tier": p.tier, "request": p.request, "created_at": p.created_at,
                 "source": p.source, "flags": p.flags, "steps": len(p.steps),
                 "actions": [s["action"] for s in p.steps],
                 "fen": sum((s.get("resolved") or {}).get("fen") or 0 for s in p.steps if s["action"] in PAYMENT_ACTIONS) or None,
-                "reason": (failed["error"]["zh"] if lang == "zh" else failed["error"]["en"]) if failed else None,
+                "reason": (failed["error"]["zh"] if lang == "zh" else failed["error"]["en"]) if failed else outcome_text,
+                "outcome": outcome,
             })
         return {"items": items}
 

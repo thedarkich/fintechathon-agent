@@ -6,6 +6,10 @@ Architecture, request flow and core algorithms of the banking agent. The design 
 
 ## 1. Architecture
 
+![System architecture: a request passes eight stages; only the planner is AI, everything else is fixed code; around them sit the simulated bank, isolated workers, the safety lock and a hash-chained audit log](img/architecture.svg)
+
+The same structure as text:
+
 ```mermaid
 flowchart LR
   subgraph Channels

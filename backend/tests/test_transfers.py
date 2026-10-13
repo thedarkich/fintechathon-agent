@@ -69,6 +69,9 @@ def test_payee_bank_returns_a_name_mismatch(bank):
         assert session.exec(select(PayeeMessage)).first() is None  # nothing reached the payee
     notes = bank.get("/api/notifications").json()["items"]
     assert any("退回" in n["title"] for n in notes)
+    # History says what happened to the money, not only that the step ran
+    row = next(p for p in bank.get("/api/plans").json()["items"] if p["id"] == plan["id"])
+    assert row["status"] == "done" and row["outcome"] == "returned" and "户名" in row["reason"]
 
 
 def test_customer_can_choose_next_day_arrival(bank):

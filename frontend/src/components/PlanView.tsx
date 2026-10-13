@@ -108,6 +108,10 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
   const pending = p.steps.filter((s) => s.status === 'pending')
   const deciding = pending.find((s) => s.tier === p.tier) ?? pending[0]
   const signals = [...new Set(pending.flatMap((s) => s.signals))]
+  // the reason the card gives: a risk signal that raised the tier, and the step's own rule only when it alone sets this tier
+  // ('today's payments stay under ¥1,000' is no reason to ask for a PIN)
+  const ruleSetsTier = !!deciding?.rule && { G: 'green', Y: 'yellow', R: 'red' }[deciding.rule[0]] === p.tier
+  const reasons = [...(ruleSetsTier || !signals.length ? [deciding?.rule_text ?? ''] : []), ...signals].filter(Boolean)
   const failed = p.steps.find((s) => s.error)
   const seal = sealFor(p)
   const accent = waiting ? (p.tier === 'red' ? 'var(--cinnabar)' : 'var(--ink)') : p.status === 'done' || p.status === 'scheduled' ? 'var(--jade)' : 'var(--rule-strong)'
@@ -161,9 +165,11 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
         )}
 
         {waiting && deciding?.rule_text && (
-          <p className="mt-2.5 text-sm leading-snug text-ink2">{p.tier === 'red' ? tr('You’ll need your PIN and an SMS code, or a passkey. Why: ', '需要交易密码和短信验证码，或通行密钥。原因：') : tr('Why: ', '原因：')}{deciding.rule_text}{lang === 'zh' ? '。' : '.'}</p>
+          <p className="mt-2.5 text-sm leading-snug text-ink2">
+            {p.tier === 'red' ? tr('You’ll need your PIN and an SMS code, or a passkey. Why: ', '需要交易密码和短信验证码，或通行密钥。原因：') : tr('Why: ', '原因：')}
+            <span className={signals.length ? 'font-semibold text-cinnabar' : ''}>{reasons.join(lang === 'zh' ? '；' : '; ')}</span>{lang === 'zh' ? '。' : '.'}
+          </p>
         )}
-        {waiting && signals.map((s) => <p key={s} className="mt-1 text-sm font-semibold leading-snug text-cinnabar">! {s}</p>)}
         {p.status === 'failed' && failed?.error && <p className="mt-2.5 text-sm leading-snug text-cinnabar">{failed.error}</p>}
         {p.status === 'scheduled' && <p className="mt-2.5 text-sm leading-snug text-ink2">{tr('The rest runs at its time, after the rules check it again. You can still stop it.', '剩下的步骤会按时执行，执行前会再检查一次，现在仍可停止。')}</p>}
         {p.status === 'clarifying' && <p className="mt-2.5 text-sm leading-snug text-ink2">{tr('Answer the question above to continue.', '回答上面的问题即可继续。')}</p>}
