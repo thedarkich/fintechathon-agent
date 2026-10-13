@@ -483,17 +483,18 @@ def order_resolve(ctx: Ctx, args: OrderArgs) -> dict:
     if args.recipient:
         payee = resolve_payee(ctx, args.recipient, "recipient")
         recipient = {"payee_id": payee.id, "name": payee.name, "name_en": payee.name_en or payee.name}
-    pay_from, pay_from_label = "checking", ctx.t("活期账户", "current account")
+    # both languages are kept: the slip can be read in either, whatever language the request was in
+    pay_from, label, label_en = "checking", "活期账户", "current account"
     if args.pay_from and args.pay_from.startswith("$"):
-        pay_from, pay_from_label = args.pay_from, ctx.t("本计划预留的资金", "the reserve this plan sets aside")
+        pay_from, label, label_en = args.pay_from, "本计划预留的资金", "the reserve this plan sets aside"
     elif args.pay_from and args.pay_from != "checking":
         found = find_reserve(ctx.session, ctx.user.id, args.pay_from)
         if found.value:
-            pay_from, pay_from_label = found.value.id, found.value.name
+            pay_from, label, label_en = found.value.id, found.value.name, f"the “{found.value.name}” reserve"
     return {"merchant": args.merchant, "shop": shop["name"], "shop_en": shop["name_en"], "item": item["code"],
             "item_name": item["name"], "item_name_en": item["name_en"], "fen": item["fen"],
             "deliver_on": deliver.isoformat() if deliver else args.deliver_on, "recipient": recipient,
-            "pay_from": pay_from, "pay_from_label": pay_from_label}
+            "pay_from": pay_from, "pay_from_label": label, "pay_from_label_en": label_en}
 
 
 def order_run(ctx: Ctx, r: dict) -> dict:
@@ -533,7 +534,7 @@ def order_describe(ctx: Ctx, r: dict) -> str:
     if r["recipient"]:
         who = ctx.t(f"，送给{r['recipient']['name']}", f" for {r['recipient']['name_en']}")
     return ctx.t(f"在{r['shop']}订购 {r['item_name']} {yuan(r['fen'])}，{r['deliver_on']} 送达{who}，从{r['pay_from_label']}支付",
-                 f"Order {r['item_name_en']} from {r['shop_en']} ({yuan(r['fen'])}), delivered {r['deliver_on']}{who}, paid from {r['pay_from_label']}")
+                 f"Order {r['item_name_en']} from {r['shop_en']} ({yuan(r['fen'])}), delivered {r['deliver_on']}{who}, paid from {r.get('pay_from_label_en', r['pay_from_label'])}")
 
 
 register(Action(

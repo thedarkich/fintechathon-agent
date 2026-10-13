@@ -430,7 +430,7 @@ def contact_resolve(ctx: Ctx, args: ContactArgs) -> dict:
                   [{"value": p.id, "label_zh": payee_label(p, "zh"), "label_en": payee_label(p, "en")} for p in found.options])
     if found.value is None:
         raise Refuse("CONTACT_NOT_FOUND", f"通讯录里没有“{args.who}”。", f"“{args.who}” is not in your contacts.")
-    return {"payee_id": found.value.id, "name": found.value.name}
+    return {"payee_id": found.value.id, "name": found.value.name, "name_en": found.value.name_en or found.value.name}
 
 
 def contact_run(ctx: Ctx, r: dict) -> dict:
@@ -450,7 +450,7 @@ register(Action(
     name="contact_lookup", args=ContactArgs,
     help="Look up a contact (name, alias or relationship such as wife/妈妈); returns payee_id, name and next birthday (YYYY-MM-DD).",
     resolve=contact_resolve, run=contact_run,
-    describe=lambda ctx, r: ctx.t(f"查找联系人 {r['name']}", f"Look up {r['name']}"), reply=contact_reply,
+    describe=lambda ctx, r: ctx.t(f"查找联系人 {r['name']}", f"Look up {r.get('name_en') or r['name']}"), reply=contact_reply,
 ))
 
 

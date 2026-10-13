@@ -73,7 +73,13 @@ export function StepRow({ steps, title = true }: { steps: PlanStep[]; title?: bo
                       {s.run_at ? s.run_at.slice(5, 10) : t.step_waiting}
                     </span>
                   )}
-                  {(s.status === 'skipped' || s.status === 'cancelled' || s.status === 'new') && (
+                  {s.status === 'new' && (
+                    <span className="flex flex-col items-center gap-1 text-center text-[0.72rem] leading-tight text-ink2">
+                      <span className="h-9 w-9 rounded-[2px] border-2 border-dashed border-rule" aria-hidden />
+                      {tr('not yet', '未开始')}
+                    </span>
+                  )}
+                  {(s.status === 'skipped' || s.status === 'cancelled') && (
                     <span className="text-center text-[0.75rem] leading-tight text-ink2">
                       <svg width="42" height="22" aria-hidden className="mx-auto block">
                         <line x1="2" y1="20" x2="40" y2="2" stroke="var(--rule)" strokeWidth="1.5" />

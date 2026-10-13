@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../i18n'
 import { api, errorText } from '../api/client'
-import type { Message, PlanResult } from '../api/types'
+import type { Message, Plan, PlanResult } from '../api/types'
 
 type Chat = {
   conversationId: string | null
@@ -38,6 +38,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     for (const key of BANK_QUERIES) void qc.invalidateQueries({ queryKey: [key] })
   }, [qc])
 
+  /** A reply's plan is written in the language the customer typed; the slip follows the interface language. */
+  const showPlan = useCallback((plan: Plan, written: string | undefined) => {
+    setPlanId(plan.id)
+    if (!written || written === lang) qc.setQueryData(['plan', plan.id, lang], plan)
+    else void qc.invalidateQueries({ queryKey: ['plan', plan.id, lang] })
+  }, [lang, qc])
+
   const reload = useCallback(async () => {
     const body = await api.conversation(conversationId)
     setConversationId(body.conversation_id)
@@ -60,24 +67,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setConversationId(body.conversation_id)
       setEscalated(body.escalated)
       setMessages((current) => [...current, ...body.messages])
-      if (body.plan) {
-        setPlanId(body.plan.id)
-        qc.setQueryData(['plan', body.plan.id, lang], body.plan)
-      }
+      if (body.plan) showPlan(body.plan, body.messages[body.messages.length - 1]?.lang)
       refreshBank()
     } catch (err) {
       setError(errorText(err, lang))
     } finally {
       setPending(null)
     }
-  }, [conversationId, lang, pending, navigate, qc, refreshBank])
+  }, [conversationId, lang, pending, navigate, refreshBank, showPlan])
 
   const apply = useCallback((result: PlanResult) => {
     setMessages((current) => [...current, ...result.messages])
-    setPlanId(result.plan.id)
-    qc.setQueryData(['plan', result.plan.id, lang], result.plan)
+    showPlan(result.plan, result.messages[result.messages.length - 1]?.lang)
     refreshBank()
-  }, [lang, qc, refreshBank])
+  }, [refreshBank, showPlan])
 
   const newConversation = useCallback(async () => {
     const body = await api.newConversation()
