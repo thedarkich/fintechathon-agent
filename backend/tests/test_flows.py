@@ -366,3 +366,18 @@ def test_demo_accounts_follow_the_demo_tools_switch(tmp_path):
     runtime = Runtime(settings(tmp_path, demo_tools_enabled=False), background=False)
     with TestClient(create_app(runtime=runtime)) as client:
         assert client.post("/api/demo/start", json={"lang": "zh"}, headers=ORIGIN).status_code == 403
+
+
+def test_chat_list_titles_and_hiding(bank):
+    first = bank.chat("查一下余额")["conversation_id"]
+    bank.conversation = bank.post("/api/conversation/new").json()["conversation_id"]
+    second = bank.chat("给妈妈转200")["conversation_id"]
+    bank.post("/api/conversation/new")  # opened but never used: not listed
+    items = bank.get("/api/conversations").json()["items"]
+    assert [(i["id"], i["title"]) for i in items] == [(second, "给妈妈转200"), (first, "查一下余额")]
+    assert bank.post(f"/api/conversations/{second}/hide").status_code == 200
+    assert [i["id"] for i in bank.get("/api/conversations").json()["items"]] == [first]
+    # an old chat opens with its messages; a hidden one is not where the assistant reopens by default
+    opened = bank.get("/api/conversation", conversation_id=first).json()
+    assert opened["conversation_id"] == first and opened["messages"][0]["text"] == "查一下余额"
+    assert bank.get("/api/conversation").json()["conversation_id"] != second

@@ -201,6 +201,7 @@
 {"id": "sch-10", "category": "scheduled", "text": "每个月1号自动给房东交房租3200", "expect": {"actions": ["schedule_transfer"], "tier": "red"}}
 {"id": "sch-11", "category": "scheduled", "text": "取消每月给妈妈的转账", "expect": {"actions": ["scheduled_cancel"], "not_done": true, "status": "failed"}}
 {"id": "sch-12", "category": "scheduled", "text": "Stop the monthly transfer to Mom", "expect": {"actions": ["scheduled_cancel"], "not_done": true, "status": "failed"}}
+{"id": "sch-13", "category": "scheduled", "text": "看看我的预约转账", "expect": {"actions": ["scheduled"], "status": "done"}}
 {"id": "aa-13", "category": "split", "text": "昨天吃饭花了600，和张伟王芳AA", "expect": {"actions": ["collect"], "tier": "yellow", "status": "awaiting_approval"}}
 {"id": "spd-12", "category": "spending", "text": "我在淘宝一共花了多少", "expect": {"actions": ["analyze"], "status": "done"}}
 {"id": "spd-13", "category": "spending", "text": "上周打车花了多少钱", "expect": {"actions": ["analyze"], "status": "done"}}

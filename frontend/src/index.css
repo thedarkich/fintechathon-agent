@@ -248,3 +248,8 @@ button {
   .page-content h1 { font-size: 26px; }
   .panel-heading { padding: 16px; }
 }
+
+/* The chat history slides in from the left on phones. */
+@keyframes drawer-in { from { transform: translateX(-100%); } to { transform: none; } }
+.drawer-in { animation: drawer-in .18s ease-out; }
+@media (prefers-reduced-motion: reduce) { .drawer-in { animation: none; } }

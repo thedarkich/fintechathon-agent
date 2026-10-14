@@ -3248,6 +3248,22 @@
   },
   {
    "set": "intent",
+   "id": "sch-13",
+   "category": "scheduled",
+   "text": "看看我的预约转账",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "scheduled"
+    ],
+    "tier": "green",
+    "status": "done",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
    "id": "aa-13",
    "category": "split",
    "text": "昨天吃饭花了600，和张伟王芳AA",
@@ -4589,8 +4605,8 @@
  ],
  "summary": {
   "intent": {
-   "cases": 219,
-   "passed": 219
+   "cases": 220,
+   "passed": 220
   },
   "intent/balance": {
    "cases": 8,
@@ -4625,8 +4641,8 @@
    "passed": 39
   },
   "intent/scheduled": {
-   "cases": 12,
-   "passed": 12
+   "cases": 13,
+   "passed": 13
   },
   "intent/split": {
    "cases": 13,

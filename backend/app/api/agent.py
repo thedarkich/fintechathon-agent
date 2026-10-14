@@ -5,7 +5,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 
 from app import clock
 from app.agent import audit, executor, service, verify
@@ -109,6 +109,39 @@ async def conversation(request: Request, conversation_id: str | None = None, use
                             .order_by(Message.at.desc()).limit(100)).all()
         return {"conversation_id": conv.id, "escalated": conv.escalated,
                 "messages": [message_view(m) for m in reversed(rows)]}
+
+
+@router.get("/conversations")
+async def conversations(request: Request, user_id: str = Depends(require_user)):
+    """The customer's chats, most recent first, each titled by the first thing they asked."""
+    with Session(runtime(request).engine) as session:
+        stats = {cid: (count, last) for cid, count, last in session.exec(
+            select(Message.conversation_id, func.count(Message.id), func.max(Message.at))
+            .where(Message.user_id == user_id).group_by(Message.conversation_id))}
+        items = []
+        for conv in session.exec(select(Conversation).where(Conversation.user_id == user_id, Conversation.hidden.is_not(True))):
+            if conv.id not in stats:
+                continue  # a chat opened but never used
+            first = session.exec(select(Message.text).where(Message.conversation_id == conv.id, Message.role == "user")
+                                 .order_by(Message.at).limit(1)).first()
+            count, last = stats[conv.id]
+            items.append({"id": conv.id, "title": (first or "")[:60], "updated_at": last, "messages": count,
+                          "escalated": conv.escalated})
+        items.sort(key=lambda item: item["updated_at"], reverse=True)
+        return {"items": items[:100]}
+
+
+@router.post("/conversations/{conversation_id}/hide")
+async def hide_conversation(request: Request, conversation_id: str, user_id: str = Depends(require_user)):
+    """Takes a chat off the list. Nothing is deleted: plans and the audit log still point at it."""
+    with Session(runtime(request).engine) as session:
+        conv = session.get(Conversation, conversation_id)
+        if conv is None or conv.user_id != user_id:
+            raise problem(404, "No such conversation.", "没有这个对话。")
+        conv.hidden = True
+        session.add(conv)
+        session.commit()
+        return {"ok": True}
 
 
 @router.post("/conversation/new")

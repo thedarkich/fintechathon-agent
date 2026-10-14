@@ -540,7 +540,7 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         return transactions(text, category, incoming=incoming)
 
     # transfers
-    if has(text, "预约转账", "定时转账", "scheduled transfer") and has(text, "查看", "有哪些", "list", "show", "what"):
+    if has(text, "预约转账", "定时转账", "scheduled transfer") and has(text, "查看", "看看", "看一下", "有哪些", "哪些", "我的", "list", "show", "what", "my", "upcoming"):
         return one("scheduled")
     if "各" in text and money and (people := payees_each(text)):
         return PlanOut(steps=[step(i + 1, "transfer", {"payee": p, "amount_yuan": money[0]}) for i, p in enumerate(people)])

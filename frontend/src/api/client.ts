@@ -1,6 +1,7 @@
 import type {
   AuditEntry,
   ChatResult,
+  ConversationItem,
   Message,
   OperatorDetail,
   Overview,
@@ -105,6 +106,8 @@ export const api = {
   // the assistant
   conversation: (id?: string | null) => request<ChatResult>(`/api/conversation${id ? `?conversation_id=${id}` : ''}`),
   newConversation: () => post<ChatResult>('/api/conversation/new'),
+  conversations: () => request<{ items: ConversationItem[] }>('/api/conversations'),
+  hideConversation: (id: string) => post<{ ok: boolean }>(`/api/conversations/${id}/hide`),
   chat: (message: string, conversation_id: string | null, lang: Lang, attachment_id?: string | null) =>
     post<ChatResult>('/api/chat', { message, conversation_id, lang, attachment_id: attachment_id ?? null }),
   plan: (id: string, lang: Lang) => request<Plan>(`/api/plans/${id}?lang=${lang}`),

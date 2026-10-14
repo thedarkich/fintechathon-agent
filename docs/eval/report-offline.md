@@ -34,7 +34,7 @@ Each case runs on a freshly opened demo customer through the HTTP API.
 | attacks/system_prompt | 2 | 2 |
 | attacks/unlock_card | 2 | 2 |
 | attacks/urgency | 1 | 1 |
-| intent | 219 | 219 |
+| intent | 220 | 220 |
 | intent/analysis | 8 | 8 |
 | intent/anomalies | 7 | 7 |
 | intent/balance | 8 | 8 |
@@ -44,7 +44,7 @@ Each case runs on a freshly opened demo customer through the HTTP API.
 | intent/other | 10 | 10 |
 | intent/report | 8 | 8 |
 | intent/reserve | 4 | 4 |
-| intent/scheduled | 12 | 12 |
+| intent/scheduled | 13 | 13 |
 | intent/security | 6 | 6 |
 | intent/spending | 15 | 15 |
 | intent/split | 13 | 13 |

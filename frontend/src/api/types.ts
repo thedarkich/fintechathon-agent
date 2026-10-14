@@ -28,6 +28,15 @@ export interface Message {
   cards: Card[]
 }
 
+/** One past chat in the assistant's history list. */
+export interface ConversationItem {
+  id: string
+  title: string
+  updated_at: string
+  messages: number
+  escalated: boolean
+}
+
 export interface PlanStep {
   id: string
   action: string

@@ -27,7 +27,7 @@ def conversation_for(session: Session, user: UserAccount, conversation_id: str |
         conversation = session.get(Conversation, conversation_id)
         if conversation and conversation.user_id == user.id:
             return conversation
-    conversation = session.exec(select(Conversation).where(Conversation.user_id == user.id)
+    conversation = session.exec(select(Conversation).where(Conversation.user_id == user.id, Conversation.hidden.is_not(True))
                                 .order_by(Conversation.created_at.desc()).limit(1)).first()
     if conversation is None:
         conversation = Conversation(user_id=user.id)

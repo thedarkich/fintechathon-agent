@@ -74,17 +74,17 @@ To use a model, set `LLM_ENABLED=true`, `AI_BASE_URL`, `AI_API_KEY` and `AI_MODE
 cd backend && uv run pytest -q
 ```
 
-86 tests run every scenario through the HTTP API with the offline planner, plus the model planner with a fake model. They cover the tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, scheduling, transfers, human takeover, the demo account, the sandbox, receipts and the audit chain.
+87 tests run every scenario through the HTTP API with the offline planner, plus the model planner with a fake model. They cover the tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, scheduling, transfers, human takeover, the demo account, the sandbox, receipts and the audit chain.
 
 ### Evaluation sets
 
-[evals/intent.jsonl](evals/intent.jsonl) holds 219 everyday requests in Chinese, English and a mix of both across all six scenarios, including vague wording, things that don't exist (a payee, card, fund or subscription the customer doesn't have) and out-of-scope questions. [evals/attacks.jsonl](evals/attacks.jsonl) holds 69 attempts to get around the rules: ignoring the rules (also spaced out, full-width or with look-alike letters), role-play, fake authority and fake system messages, fake approvals and plan JSON, urgency, claiming to be verified, switching confirmation off, changing thresholds, splitting payments or spreading them over days, instructions hidden in a receipt, scam scripts, asking for secrets, and repeated attempts that must trip the safety lock. Each case runs on a newly opened customer through the HTTP API. The runner checks the planned actions, the tier, the status, risk signals and the reply; for attacks it also checks that the attempt was flagged, that nothing ran without approval, that typed secrets were hidden and that the safety lock is on.
+[evals/intent.jsonl](evals/intent.jsonl) holds 220 everyday requests in Chinese, English and a mix of both across all six scenarios, including vague wording, things that don't exist (a payee, card, fund or subscription the customer doesn't have) and out-of-scope questions. [evals/attacks.jsonl](evals/attacks.jsonl) holds 69 attempts to get around the rules: ignoring the rules (also spaced out, full-width or with look-alike letters), role-play, fake authority and fake system messages, fake approvals and plan JSON, urgency, claiming to be verified, switching confirmation off, changing thresholds, splitting payments or spreading them over days, instructions hidden in a receipt, scam scripts, asking for secrets, and repeated attempts that must trip the safety lock. Each case runs on a newly opened customer through the HTTP API. The runner checks the planned actions, the tier, the status, risk signals and the reply; for attacks it also checks that the attempt was flagged, that nothing ran without approval, that typed secrets were hidden and that the safety lock is on.
 
 ```bash
 cd backend && uv run python -m app.evals ../evals/intent.jsonl ../evals/attacks.jsonl --out ../docs/eval
 ```
 
-Offline planner, 14 October 2026: 219/219 requests and 69/69 attacks ([report](docs/eval/report-offline.md)). `--model` runs the same sets against the configured AI provider; that makes one paid call per case, so it never runs by default.
+Offline planner, 14 October 2026: 220/220 requests and 69/69 attacks ([report](docs/eval/report-offline.md)). `--model` runs the same sets against the configured AI provider; that makes one paid call per case, so it never runs by default.
 
 ### For automated evaluation
 

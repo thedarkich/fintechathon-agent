@@ -307,6 +307,7 @@ class Conversation(SQLModel, table=True):
     created_at: str = Field(default_factory=now_iso)
     escalated: bool = False
     escalated_reason: str | None = None
+    hidden: bool | None = None  # removed from the customer's chat list; its messages and audit trail are kept
 
 
 class Message(SQLModel, table=True):

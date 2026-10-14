@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../i18n'
@@ -17,10 +17,11 @@ type Chat = {
   apply: (result: PlanResult) => void
   reload: () => Promise<void>
   newConversation: () => Promise<void>
+  openConversation: (id: string) => Promise<void>
 }
 const ChatContext = createContext<Chat | null>(null)
 
-const BANK_QUERIES = ['overview', 'transactions', 'report', 'cards', 'subscriptions', 'wealth', 'scheduled', 'notifications', 'audit', 'phone', 'locks', 'plans', 'payees', 'anomalies', 'clock']
+const BANK_QUERIES = ['conversations', 'overview', 'transactions', 'report', 'cards', 'subscriptions', 'wealth', 'scheduled', 'notifications', 'audit', 'phone', 'locks', 'plans', 'payees', 'anomalies', 'clock']
 
 /** One conversation shared by every workspace page, so a button on Controls can ask the assistant and land here. */
 export function ChatProvider({ children }: { children: ReactNode }) {
@@ -33,6 +34,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [pending, setPending] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [planId, setPlanId] = useState<string | null>(null)
+  const starting = useRef<Promise<string> | null>(null)  // a new chat the server is still opening
 
   const refreshBank = useCallback(() => {
     for (const key of BANK_QUERIES) void qc.invalidateQueries({ queryKey: [key] })
@@ -63,7 +65,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setError('')
     navigate('/assistant')
     try {
-      const body = await api.chat(message, conversationId, lang, attachmentId)
+      // a message typed straight after "New chat" belongs to the new chat, not the one on screen before it
+      const target = starting.current ? await starting.current.catch(() => conversationId) : conversationId
+      const body = await api.chat(message, target, lang, attachmentId)
       setConversationId(body.conversation_id)
       setEscalated(body.escalated)
       setMessages((current) => [...current, ...body.messages])
@@ -83,15 +87,35 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [refreshBank, showPlan])
 
   const newConversation = useCallback(async () => {
-    const body = await api.newConversation()
-    setConversationId(body.conversation_id)
     setMessages([])
     setEscalated(false)
     setPlanId(null)
+    setError('')
+    const started = api.newConversation().then((body) => body.conversation_id)
+    starting.current = started
+    try {
+      setConversationId(await started)
+    } finally {
+      if (starting.current === started) starting.current = null
+    }
   }, [])
 
+  /** A chat from the history list: its messages come back as they were, cards and all. */
+  const openConversation = useCallback(async (id: string) => {
+    try {
+      const body = await api.conversation(id)
+      setConversationId(body.conversation_id)
+      setMessages(body.messages)
+      setEscalated(body.escalated)
+      setError('')
+      setPlanId([...body.messages].reverse().find((m) => m.plan_id)?.plan_id ?? null)
+    } catch (err) {
+      setError(errorText(err, lang))
+    }
+  }, [lang])
+
   return (
-    <ChatContext.Provider value={{ conversationId, messages, escalated, pending, error, planId, setPlanId, send, apply, reload, newConversation }}>
+    <ChatContext.Provider value={{ conversationId, messages, escalated, pending, error, planId, setPlanId, send, apply, reload, newConversation, openConversation }}>
       {children}
     </ChatContext.Provider>
   )

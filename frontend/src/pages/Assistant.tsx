@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { Mic, Paperclip, SendHorizontal } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Mic, PanelLeftOpen, Paperclip, SendHorizontal, SquarePen } from 'lucide-react'
 import { api, errorText } from '../api/client'
 import type { UploadResult } from '../api/types'
 import { useLang } from '../i18n'
 import { Icon, type IconName } from '../components/Icon'
 import { BrandSeal } from '../components/Seal'
 import { Result } from '../components/Results'
+import { ChatHistory } from '../components/ChatHistory'
+import { ReplyText } from '../components/ReplyText'
 import { useAuth } from '../lib/auth'
 import { useChat } from '../lib/chat'
-import { yuan } from '../lib/format'
+import { stamp, yuan } from '../lib/format'
 import { prepareUpload } from '../lib/upload'
 
 /** Things to try, one per kind of task, in the words a customer would use. */
@@ -28,14 +30,39 @@ const SUGGESTIONS: [IconName, string, string][] = [
 /** Answers whose card holds the details: the chat shows only the reply's first line, its headline. */
 const DATA_CARDS = new Set(['balances', 'transactions', 'spending', 'report', 'anomalies', 'subscriptions', 'cards', 'holdings', 'products', 'compare', 'analysis'])
 
+const WIDE = '(min-width: 1024px)'  // from here the chat list sits beside the chat; below, it is a drawer
+const SIDEBAR_KEY = 'chat-history'
+
+function useWide() {
+  const [wide, setWide] = useState(() => window.matchMedia(WIDE).matches)
+  useEffect(() => {
+    const query = window.matchMedia(WIDE)
+    const change = () => setWide(query.matches)
+    query.addEventListener('change', change)
+    return () => query.removeEventListener('change', change)
+  }, [])
+  return wide
+}
+
+function sidebarStored(): boolean {
+  try { return localStorage.getItem(SIDEBAR_KEY) !== 'closed' } catch { return true }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Recognition: any = typeof window !== 'undefined' ? (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition : undefined
 
 export default function Assistant() {
   const { tr, lang } = useLang()
   const { user } = useAuth()
-  const { messages, pending, error, send, escalated, newConversation } = useChat()
+  const { conversationId, messages, pending, error, send, escalated, newConversation, openConversation } = useChat()
+  const qc = useQueryClient()
   const notes = useQuery({ queryKey: ['notifications', lang], queryFn: () => api.notifications(lang) })
+  const chats = useQuery({ queryKey: ['conversations'], queryFn: api.conversations })
+  const wide = useWide()
+  const [pinned, setPinned] = useState(sidebarStored)  // the desktop choice, remembered
+  const [drawer, setDrawer] = useState(false)  // the phone drawer, closed on every visit
+  const open = wide ? pinned : drawer
+  const drawerStart = useRef<HTMLButtonElement>(null)
   const [params, setParams] = useSearchParams()
   const [text, setText] = useState('')
   const [attachment, setAttachment] = useState<UploadResult | null>(null)
@@ -64,6 +91,39 @@ export default function Assistant() {
     }
   }, [params, setParams, send])
   useEffect(() => { if (messages.length || pending) end.current?.scrollIntoView({ block: 'end' }) }, [messages.length, pending])
+
+  // the phone drawer: focus moves in, Escape closes it, the page behind stays still
+  useEffect(() => {
+    if (wide || !drawer) return
+    drawerStart.current?.focus()
+    const escape = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') setDrawer(false) }
+    const overflow = document.body.style.overflow
+    document.addEventListener('keydown', escape)
+    document.body.style.overflow = 'hidden'
+    return () => { document.removeEventListener('keydown', escape); document.body.style.overflow = overflow }
+  }, [wide, drawer])
+
+  const showHistory = (value: boolean) => {
+    if (!wide) return setDrawer(value)
+    setPinned(value)
+    try { localStorage.setItem(SIDEBAR_KEY, value ? 'open' : 'closed') } catch { /* storage blocked: the choice lasts this visit */ }
+  }
+  const pick = (id: string) => {
+    if (!wide) setDrawer(false)
+    if (id !== conversationId) void openConversation(id)
+  }
+  const fresh = () => {
+    if (!wide) setDrawer(false)
+    void newConversation()
+  }
+  const remove = async (id: string) => {
+    try {
+      await api.hideConversation(id)
+      if (id === conversationId) await newConversation()
+    } finally {
+      void qc.invalidateQueries({ queryKey: ['conversations'] })
+    }
+  }
 
   const submit = (e?: FormEvent) => {
     e?.preventDefault()
@@ -110,14 +170,38 @@ export default function Assistant() {
 
   const name = user?.name ?? ''
   const tips = (notes.data?.items ?? []).filter((n) => n.suggestion && !n.read).slice(0, 2)
+  const title = chats.data?.items.find((c) => c.id === conversationId)?.title || messages.find((m) => m.role === 'user')?.text || ''
+  const history = (first?: typeof drawerStart) => (
+    <ChatHistory items={chats.data?.items} active={conversationId} busy={!!pending} first={first}
+      onPick={pick} onNew={fresh} onRemove={(id) => void remove(id)} onClose={() => showHistory(false)} />
+  )
 
   return (
-    <main tabIndex={-1} className="page-content">
-      <div className="mx-auto flex min-h-[calc(100dvh-210px)] w-full max-w-3xl flex-col">
-        {messages.length > 0 && (
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="cond text-2xl font-extrabold">{tr('Assistant', '助手')}</h1>
-            <button type="button" className="btn btn-line shrink-0 whitespace-nowrap py-1.5 text-sm" onClick={() => void newConversation()}>{tr('New chat', '新对话')}</button>
+    <main tabIndex={-1} className="page-content !max-w-[1280px]">
+      <div className="flex items-start gap-6">
+      {wide && open && (
+        <aside className="sticky top-4 flex max-h-[calc(100dvh-2rem)] w-64 shrink-0 flex-col rounded-box border border-rule bg-field">{history()}</aside>
+      )}
+      {!wide && open && <>
+        <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setDrawer(false)} aria-hidden />
+        <aside role="dialog" aria-modal="true" aria-label={tr('Chat history', '对话记录')} className="drawer-in fixed inset-y-0 left-0 z-50 flex w-[85vw] max-w-[320px] flex-col bg-paper shadow-[0_0_40px_var(--shadow)]">{history(drawerStart)}</aside>
+      </>}
+
+      <div className="mx-auto flex min-h-[calc(100dvh-210px)] w-full min-w-0 max-w-3xl flex-1 flex-col">
+        {(!open || messages.length > 0) && (
+          <div className="sticky top-0 z-10 -mx-1 flex min-h-[52px] items-center gap-2 bg-paper px-1 py-2">
+            {!open && (
+              <button type="button" onClick={() => showHistory(true)} aria-expanded={false} aria-label={tr('Show chat history', '展开对话记录')} title={tr('Chat history', '对话记录')}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rule text-ink2 hover:bg-paper2">
+                <PanelLeftOpen size={18} />
+              </button>
+            )}
+            {messages.length > 0 && <h1 className="min-w-0 flex-1 truncate !text-base !font-semibold !tracking-normal" title={title}>{title}</h1>}
+            {messages.length > 0 && !open && (
+              <button type="button" className="btn btn-line shrink-0 gap-1.5 whitespace-nowrap py-1.5 text-sm" onClick={fresh} disabled={!!pending}>
+                <SquarePen size={15} />{tr('New chat', '新对话')}
+              </button>
+            )}
           </div>
         )}
 
@@ -150,7 +234,7 @@ export default function Assistant() {
             if (m.role === 'user') {
               const file = m.cards.find((c) => c.type === 'attachment')
               return (
-                <div key={m.id} className="ml-auto flex w-fit max-w-[85%] flex-col items-end gap-1.5">
+                <div key={m.id} className="ml-auto flex w-fit max-w-[85%] flex-col items-end gap-1.5" title={stamp(m.at)}>
                   {file && <img src={file.preview} alt={tr('Attached receipt', '附带的小票')} className="h-28 ruled bg-white object-contain" />}
                   <p className="keep whitespace-pre-wrap rounded-2xl rounded-br-md bg-[var(--action)] px-4 py-2.5 text-[0.95rem] text-[var(--action-ink)]">{m.text}</p>
                 </div>
@@ -158,11 +242,11 @@ export default function Assistant() {
             }
             if (m.role === 'system') return <p key={m.id} className="mx-auto max-w-[90%] text-center text-xs text-ink2">{m.text}</p>
             return (
-              <div key={m.id} className="flex gap-2.5">
+              <div key={m.id} className="flex gap-2.5" title={stamp(m.at)}>
                 <span className="mt-0.5 shrink-0">{m.role === 'operator' ? <span className="agent-avatar !h-7 !w-7"><Icon name="users" size={14} /></span> : <BrandSeal size={28} />}</span>
                 <div className="min-w-0 flex-1 space-y-2.5">
                   {m.role === 'operator' && <p className="text-xs font-semibold text-ink2">{tr('Bank staff', '人工客服')}</p>}
-                  {m.text && <p className="keep whitespace-pre-wrap text-[0.97rem] leading-relaxed">{m.cards.some((c) => DATA_CARDS.has(c.type)) ? m.text.split('\n')[0].replace(/[:：]\s*$/, '') : m.text}</p>}
+                  {m.text && <ReplyText text={m.cards.some((c) => DATA_CARDS.has(c.type)) ? m.text.split('\n')[0].replace(/[:：]\s*$/, '') : m.text} />}
                   {m.cards.filter((card) => card.type !== 'receipt').map((card, i) => <Result key={`${m.id}-${i}`} card={card} />)}
                 </div>
               </div>
@@ -206,6 +290,7 @@ export default function Assistant() {
             <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--action)] text-[var(--action-ink)] disabled:opacity-40" disabled={(!text.trim() && !attachment) || !!pending} aria-label={tr('Send', '发送')}><SendHorizontal size={18} /></button>
           </div>
         </form>
+      </div>
       </div>
     </main>
   )
