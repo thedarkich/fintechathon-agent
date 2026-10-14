@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { AuditEntry } from '../api/types'
 import { useLang } from '../i18n'
-import { Icon } from '../components/Icon'
+import { PageHead, Section } from '../components/bits'
 import { Requests } from '../components/Requests'
 import { SealMark, type MarkKind } from '../components/Seal'
 import { clock, shortAddr, timeAgo } from '../lib/format'
@@ -125,26 +125,19 @@ export default function Ledger() {
 
   return (
     <main tabIndex={-1} className="page-content ">
-      <h1 className="cond text-[2.4rem] font-extrabold leading-tight sm:text-[2.9rem]">{t.ledger_title}</h1>
-      <p className="max-w-[38rem] text-ink2">{t.ledger_sub}</p>
+      <PageHead title={t.ledger_title} />
+      <Requests />
 
-      <div className="mt-7"><Requests /></div>
-
-      <div className="mb-1 mt-12 flex items-center gap-2"><Icon name="activity" size={19} /><h2 className="text-lg font-semibold">{tr('Full record of every step', '每一步的完整记录')}</h2></div>
-      <p className="mb-4 max-w-[44rem] text-sm text-ink2">{tr('The technical audit log behind your requests. PINs, codes and passwords are never written here. Each row stores the hash of the row before it, and the chain is checked again every few seconds.', '你的请求背后的技术审计日志。交易密码、验证码和登录密码从不写入。每条记录都保存上一条的哈希，系统每隔几秒重新校验整条链。')}</p>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="tab-scroll flex gap-1" role="tablist" aria-label={t.ledger_title}>
-          {([['all', tr('All', '全部')], ['requests', tr('Requests & plans', '请求与计划')], ['decisions', tr('Decisions', '判定与确认')], ['actions', tr('Actions', '执行')], ['security', tr('Security', '安全')]] as const).map(([k, label]) => (
-            <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} className={`rounded-box px-3 py-1.5 text-[0.95rem] ${kind === k ? 'bg-ink text-field' : 'text-ink hover:bg-paper2'}`}>{label}</button>
-          ))}
-        </div>
-        {chain.data && (
-          <p className={`text-sm ${chain.data.ok ? 'text-ink2' : 'font-semibold text-cinnabar'}`}>
-            {chain.data.ok
-              ? <>{tr(`Hash chain intact, ${chain.data.entries} entries, head`, `哈希链完整，共 ${chain.data.entries} 条，最新`)} <span className="font-mono text-ink" title={chain.data.head}>{shortAddr(chain.data.head, 8, 6)}</span></>
-              : tr(`Hash chain broken at entry ${chain.data.broken_at}`, `哈希链在第 ${chain.data.broken_at} 条断开`)}
+      <Section title={tr('Every step, hash-chained', '每一步的记录')} className="mt-10"
+        aside={chain.data && (
+          <p className={`text-sm ${chain.data.ok ? 'text-jade' : 'font-semibold text-cinnabar'}`} title={chain.data.head}>
+            {chain.data.ok ? tr(`Chain intact · ${chain.data.entries} entries`, `哈希链完整 · ${chain.data.entries} 条`) : tr(`Chain broken at entry ${chain.data.broken_at}`, `哈希链在第 ${chain.data.broken_at} 条断开`)}
           </p>
-        )}
+        )}>
+      <div className="tab-scroll flex gap-1" role="tablist" aria-label={t.ledger_title}>
+        {([['all', tr('All', '全部')], ['requests', tr('Requests & plans', '请求与计划')], ['decisions', tr('Decisions', '判定与确认')], ['actions', tr('Actions', '执行')], ['security', tr('Security', '安全')]] as const).map(([k, label]) => (
+          <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} className={`rounded-box px-3 py-1.5 text-[0.95rem] ${kind === k ? 'bg-ink text-field' : 'text-ink hover:bg-paper2'}`}>{label}</button>
+        ))}
       </div>
 
       {entries.isLoading ? <div className="mt-3 h-64 animate-pulse rounded-box bg-paper2" aria-hidden /> : rows.length === 0 ? <p className="mt-6 text-ink2">{t.ledger_empty}</p> : <>
@@ -194,6 +187,7 @@ export default function Ledger() {
           })}
         </ol>
       </>}
+      </Section>
     </main>
   )
 }

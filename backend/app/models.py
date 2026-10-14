@@ -159,7 +159,7 @@ class Subscription(SQLModel, table=True):
     last_charged: str
     next_charge_on: str
     charges: int
-    status: str = "active"  # active | cancelled
+    status: str = "active"  # active | cancelled | ended (no longer charging)
     remind_days_before: int | None = None
     cancelled_at: str | None = None
     card_id: str | None = None

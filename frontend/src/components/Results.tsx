@@ -24,6 +24,25 @@ export function Table({ head, children, minWidth = '30rem' }: { head: ReactNode[
   )
 }
 
+type Row = { key: string; main: ReactNode; sub?: ReactNode; value?: ReactNode; muted?: boolean }
+
+/** A list of rows as on the app's pages: what it is, a grey detail line, the amount on the right. */
+function Rows({ items }: { items: Row[] }) {
+  return (
+    <ul className="divide-y divide-[var(--rule)] ruled bg-field">
+      {items.map((row) => (
+        <li key={row.key} className={`flex items-center gap-3 px-3 py-2.5 ${row.muted ? 'text-ink2' : ''}`}>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[0.93rem]">{row.main}</p>
+            {row.sub && <p className="text-xs text-ink2">{row.sub}</p>}
+          </div>
+          {row.value !== undefined && <span className="num shrink-0 font-mono text-[0.93rem]">{row.value}</span>}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function Bars({ rows }: { rows: { label: string; fen: number; hint?: string }[] }) {
   const top = Math.max(1, ...rows.map((r) => r.fen))
   return (
@@ -137,24 +156,18 @@ export function Result({ card }: { card: Card }) {
       )
     case 'balances':
       return (
-        <Table head={[tr('Account', '账户'), tr('Number', '账号'), tr('Balance', '余额')]} minWidth="22rem">
-          {card.accounts.map((a: { id: string; name: string; number: string; fen: number }) => (
-            <tr key={a.id} className="rule-b last:border-b-0"><td className="px-3 py-2">{a.name}</td><td className="px-3 py-2 font-mono text-[0.82rem] text-ink2">{a.number}</td><td className="num px-3 py-2 text-right font-mono">{yuan(a.fen)}</td></tr>
-          ))}
-        </Table>
+        <Rows items={card.accounts.map((a: { id: string; name: string; number: string; fen: number }) => ({
+          key: a.id, main: <>{a.name} <span className="font-mono text-[0.82rem] text-ink2">{a.number.slice(-4)}</span></>, value: yuan(a.fen),
+        }))} />
       )
     case 'transactions':
       return (
-        <Table head={[tr('Time', '时间'), tr('Counterparty', '对方'), tr('Category', '类别'), tr('Amount', '金额')]}>
-          {card.items.map((x: { id: string; at: string; merchant: string; fen: number; status: string; category: string }) => (
-            <tr key={x.id} className={`rule-b last:border-b-0 ${x.status === 'declined' ? 'text-ink2' : ''}`}>
-              <td className="num px-3 py-2 font-mono text-[0.82rem] text-ink2">{stamp(x.at)}</td>
-              <td className="px-3 py-2">{x.merchant}{x.status === 'declined' && <span className="ml-1.5 text-xs text-cinnabar">{tr('declined', '已拒绝')}</span>}</td>
-              <td className="px-3 py-2 text-ink2">{category(x.category, lang)}</td>
-              <td className={`num px-3 py-2 text-right font-mono ${x.fen > 0 ? 'text-jade' : ''}`}>{x.fen > 0 ? '+' : ''}{yuan(x.fen)}</td>
-            </tr>
-          ))}
-        </Table>
+        <Rows items={card.items.map((x: { id: string; at: string; merchant: string; fen: number; status: string; category: string }) => ({
+          key: x.id, muted: x.status === 'declined',
+          main: <>{x.merchant}{x.status === 'declined' && <span className="ml-1.5 text-xs text-cinnabar">{tr('declined', '已拒绝')}</span>}</>,
+          sub: `${category(x.category, lang)} · ${stamp(x.at)}`,
+          value: <span className={x.fen > 0 ? 'text-jade' : ''}>{x.fen > 0 ? '+' : ''}{yuan(x.fen)}</span>,
+        }))} />
       )
     case 'spending':
       return <div className="ruled bg-field p-4"><Bars rows={card.categories.slice(0, 8).map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%` }))} /></div>
@@ -184,51 +197,41 @@ export function Result({ card }: { card: Card }) {
     case 'subscriptions':
       return (
         <div className="space-y-2">
-          <Table head={[tr('Merchant', '商户'), tr('Cycle', '周期'), tr('Next charge', '下次扣费'), tr('Amount', '金额')]}>
-            {card.items.map((s: { id: string; merchant: string; fen: number; cycle: string; status: string; next_charge_on: string; new: boolean }) => (
-              <tr key={s.id} className={`rule-b last:border-b-0 ${s.status === 'cancelled' ? 'text-ink2 line-through' : ''}`}>
-                <td className="px-3 py-2">{s.merchant}{s.new && <span className="ml-1.5 text-xs text-cinnabar">{tr('new', '新开通')}</span>}</td>
-                <td className="px-3 py-2 text-ink2">{s.cycle === 'monthly' ? tr('monthly', '每月') : tr('yearly', '每年')}</td>
-                <td className="num px-3 py-2 font-mono text-[0.82rem]">{s.next_charge_on}</td>
-                <td className="num px-3 py-2 text-right font-mono">{yuan(s.fen)}</td>
-              </tr>
-            ))}
-          </Table>
-          <p className="text-sm text-ink2">{tr('About', '约合每月')} <strong className="num text-ink">{yuan(card.monthly_fen)}</strong>{tr(' a month.', '。')}</p>
+          <Rows items={card.items.filter((s: { status: string }) => s.status === 'active').map((s: { id: string; merchant: string; fen: number; cycle: string; next_charge_on: string; new: boolean }) => ({
+            key: s.id,
+            main: <>{s.merchant}{s.new && <span className="ml-1.5 text-xs text-cinnabar">{tr('new', '近期开通')}</span>}</>,
+            sub: `${s.cycle === 'monthly' ? tr('monthly', '每月') : tr('yearly', '每年')} · ${tr('next', '下次')} ${s.next_charge_on}`,
+            value: yuan(s.fen),
+          }))} />
           {card.overlaps.length > 0 && <div className="flex flex-wrap gap-2">{card.overlaps.flatMap((o: { merchants: string[] }) => o.merchants.slice(1).map((m) => <Ask key={m} text={tr(`Cancel ${m}`, `取消${m}`)} />))}</div>}
         </div>
       )
     case 'cards':
       return (
-        <Table head={[tr('Card', '卡片'), tr('Status', '状态'), tr('Daily limit', '日限额')]} minWidth="22rem">
-          {card.items.map((c: { id: string; name: string; last4: string; status: string; daily_limit_fen: number }) => (
-            <tr key={c.id} className="rule-b last:border-b-0"><td className="px-3 py-2">{c.name} <span className="font-mono text-[0.82rem] text-ink2">****{c.last4}</span></td><td className={`px-3 py-2 ${c.status === 'active' ? 'text-jade' : 'text-cinnabar'}`}>{({ active: tr('In use', '正常'), frozen: tr('Frozen', '已冻结'), lost: tr('Reported lost', '已挂失') } as Record<string, string>)[c.status] ?? c.status}</td><td className="num px-3 py-2 text-right font-mono">{yuan(c.daily_limit_fen)}</td></tr>
-          ))}
-        </Table>
+        <Rows items={card.items.map((c: { id: string; name: string; last4: string; status: string; daily_limit_fen: number }) => ({
+          key: c.id, main: <>{c.name} <span className="font-mono text-[0.82rem] text-ink2">{c.last4}</span></>,
+          sub: tr(`daily limit ${yuan(c.daily_limit_fen)}`, `日限额 ${yuan(c.daily_limit_fen)}`),
+          value: <span className={`font-sans font-semibold ${c.status === 'active' ? 'text-jade' : 'text-cinnabar'}`}>{({ active: tr('Active', '正常'), frozen: tr('Frozen', '已冻结'), lost: tr('Reported lost', '已挂失') } as Record<string, string>)[c.status] ?? c.status}</span>,
+        }))} />
       )
     case 'holdings':
       return (
-        <Table head={[tr('Product', '产品'), tr('Gain', '收益'), tr('Value', '市值')]} minWidth="24rem">
-          {card.items.map((h: { code: string; name: string; value_fen: number; gain_fen: number; return_pct: number }) => (
-            <tr key={h.code} className="rule-b last:border-b-0"><td className="px-3 py-2">{h.name}</td><td className="num px-3 py-2 font-mono text-jade">{yuan(h.gain_fen)} ({h.return_pct > 0 ? '+' : ''}{h.return_pct}%)</td><td className="num px-3 py-2 text-right font-mono">{yuan(h.value_fen)}</td></tr>
-          ))}
-        </Table>
+        <Rows items={card.items.map((h: { code: string; name: string; value_fen: number; gain_fen: number; return_pct: number }) => ({
+          key: h.code, main: h.name,
+          sub: <span className="text-jade">{tr('gain', '收益')} {yuan(h.gain_fen)} ({h.return_pct > 0 ? '+' : ''}{h.return_pct}%)</span>,
+          value: yuan(h.value_fen),
+        }))} />
       )
     case 'products':
     case 'compare':
       return (
         <div className="space-y-1.5">
-          <Table head={[tr('Product', '产品'), tr('Risk', '风险'), tr('Return', '收益'), tr('Suitable', '适合')]}>
-            {card.items.map((p: { code: string; name: string; risk_level: number; yield_bp: number; return_1y_bp: number; max_drawdown_bp: number; suitable: boolean }) => (
-              <tr key={p.code} className="rule-b last:border-b-0">
-                <td className="px-3 py-2">{p.name}</td>
-                <td className="px-3 py-2 font-mono">R{p.risk_level}</td>
-                <td className="num px-3 py-2 font-mono text-[0.85rem]">{p.yield_bp ? `${(p.yield_bp / 100).toFixed(2)}% ${tr('7-day', '七日')}` : `${(p.return_1y_bp / 100).toFixed(2)}% ${tr('1 yr', '近一年')}`}</td>
-                <td className={`px-3 py-2 text-right font-semibold ${p.suitable ? 'text-jade' : 'text-cinnabar'}`}>{p.suitable ? tr('yes', '适合') : tr('above your level', '超出等级')}</td>
-              </tr>
-            ))}
-          </Table>
-          <p className="text-xs text-ink2">{tr('Simulated demo products, not investment advice.', '模拟产品，仅用于演示，不构成投资建议。')}</p>
+          <Rows items={card.items.map((p: { code: string; name: string; risk_level: number; yield_bp: number; return_1y_bp: number; suitable: boolean }) => ({
+            key: p.code, main: p.name,
+            sub: `R${p.risk_level} · ${p.yield_bp ? `${tr('7-day', '七日年化')} ${(p.yield_bp / 100).toFixed(2)}%` : `${tr('1 year', '近一年')} ${(p.return_1y_bp / 100).toFixed(2)}%`}`,
+            value: <span className={`font-sans text-sm font-semibold ${p.suitable ? 'text-jade' : 'text-cinnabar'}`}>{p.suitable ? tr('Suitable', '适合') : tr('Above your level', '超出等级')}</span>,
+          }))} />
+          <p className="text-xs text-ink2">{tr('Simulated products. Not investment advice.', '模拟产品，不构成投资建议。')}</p>
         </div>
       )
     case 'receipt_reading':

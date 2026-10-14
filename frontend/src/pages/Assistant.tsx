@@ -18,13 +18,15 @@ const SUGGESTIONS: [IconName, string, string][] = [
   ['wallet', "What's my balance?", '我卡里还有多少钱'],
   ['arrow', 'Send Mom 200', '给妈妈转200'],
   ['chart', 'Where did my money go last month?', '上个月钱都花哪了'],
-  ['flag', 'Anything suspicious on my account?', '最近有没有可疑交易'],
+  ['flag', 'Anything suspicious?', '有没有可疑交易'],
   ['card', 'Freeze my virtual card', '冻结我的虚拟卡'],
-  ['bell', 'What subscriptions am I paying for?', '我有哪些自动续费'],
-  ['users', "Split last night's hotpot with Liu Yang and Wang Fang", '昨晚海底捞和刘洋、王芳AA'],
-  ['trend', "I have 100000 I won't need for a year. What should I invest in?", '有10万一年不用，推荐个理财'],
-  ['clock', "My wife's birthday is next month: set aside 1000 and order flowers and a cake two days before", '下个月老婆生日，帮我预留1000元，提前两天订花和蛋糕'],
+  ['bell', 'What subscriptions do I have?', '我有哪些自动续费'],
+  ['trend', 'Recommend a low-risk product', '推荐一个稳健的理财'],
+  ['clock', "Plan my wife's birthday next month", '下个月老婆生日，帮我准备一下'],
 ]
+
+/** Answers whose card holds the details: the chat shows only the reply's first line, its headline. */
+const DATA_CARDS = new Set(['balances', 'transactions', 'spending', 'report', 'anomalies', 'subscriptions', 'cards', 'holdings', 'products', 'compare', 'analysis'])
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Recognition: any = typeof window !== 'undefined' ? (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition : undefined
@@ -40,17 +42,25 @@ export default function Assistant() {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [listening, setListening] = useState(false)
+  const [hint, setHint] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+  const box = useRef<HTMLTextAreaElement>(null)
   const end = useRef<HTMLDivElement>(null)
   const asked = useRef(false)
 
-  // a sentence tapped on the landing page arrives as ?ask=…
+  // a sentence tapped on the landing page arrives as ?ask=… and is sent; a page's action arrives as ?hint=…,
+  // an example that waits in the empty box for the customer's own words
   useEffect(() => {
     const ask = params.get('ask')
+    const example = params.get('hint')
     if (ask && !asked.current) {
       asked.current = true
       setParams({}, { replace: true })
       void send(ask)
+    } else if (example) {
+      setHint(example)
+      setParams({}, { replace: true })
+      box.current?.focus()
     }
   }, [params, setParams, send])
   useEffect(() => { if (messages.length || pending) end.current?.scrollIntoView({ block: 'end' }) }, [messages.length, pending])
@@ -104,19 +114,19 @@ export default function Assistant() {
   return (
     <main tabIndex={-1} className="page-content">
       <div className="mx-auto flex min-h-[calc(100dvh-210px)] w-full max-w-3xl flex-col">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="cond text-2xl font-extrabold">{tr('Assistant', '助手')}</h1>
-          {messages.length > 0 && <button type="button" className="btn btn-line shrink-0 whitespace-nowrap py-1.5 text-sm" onClick={() => void newConversation()}>{tr('New chat', '新对话')}</button>}
-        </div>
+        {messages.length > 0 && (
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="cond text-2xl font-extrabold">{tr('Assistant', '助手')}</h1>
+            <button type="button" className="btn btn-line shrink-0 whitespace-nowrap py-1.5 text-sm" onClick={() => void newConversation()}>{tr('New chat', '新对话')}</button>
+          </div>
+        )}
 
         <div className="flex-1 space-y-5 py-5" aria-live="polite">
           {messages.length === 0 && !pending && (
-            <div className="pt-4">
-              <p className="cond text-[1.9rem] font-extrabold leading-tight">{name ? tr(`Hi ${name}. What can I do for you?`, `${name}，你好。今天想办点什么？`) : tr('What can I do for you?', '今天想办点什么？')}</p>
-              <p className="mt-2 text-ink2">{tr('Just say it, in Chinese or English. I always ask before any money moves.', '直接说就行，中文英文都可以。动钱之前，我都会先问你。')}</p>
+            <div className="pt-6">
+              <h1 className="cond text-[2rem] font-extrabold leading-tight">{name ? tr(`Hi ${name}. What can I do for you?`, `${name}，你好。今天想办点什么？`) : tr('What can I do for you?', '今天想办点什么？')}</h1>
               {tips.length > 0 && (
                 <div className="mt-6 space-y-2">
-                  <p className="text-sm font-semibold text-ink2">{tr('You might want to', '你可能需要')}</p>
                   {tips.map((n) => (
                     <button key={n.id} type="button" disabled={!!pending} onClick={() => void send(n.suggestion!)} className="flex w-full items-start gap-3 rounded-box border border-rule bg-field px-4 py-3 text-left hover:border-[var(--action)]">
                       <Icon name={n.kind === 'anomaly' ? 'flag' : n.kind === 'birthday' ? 'clock' : 'bell'} size={18} className="mt-0.5 shrink-0 text-[var(--action)]" />
@@ -125,12 +135,11 @@ export default function Assistant() {
                   ))}
                 </div>
               )}
-              <p className="mt-6 text-sm font-semibold text-ink2">{tr('Try one of these', '试试这样说')}</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              <div className="mt-6 flex flex-wrap gap-2">
                 {SUGGESTIONS.map(([icon, en, zh]) => (
-                  <button key={zh} type="button" disabled={!!pending} onClick={() => void send(lang === 'zh' ? zh : en)} className="flex items-center gap-2.5 rounded-box border border-rule bg-field px-3 py-2.5 text-left text-[0.93rem] hover:border-[var(--action)]">
-                    <Icon name={icon} size={17} className="shrink-0 text-[var(--action)]" />
-                    <span className="min-w-0">{lang === 'zh' ? zh : en}</span>
+                  <button key={zh} type="button" disabled={!!pending} onClick={() => void send(lang === 'zh' ? zh : en)} className="flex items-center gap-2 rounded-full border border-rule bg-field px-3.5 py-2 text-left text-[0.93rem] hover:border-[var(--action)]">
+                    <Icon name={icon} size={16} className="shrink-0 text-[var(--action)]" />
+                    <span>{lang === 'zh' ? zh : en}</span>
                   </button>
                 ))}
               </div>
@@ -153,8 +162,8 @@ export default function Assistant() {
                 <span className="mt-0.5 shrink-0">{m.role === 'operator' ? <span className="agent-avatar !h-7 !w-7"><Icon name="users" size={14} /></span> : <BrandSeal size={28} />}</span>
                 <div className="min-w-0 flex-1 space-y-2.5">
                   {m.role === 'operator' && <p className="text-xs font-semibold text-ink2">{tr('Bank staff', '人工客服')}</p>}
-                  {m.text && <p className="keep whitespace-pre-wrap text-[0.97rem] leading-relaxed">{m.text}</p>}
-                  {m.cards.map((card, i) => <Result key={`${m.id}-${i}`} card={card} />)}
+                  {m.text && <p className="keep whitespace-pre-wrap text-[0.97rem] leading-relaxed">{m.cards.some((c) => DATA_CARDS.has(c.type)) ? m.text.split('\n')[0].replace(/[:：]\s*$/, '') : m.text}</p>}
+                  {m.cards.filter((card) => card.type !== 'receipt').map((card, i) => <Result key={`${m.id}-${i}`} card={card} />)}
                 </div>
               </div>
             )
@@ -191,12 +200,11 @@ export default function Assistant() {
                 <Mic size={18} />
               </button>
             )}
-            <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1} maxLength={2000}
-              placeholder={tr('What do you need?', '说说你要办的事…')}
+            <textarea ref={box} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1} maxLength={2000}
+              placeholder={hint ? tr(`e.g. ${hint}`, `例如：${hint}`) : tr('What do you need?', '说说你要办的事…')}
               aria-label={tr('Message', '消息')} className="max-h-32 min-h-[40px] min-w-0 flex-1 resize-none bg-transparent px-1 py-2 text-[0.97rem] outline-none focus-visible:outline-none" />
             <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--action)] text-[var(--action-ink)] disabled:opacity-40" disabled={(!text.trim() && !attachment) || !!pending} aria-label={tr('Send', '发送')}><SendHorizontal size={18} /></button>
           </div>
-          <p className="mt-1.5 text-center text-[0.72rem] text-ink2">{tr('Simulated bank. Money only moves after you confirm.', '模拟银行。只有你确认后，钱才会动。')}</p>
         </form>
       </div>
     </main>

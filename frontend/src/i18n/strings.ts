@@ -21,7 +21,6 @@ export const zh = {
   col_hash: '哈希',
 
   ledger_title: '记录',
-  ledger_sub: '你办过的每件事，以及背后每一步的记录。记录用哈希串起来，任何改动都会被发现。',
   ledger_empty: '还没有记录。',
 }
 
@@ -47,6 +46,5 @@ export const en: Strings = {
   col_hash: 'Hash',
 
   ledger_title: 'History',
-  ledger_sub: 'Everything you asked for, and the record of every step behind it. Entries are chained by hashes, so any change would be noticed.',
   ledger_empty: 'Nothing recorded yet.',
 }

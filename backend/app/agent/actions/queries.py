@@ -48,7 +48,7 @@ def balance_reply(ctx: Ctx, r: dict, result: dict) -> str:
     lines = [f"{a['name']}（{a['number'][-4:]}）：{yuan(a['fen'])}" if ctx.lang == "zh"
              else f"{a['name']} (…{a['number'][-4:]}): {yuan(a['fen'])}" for a in result["accounts"]]
     if len(result["accounts"]) > 1:
-        lines.append(ctx.t(f"合计 {yuan(result['total_fen'])}", f"Total {yuan(result['total_fen'])}"))
+        lines.insert(0, ctx.t(f"合计 {yuan(result['total_fen'])}", f"Total {yuan(result['total_fen'])}"))
     return "\n".join(lines)
 
 
@@ -221,8 +221,8 @@ def spending_reply(ctx: Ctx, r: dict, res: dict) -> str:
     top = res["categories"][:4]
     parts = "，".join(f"{label(c['category'], 'zh')} {yuan(c['fen'])}" for c in top) if ctx.lang == "zh" else \
         ", ".join(f"{label(c['category'], 'en')} {yuan(c['fen'])}" for c in top)
-    return ctx.t(f"{span} 共支出 {yuan(res['spend_fen'])}，收入 {yuan(res['income_fen'])}。最多的是：{parts}。",
-                 f"{span}: spent {yuan(res['spend_fen'])}, received {yuan(res['income_fen'])}. Biggest: {parts}.")
+    return ctx.t(f"{span} 共支出 {yuan(res['spend_fen'])}，收入 {yuan(res['income_fen'])}。\n最多的是：{parts}。",
+                 f"{span}: spent {yuan(res['spend_fen'])}, received {yuan(res['income_fen'])}.\nBiggest: {parts}.")
 
 
 register(Action(
@@ -370,7 +370,9 @@ def cards_reply(ctx: Ctx, r: dict, res: dict) -> str:
                                              ("ATM", c["atm"]), (ctx.t("闪付", "contactless"), c["contactless"])) if on)
         lines.append(ctx.t(f"· {c['name']} ****{c['last4']}：{state}，日限额 {yuan(c['daily_limit_fen'])}，已开通 {switches or '无'}",
                            f"· {c['name']} ****{c['last4']}: {state}, daily limit {yuan(c['daily_limit_fen'])}, enabled: {switches or 'none'}"))
-    return "\n".join(lines) or ctx.t("没有银行卡。", "No cards.")
+    if not lines:
+        return ctx.t("没有银行卡。", "No cards.")
+    return "\n".join([ctx.t(f"你有 {len(lines)} 张卡：", f"You have {len(lines)} cards:"), *lines])
 
 
 register(Action(

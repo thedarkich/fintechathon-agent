@@ -1,32 +1,9 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { getAdminToken } from '../api/client'
 import type { Tier } from '../api/types'
 import { useLang } from '../i18n'
 import { isOperator, useAuth } from '../lib/auth'
-
-/** Live countdown to an ISO time; calls onDone once when it passes. */
-export function Countdown({ to, onDone }: { to: string; onDone?: () => void }) {
-  const target = new Date(to).getTime()
-  const [left, setLeft] = useState(() => Math.max(0, target - Date.now()))
-  useEffect(() => {
-    const t = setInterval(() => {
-      const l = Math.max(0, target - Date.now())
-      setLeft(l)
-      if (l === 0) {
-        clearInterval(t)
-        onDone?.()
-      }
-    }, 250)
-    return () => clearInterval(t)
-  }, [target, onDone])
-  const s = Math.ceil(left / 1000)
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  const sec = s % 60
-  const txt = h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}` : `${m}:${String(sec).padStart(2, '0')}`
-  return <span className="num cond font-bold">{txt}</span>
-}
 
 /** Workspace pages open for a signed-in customer. */
 export function SignedInGate({ children }: { children: ReactNode }) {
@@ -53,7 +30,6 @@ export function OperatorGate({ children }: { children: ReactNode }) {
   )
 }
 
-/** The permission tier of a step, in the same small-tag style as the controls page. */
 /** The three levels in plain words: done right away, needs your OK, needs your PIN and a code. */
 export function TierTag({ tier }: { tier: Tier | null | undefined }) {
   const { tr } = useLang()
@@ -63,24 +39,32 @@ export function TierTag({ tier }: { tier: Tier | null | undefined }) {
   return <span className="inline-flex items-center rounded-full bg-cinnabar px-2 py-px text-[0.72rem] font-semibold leading-tight text-white">{tr('Needs PIN + code', '需验证')}</span>
 }
 
-export function Problem({ text }: { text: string | null | undefined }) {
-  return text ? <p role="alert" className="mt-2 text-sm font-semibold text-cinnabar">{text}</p> : null
+/** The page title, with the page's own controls on the right. No intro text: the page shows what it is. */
+export function PageHead({ title, right }: { title: string; right?: ReactNode }) {
+  return (
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <h1 className="cond text-[2rem] font-extrabold leading-tight">{title}</h1>
+      {right}
+    </div>
+  )
 }
 
-/** A titled card, as on the Accounts page: a numbered title, a one-line purpose, then the content. */
-export function Card({ title, sub, right, children, id }: { title: string; sub?: string; right?: ReactNode; children: ReactNode; id?: string }) {
+/** One block of a page: a heading with an optional count or action beside it, then the content. */
+export function Section({ title, aside, id, className = '', children }: { title: string; aside?: ReactNode; id?: string; className?: string; children: ReactNode }) {
   return (
-    <section className="ruled bg-field p-4" id={id}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="cond text-xl font-bold">{title}</h2>
-          {sub && <p className="mt-0.5 text-sm leading-snug text-ink2">{sub}</p>}
-        </div>
-        {right}
+    <section id={id} className={`scroll-mt-6 ${className}`}>
+      <div className="mb-3 flex min-h-9 flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        {aside}
       </div>
-      <div className="mt-3">{children}</div>
+      {children}
     </section>
   )
+}
+
+/** Opens the assistant ready to type, with an example as the placeholder (for actions that need details). */
+export function AskButton({ label, hint, className = 'btn btn-line py-1.5 text-sm' }: { label: string; hint: string; className?: string }) {
+  return <Link to={`/assistant?hint=${encodeURIComponent(hint)}`} className={className}>{label}</Link>
 }
 
 /** A panel with a heading bar, as on the controls page. */
@@ -93,17 +77,5 @@ export function Panel({ title, note, right, children, id }: { title: string; not
       </div>{right}</div>
       {children}
     </section>
-  )
-}
-
-export function Figure({ label, value, unit, color, icon }: { label: string; value: string; unit?: string; color?: string; icon?: ReactNode }) {
-  return (
-    <div className="metric-card">
-      <dt>{label}{icon}</dt>
-      <dd style={{ color: color ?? 'var(--ink)' }}>
-        {value}
-        {unit && <small>{unit}</small>}
-      </dd>
-    </div>
   )
 }

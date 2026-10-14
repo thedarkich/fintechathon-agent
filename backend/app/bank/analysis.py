@@ -235,15 +235,23 @@ def detect_recurring(txns: list[Txn], today: date) -> list[dict]:
 def refresh_subscriptions(session: Session, user_id: str, today: date) -> list[Subscription]:
     txns = txns_between(session, user_id, today - timedelta(days=800), today + timedelta(days=1))
     existing = {s.key: s for s in session.exec(select(Subscription).where(Subscription.user_id == user_id))}
-    for item in detect_recurring(txns, today):
+    found = detect_recurring(txns, today)
+    for item in found:
         row = existing.get(item["key"])
         if row is None:
             row = Subscription(user_id=user_id, **item)
             existing[item["key"]] = row
-        elif row.status == "active":
+        elif row.status in ("active", "ended"):
+            row.status = "active"  # charging again
             for field in ("last_charged", "next_charge_on", "charges", "card_id"):
                 setattr(row, field, item[field])
         session.add(row)
+    # no longer recurring (it stopped, or an older rule mistook repeat purchases for one): stop listing and renewing it
+    detected = {item["key"] for item in found}
+    for key, row in existing.items():
+        if row.status == "active" and key not in detected:
+            row.status = "ended"
+            session.add(row)
     session.flush()
     return sorted(existing.values(), key=lambda s: (s.status != "active", s.next_charge_on))
 

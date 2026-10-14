@@ -5,6 +5,7 @@ import type { PlanRow } from '../api/types'
 import { useLang } from '../i18n'
 import { usePlans } from '../lib/bank'
 import { clock, stamp, yuan } from '../lib/format'
+import { Section } from './bits'
 import { Icon } from './Icon'
 import { ConfirmCard, markColor, markFor, statusLabel } from './PlanView'
 import { SealMark } from './Seal'
@@ -18,17 +19,11 @@ export function Requests() {
   const rows = plans.data?.items ?? []
   const shown = search ? rows.filter((p) => p.request.toLowerCase().includes(search.toLowerCase())) : rows
   return (
-    <section>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="cond text-xl font-bold">{tr('What you asked for', '你办过的事')}</h2>
-          <p className="text-sm text-ink2">{tr('Tap one to see what happened.', '点一条查看详情。')}</p>
-        </div>
-        <label className="flex w-full items-center gap-2 rounded-box border border-rule bg-field px-3 py-2 sm:w-64"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm" aria-label={tr('Search', '搜索')} placeholder={tr('Search…', '搜索…')} value={search} onChange={(e) => setSearch(e.target.value)} /></label>
-      </div>
-      <div className="mt-3"><RequestList rows={shown} loading={plans.isLoading} selected={selected} onSelect={setSelected} /></div>
+    <Section title={tr('What you asked for', '你办过的事')}
+      aside={<label className="flex w-full items-center gap-2 rounded-box border border-rule bg-field px-3 py-1.5 sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm" aria-label={tr('Search', '搜索')} placeholder={tr('Search…', '搜索…')} value={search} onChange={(e) => setSearch(e.target.value)} /></label>}>
+      <RequestList rows={shown} loading={plans.isLoading} selected={selected} onSelect={setSelected} />
       {selected && <RequestModal planId={selected} row={rows.find((r) => r.id === selected)} onClose={() => setSelected(null)} />}
-    </section>
+    </Section>
   )
 }
 

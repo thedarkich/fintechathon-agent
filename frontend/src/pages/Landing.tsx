@@ -34,7 +34,7 @@ function PhoneDemo() {
         <div className="lp-chat">
           {step >= 0 && <p className="lp-bubble lp-me">{tr('Send Mom 200', '给妈妈转200')}</p>}
           {step === 1 && <p className="lp-typing" aria-hidden><i /><i /><i /></p>}
-          {step >= 2 && <p className="lp-bubble lp-bot">{tr('Check the details and tap Confirm if they’re right.', '请核对下面的内容，没问题就点“确认”。')}</p>}
+          {step >= 2 && <p className="lp-bubble lp-bot">{tr('Please check:', '请核对：')}</p>}
           {step >= 2 && (
             <div className={`lp-card ${step >= 4 ? 'is-done' : ''}`}>
               <div className="lp-card-head"><b>{step >= 4 ? tr('Done', '已办好') : tr('Please confirm', '请确认')}</b>{step < 4 ? <span className="lp-tag">{tr('Needs your OK', '需确认')}</span> : <Seal kind="done" size={40} />}</div>
