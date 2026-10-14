@@ -57,7 +57,7 @@ def bank_en(bank: str) -> str:
 NOTE_EN = {"家人": "family", "大学同学": "university friend", "同事，财务部": "colleague, finance",
            "室友，水电网费AA": "roommate, splits bills", "房租": "rent", "羽毛球球友": "badminton friend",
            "高中同学": "school friend", "二手相机卖家（今天新加）": "used-camera seller, added today",
-           "二手相机卖家，今天新加": "used-camera seller, added today"}
+           "二手相机卖家，今天新加": "used-camera seller, added today", "手机号转账": "added by phone number"}
 
 
 def note_en(note: str | None) -> str | None:
@@ -202,7 +202,7 @@ def _audit(session: Session, row: Transfer) -> None:
 
 def view(row: Transfer, lang: str, now: datetime) -> dict:
     zh = lang == "zh"
-    return {"id": row.id, "payee": row.payee_name if zh else row.payee_name_en, "bank": row.bank if zh else bank_en(row.bank),
+    return {"id": row.id, "payee_id": row.payee_id, "payee": row.payee_name if zh else row.payee_name_en, "bank": row.bank if zh else bank_en(row.bank),
             "account_tail": row.account_tail, "fen": row.amount_fen, "memo": row.memo, "route": row.route,
             "route_label": ROUTES[row.route][0 if zh else 1], "arrival": row.arrival,
             "arrival_label": ARRIVALS[row.arrival][0 if zh else 1], "arrival_reason": row.arrival_reason,

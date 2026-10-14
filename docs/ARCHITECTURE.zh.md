@@ -146,9 +146,17 @@ flowchart LR
 
 上传的照片或 PDF（最大 5 MB）在独立的、受资源限制的进程中解析。配置了视觉模型时，模型只返回固定格式（商户、日期、明细、总额、是否发现指令）；没有模型时，带文字层的 PDF 由规则读取。隐藏文字（接近白色、极小、超出页面或面积为零的文字）和类似指令的内容（“转账给……”）会被标记。规划器只看到小票的 ID，看不到内容；基于被标记小票的步骤需要强验证。
 
+### 3.11 应用自己的页面
+
+除了助手，应用还为最常用的事提供了页面：服务首页、手机号转账、缴费（话费充值、电费、水费、燃气费、宽带电视、物业费、交通罚款）和扫码付。页面自己填好信息，不经过模型；但页面发起的付款仍然是一个计划：`POST /api/screens/plan` 只接受白名单里的一个步骤，并和对话请求一样经过校验、匹配、分级、确认哈希、交易密码与验证码以及审计（`source: screen`）。页面上填写的备注也会像聊天消息一样做诈骗话术筛查。这些操作（`phone_transfer`、`bill_pay`、`bill_autopay`、`qr_pay`）标记为“仅限页面”，规划器看不到它们，助手的行为保持不变。
+
+- **手机号转账。** 号码会在模拟的手机号目录中查找：已保存的收款人、其他人（只显示打码的姓名，如“*小明”，以及所属银行），或查无此人。查询有频率限制，不能用来批量获取陌生人的姓名。第一次转给某个号码视为今天新加的收款人，适用新收款人规则（超过 ¥500 为红色，2 小时后到账）。
+- **缴费。** 缴费单位按月出账（模拟数据，同一户号同一月份金额固定）。客户已经用代扣缴纳的账单会在第一次打开时列出。开通自动缴费是黄色步骤，需设每月上限；超过上限的账单绝不会自动扣款，而是提醒客户。
+- **扫码付。** 收款码里只有商户编号，收银台生成的码另带金额和订单号；商户名称取自银行自己的商户登记，所以收款码不能冒充别的商户。收款码可以是指向付款页面的链接，用手机相机扫码即可直接打开付款。不是本行的二维码会提示，绝不会打开。
+
 ## 四、数据模型
 
-`UserAccount`、`BankAccount`（活期、储蓄、预留）、`Txn`、`Payee`、`Card`、`Subscription`、`ScheduledTransfer`、`Transfer`、`PayeeMessage`、`Collection`、`WealthProduct`、`Holding`、`RiskProfile`、`Order`、`Plan`、`Conversation`、`Message`、`Challenge`、`Passkey`、`SmsMessage`、`Notification`、`SafetyLock`、`AuditEntry`、`DemoClock`、`Upload`。金额以整数“分”存储，时间为北京时间。每位新客户都会得到一个预置的银行：约 22 个月的真实感交易、家人和朋友收款人（包括两位拼音同名的人，以及一位今天新加、账户却登记在别人名下的卖家）、两张卡、包含重复和遗忘试用的订阅、预置的异常交易、理财持仓和风险测评结果。
+`UserAccount`、`BankAccount`（活期、储蓄、预留）、`Txn`、`Payee`、`Card`、`Subscription`、`ScheduledTransfer`、`Transfer`、`PayeeMessage`、`Collection`、`WealthProduct`、`Holding`、`RiskProfile`、`Order`、`Plan`、`Conversation`、`Message`、`Challenge`、`Passkey`、`SmsMessage`、`Notification`、`SafetyLock`、`AuditEntry`、`DemoClock`、`Upload`、`SavedBill`、`BillPayment`。金额以整数“分”存储，时间为北京时间。每位新客户都会得到一个预置的银行：约 22 个月的真实感交易、家人和朋友收款人（包括两位拼音同名的人，以及一位今天新加、账户却登记在别人名下的卖家）、两张卡、包含重复和遗忘试用的订阅、预置的异常交易、理财持仓和风险测评结果。
 
 ## 五、接口
 
@@ -156,13 +164,14 @@ flowchart LR
 - `POST /api/demo/start`：一键开通演示账户，自带预置的银行（交易密码会返回并显示在屏幕上；红色步骤仍需交易密码加一次性验证码或通行密钥）。
 - `POST /api/plans/{id}/approve`、`/sms`、`/passkey-options`、`/verify`、`/cancel`、`/answer`、`/edit`：确认、验证、叫停、回答追问和修改步骤。
 - `GET /api/bank/*`：客户直接查看自己的银行（不经过 AI）：总览、交易、报告、异常、订阅、卡片、收款人、理财、预约转账、转账进度。
+- `POST /api/screens/plan`：应用页面发起的付款，返回一个等待确认的计划。`GET /api/directory`、`/billers`、`/bills`、`/bills/lookup`、`/qr/read`、`/qr/merchants`：这些页面用到的查询。
 - `GET /api/audit`、`GET /api/audit/verify`：审计日志与链校验。
 - `POST /api/demo/advance`、`/reset`、`/transfers/{id}`：演示工具（银行时钟、重新生成数据、转账进度控制）。
 - 人工客服接口（管理员令牌或工作人员账户）：队列、对话详情、回复、交还、取消、解锁。没有任何接口可以代为确认。
 
 ## 六、测试与评测
 
-- `backend/tests`：87 个通过 HTTP 接口运行的测试，覆盖等级边界、确认哈希、验证、安全锁、回滚、停止计划和预约转账、人工接管、演示账户、转账、沙箱、小票，以及用模拟模型测试的模型规划器。
+- `backend/tests`：96 个通过 HTTP 接口运行的测试，覆盖等级边界、确认哈希、验证、安全锁、回滚、停止计划和预约转账、人工接管、演示账户、转账、沙箱、小票，以及用模拟模型测试的模型规划器。
 - `evals/`：220 个日常请求和 69 个攻击，每个都在新开的客户上运行；报告见 [eval/report-offline.md](eval/report-offline.md)，运行命令见 README。
 
 ## 七、部署

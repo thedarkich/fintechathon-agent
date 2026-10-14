@@ -113,6 +113,6 @@ export const isOperator = (user: User | null) => !!getAdminToken() || !!user?.op
 export const landingFor = (user: User | null, path: string) => (!user && getAdminToken() ? '/operator' : path)
 
 export function workspaceDestination(value: string | null) {
-  if (!value) return '/assistant'
-  return /^\/(assistant|accounts|transfers|bills|wealth|controls|ledger|operator)(?:\?[^#]*)?$/.test(value) ? value : '/assistant'
+  if (!value) return '/home'
+  return /^\/(home|send|payments|qr|assistant|accounts|transfers|bills|wealth|controls|ledger|operator)(?:\?[^#]*)?$/.test(value) ? value : '/home'
 }

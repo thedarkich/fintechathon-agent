@@ -61,7 +61,7 @@ export function statusLabel(status: PlanStatus, t: Strings): string {
 export const markColor = (kind: MarkKind) =>
   kind === 'done' || kind === 'query' ? 'var(--jade)' : kind === 'blocked' || kind === 'flag' ? 'var(--cinnabar)' : kind === 'pending' || kind === 'cancelled' || kind === 'undone' ? 'var(--ink-2)' : 'var(--ink)'
 
-const MONEY = ['transfer', 'schedule_transfer', 'merchant_order', 'wealth_subscribe']
+const MONEY = ['transfer', 'phone_transfer', 'schedule_transfer', 'merchant_order', 'wealth_subscribe', 'bill_pay', 'qr_pay']
 
 /** One step's state as a small symbol: done, waiting for you, scheduled, failed or not run. */
 function StepIcon({ s }: { s: PlanStep }) {
@@ -183,7 +183,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
           </div>
         )}
         {p.status === 'scheduled' && <button type="button" className="btn btn-line mt-3 py-1.5" disabled={busy} onClick={() => void act(() => api.cancel(p.id, true, lang))}>{tr('Stop and undo', '停止并撤销')}</button>}
-        {p.status === 'done' && p.steps.some((s) => s.action === 'transfer') && (
+        {p.status === 'done' && p.steps.some((s) => s.action === 'transfer' || s.action === 'phone_transfer') && (
           <Link to="/accounts#transfers" className="mt-2.5 inline-block text-sm font-semibold text-[var(--action)]">{tr('See where the money is →', '查看到账进度 →')}</Link>
         )}
         {error && <p role="alert" className="mt-2 text-sm font-semibold text-cinnabar">{error}</p>}

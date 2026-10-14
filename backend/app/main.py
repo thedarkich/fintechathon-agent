@@ -14,6 +14,7 @@ from app.api.agent import router as agent
 from app.api.bank import router as bank
 from app.api.demo import router as demo
 from app.api.operator import router as operator
+from app.api.screens import router as screens
 from app.api.security import RequestBoundary, problem
 from app.api.uploads import router as uploads
 from app.config import Settings
@@ -72,6 +73,7 @@ def create_app(settings=None, *, runtime=None):
     app.include_router(bank)
     app.include_router(demo)
     app.include_router(operator)
+    app.include_router(screens)
     app.include_router(uploads)
 
     @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], include_in_schema=False)

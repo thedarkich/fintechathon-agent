@@ -119,7 +119,8 @@ async def conversations(request: Request, user_id: str = Depends(require_user)):
             select(Message.conversation_id, func.count(Message.id), func.max(Message.at))
             .where(Message.user_id == user_id).group_by(Message.conversation_id))}
         items = []
-        for conv in session.exec(select(Conversation).where(Conversation.user_id == user_id, Conversation.hidden.is_not(True))):
+        for conv in session.exec(select(Conversation).where(Conversation.user_id == user_id, Conversation.hidden.is_not(True),
+                                                            Conversation.kind.is_(None))):
             if conv.id not in stats:
                 continue  # a chat opened but never used
             first = session.exec(select(Message.text).where(Message.conversation_id == conv.id, Message.role == "user")

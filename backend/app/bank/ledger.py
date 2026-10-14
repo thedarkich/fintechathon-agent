@@ -10,7 +10,7 @@ from app.bank.categories import categorize
 from app.clock import CST
 from app.models import BankAccount, Order, Payee, ScheduledTransfer, Txn
 
-PAYMENT_KINDS = ("transfer_out", "order")
+PAYMENT_KINDS = ("transfer_out", "order", "bill", "qr")  # money paid to others: counted towards the day's total
 
 
 class BankError(Exception):

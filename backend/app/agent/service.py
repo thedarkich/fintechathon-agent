@@ -6,8 +6,9 @@ from sqlmodel import Session, select
 
 from app import clock
 from app.agent import audit, executor, locks, offline, replies, screening
+from app.agent.actions import REGISTRY
 from app.agent.core import Ctx
-from app.agent.planner import Planner, PlanOut, validate
+from app.agent.planner import Planner, PlanOut, StepOut, validate
 from app.llm import ModelUnavailable
 from app.models import Conversation, Message, Plan, Upload, UserAccount
 
@@ -27,13 +28,74 @@ def conversation_for(session: Session, user: UserAccount, conversation_id: str |
         conversation = session.get(Conversation, conversation_id)
         if conversation and conversation.user_id == user.id:
             return conversation
-    conversation = session.exec(select(Conversation).where(Conversation.user_id == user.id, Conversation.hidden.is_not(True))
+    conversation = session.exec(select(Conversation).where(Conversation.user_id == user.id, Conversation.hidden.is_not(True),
+                                                           Conversation.kind.is_(None))
                                 .order_by(Conversation.created_at.desc()).limit(1)).first()
     if conversation is None:
         conversation = Conversation(user_id=user.id)
         session.add(conversation)
         session.flush()
     return conversation
+
+
+def screens_conversation(session: Session, user: UserAccount) -> Conversation:
+    conversation = session.exec(select(Conversation).where(Conversation.user_id == user.id,
+                                                           Conversation.kind == "screens")).first()
+    if conversation is None:
+        conversation = Conversation(user_id=user.id, kind="screens")
+        session.add(conversation)
+        session.flush()
+    return conversation
+
+
+# what History calls a screen request that never got as far as its details
+SCREEN_LABELS = {"transfer": ("转账", "Transfer"), "phone_transfer": ("手机号转账", "Transfer by phone number"),
+                 "bill_pay": ("缴费", "Pay a bill"), "bill_autopay": ("自动缴费", "Automatic bill payment"),
+                 "qr_pay": ("扫码付款", "Pay by QR code")}
+
+
+class ScreenError(Exception):
+    def __init__(self, errors: list[str]):
+        super().__init__(", ".join(errors))
+        self.errors = errors
+
+
+def screen_plan(session: Session, user: UserAccount, action: str, args: dict, *, lang: str) -> Plan:
+    """A request made with a screen's own buttons (transfer by phone, pay a bill, pay by QR).
+
+    No model is involved, but everything after planning is the same as for the assistant: the step is
+    validated, resolved, put in a tier by the bank's rules, confirmed (PIN and code when red) and audited.
+    Typed notes are screened for scam and injection wording like chat messages."""
+    ctx = Ctx(session=session, user=user, now=clock.now(session, user.id), lang=lang if lang in ("zh", "en") else "zh")
+    conversation = screens_conversation(session, user)
+    proposed = PlanOut(steps=[StepOut(id="s1", action=action, args=args)])
+    words = " ".join(str(v) for k, v in args.items() if k == "memo" and v)
+    clean, _ = screening.redact(words) if words else ("", False)
+    audit.append(session, user.id, "request", {"text": f"[{action}] {clean}".strip(), "lang": ctx.lang, "channel": "screen",
+                                               "conversation": conversation.id})
+    errors = validate(proposed, "", screen=True)
+    audit.append(session, user.id, "plan_proposed", {"source": "screen", "model": None, "plan": proposed.model_dump(),
+                                                     "errors": errors})
+    if errors:
+        audit.append(session, user.id, "plan_rejected", {"errors": errors})
+        session.commit()
+        raise ScreenError(errors)
+    flags = screening.screen(words) if words else []
+    if flags:
+        audit.append(session, user.id, "screening", {"flags": flags})
+        locks.evaluate(session, user.id)
+    label = SCREEN_LABELS.get(action, (action, action))
+    plan = Plan(user_id=user.id, conversation_id=conversation.id, request=ctx.t(*label), lang=ctx.lang, source="screen", flags=flags,
+                steps=[{"id": "s1", "action": action, "args": args, "after": [], "run_at": None}])
+    session.add(plan)
+    session.flush()
+    executor.prepare(ctx, plan)
+    step = plan.steps[0]
+    if step.get("resolved"):  # what History lists: the request in the words of the step itself
+        plan.request = REGISTRY[action].describe(ctx, step["resolved"])
+    reply_for_plan(session, ctx, conversation, plan)
+    session.commit()
+    return plan
 
 
 def history(session: Session, conversation_id: str) -> list[str]:

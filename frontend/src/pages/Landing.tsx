@@ -68,8 +68,8 @@ export default function LandingPage() {
   }
   const tryIt = (text: string) => void go(`/assistant?ask=${encodeURIComponent(text)}`)
   const cta = (
-    <button type="button" className="site-button" disabled={demo.busy} onClick={() => void go('/assistant')}>
-      {demo.busy ? tr('Opening your bank…', '正在开通…') : signedIn ? tr('Open the assistant', '打开助手') : tr('Try it now, no sign-up', '马上试试，不用注册')} <span aria-hidden>→</span>
+    <button type="button" className="site-button" disabled={demo.busy} onClick={() => void go('/home')}>
+      {demo.busy ? tr('Opening your bank…', '正在开通…') : signedIn ? tr('Open the app', '进入银行') : tr('Try it now, no sign-up', '马上试试，不用注册')} <span aria-hidden>→</span>
     </button>
   )
   const [params] = useSearchParams()

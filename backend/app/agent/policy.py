@@ -48,9 +48,10 @@ def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_s
                      + earlier_same_day_fen + payment)
         rule = "Y_SMALL_PAYMENT" if day_total <= DAILY_LIMIT_FEN else "R_LARGE_PAYMENT"
     tier = tier_of(rule)
-    if payment and resolved.get("payee_new") and resolved.get("payee_id"):
-        # in total, so two ¥400 payments to a payee added today count as ¥800
-        to_payee = ledger.paid_to(ctx.session, ctx.user.id, resolved["payee_id"]) + earlier_to_payee_fen + payment
+    if payment and resolved.get("payee_new"):
+        # in total, so two ¥400 payments to a payee added today count as ¥800; a phone number never paid has nothing yet
+        paid = ledger.paid_to(ctx.session, ctx.user.id, resolved["payee_id"]) if resolved.get("payee_id") else 0
+        to_payee = paid + earlier_to_payee_fen + payment
         if to_payee > NEW_PAYEE_FEN:
             signals.append("S_NEW_PAYEE_LARGE")
             tier = higher(tier, "red")
@@ -72,7 +73,7 @@ SAFER_ARRIVAL_SIGNALS = ("S_NEW_PAYEE_LARGE", "S_FLAGGED_REQUEST", "S_FLAGGED_CO
 def safer_arrival(action: Action, resolved: dict, decision: dict) -> str | None:
     """A transfer with a risk signal arrives in 2 hours instead of now, so the customer can still cancel it.
     Fixed code: the model can neither ask for nor skip this."""
-    if action.name == "transfer" and resolved.get("arrival", "instant") == "instant" \
+    if action.name in ("transfer", "phone_transfer") and resolved.get("arrival", "instant") == "instant" \
             and any(s in decision["signals"] for s in SAFER_ARRIVAL_SIGNALS):
         return "standard"
     return None

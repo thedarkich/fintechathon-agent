@@ -2,6 +2,7 @@
 
 from app.agent.actions import (  # noqa: F401
     analysis,
+    bills,
     cards,
     control,
     payments,

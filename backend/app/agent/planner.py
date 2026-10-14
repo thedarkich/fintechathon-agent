@@ -52,7 +52,7 @@ def refs_in(value) -> set[str]:
     return set()
 
 
-def validate(plan: PlanOut, user_text: str) -> list[str]:
+def validate(plan: PlanOut, user_text: str, *, screen: bool = False) -> list[str]:
     errors = []
     ids = [s.id for s in plan.steps]
     if len(ids) != len(set(ids)):
@@ -61,6 +61,9 @@ def validate(plan: PlanOut, user_text: str) -> list[str]:
         action = REGISTRY.get(step.action)
         if action is None:
             errors.append(f"UNKNOWN_ACTION:{step.action}")
+            continue
+        if action.screen_only and not screen:
+            errors.append(f"SCREEN_ONLY:{step.action}")
             continue
         for dep in step.after:
             if dep not in ids or dep == step.id:
@@ -89,7 +92,7 @@ def validate(plan: PlanOut, user_text: str) -> list[str]:
 
 
 def catalogue() -> str:
-    return "\n".join(f"- {name}: {action.help}" for name, action in REGISTRY.items())
+    return "\n".join(f"- {name}: {action.help}" for name, action in REGISTRY.items() if not action.screen_only)
 
 
 PROMPT = """You are the planning component of a bank's mobile assistant in mainland China (amounts in RMB yuan).

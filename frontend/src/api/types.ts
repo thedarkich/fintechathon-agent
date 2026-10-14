@@ -28,6 +28,43 @@ export interface Message {
   cards: Card[]
 }
 
+/** Who a phone number belongs to, before a transfer by phone number. */
+export type Directory =
+  | { kind: 'self' | 'none' }
+  | { kind: 'payee'; payee: { id: string; name: string; note: string | null; bank: string; account_tail: string } }
+  | { kind: 'directory'; name: string; bank: string; same_bank: boolean }
+
+export interface Provider { code: string; category: string; name: string; account_label: string; billed: boolean; top_ups: number[] | null }
+export interface BillerCategory { code: string; name: string; icon: string; providers: Provider[] }
+export interface SavedBill {
+  id: string
+  provider: Provider
+  account: string
+  label: string | null
+  autopay: boolean
+  autopay_limit_fen: number | null
+  next_autopay_on: string | null
+  billed_fen: number | null
+  due_fen: number | null
+  period: string | null
+}
+export interface BillLookup {
+  provider: Provider
+  account: string
+  holder: string | null
+  period: string | null
+  billed_fen: number | null
+  due_fen: number | null
+  detail: string | null
+  saved_id: string | null
+  autopay: boolean
+  autopay_limit_fen: number | null
+  next_autopay_on: string | null
+}
+export interface QrMerchant { code: string; name: string; city: string; category: string; payload: string }
+export type QrRead = { valid: false } | { valid: true; merchant: Omit<QrMerchant, 'payload'>; fen: number | null; order: string | null }
+export type ScreenAction = 'transfer' | 'phone_transfer' | 'bill_pay' | 'bill_autopay' | 'qr_pay'
+
 /** One past chat in the assistant's history list. */
 export interface ConversationItem {
   id: string
@@ -198,6 +235,7 @@ export type TransferStatus = 'accepted' | 'clearing' | 'arrived' | 'returned' | 
 /** A transfer as the simulated bank processes it (backend bank/transfers.py). */
 export interface Transfer {
   id: string
+  payee_id: string
   payee: string
   bank: string
   account_tail: string

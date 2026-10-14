@@ -146,9 +146,17 @@ Questions the fixed analyses cannot answer (“周末晚上8点后喝咖啡花�
 
 An uploaded photo or PDF (5 MB at most) is parsed in a separate, resource-limited worker. A configured vision model returns only a fixed schema (merchant, date, items, total, whether instructions were found); without one, PDFs with a text layer are read by rules. Hidden text (near-white, tiny, off-page or zero-size text) and instruction-like content (“transfer to…”) are flagged. The planner sees only the receipt's id, never its contents, and any step based on a flagged receipt needs strong verification.
 
+### 3.11 The app's own screens
+
+Next to the assistant, the app has screens for what people do most: a home screen of services, transfer by phone number, Payments (mobile top-up, electricity, water, gas, internet, property fees, traffic fines) and QR pay. A screen fills in the details itself, so no model is involved, but a payment from a screen is still a plan: `POST /api/screens/plan` takes one step from a short allowlist and runs it through the same validation, resolution, tiers, approval hash, PIN and code, and audit as a chat request (`source: screen`). Notes typed on a screen are screened for scam wording like chat messages. These actions (`phone_transfer`, `bill_pay`, `bill_autopay`, `qr_pay`) are marked screen-only, so the planner is never offered them and the assistant behaves as before.
+
+- **Phone transfers.** A number is looked up in a simulated phone directory: a saved payee, someone else (shown only by a masked name such as “*小明” and their bank), or nobody. Lookups are rate-limited so they can't be used to list strangers' names. A first transfer to a number counts as a payee added today, so the new-payee rule (over ¥500 → red, money arrives 2 hours later) applies.
+- **Bills.** Providers bill monthly (simulated, the same amount for the same account and month). Bills the customer already pays by direct debit are listed on the first visit. Automatic payment is a yellow step with a monthly limit; a bill above the limit is never paid automatically, the customer is told instead.
+- **QR pay.** A code carries only the shop's id, and for a till's code the amount and order number; the shop's name comes from the bank's own merchant records, so a code cannot rename a shop. A code can be a link to the pay screen, so a phone camera opens the app on the payment. Codes that aren't the bank's are reported, never opened.
+
 ## 4. Data model
 
-`UserAccount`, `BankAccount` (checking, savings, reserve), `Txn`, `Payee`, `Card`, `Subscription`, `ScheduledTransfer`, `Transfer`, `PayeeMessage`, `Collection`, `WealthProduct`, `Holding`, `RiskProfile`, `Order`, `Plan`, `Conversation`, `Message`, `Challenge`, `Passkey`, `SmsMessage`, `Notification`, `SafetyLock`, `AuditEntry`, `DemoClock`, `Upload`. Money is stored as integer fen; times are China Standard Time. Every new customer gets a seeded bank: about 22 months of realistic transactions, family and friend payees (including two with the same pinyin name and a seller added today whose account is in someone else's name), two cards, subscriptions with an overlap and a forgotten trial, seeded anomalies, holdings and a risk profile.
+`UserAccount`, `BankAccount` (checking, savings, reserve), `Txn`, `Payee`, `Card`, `Subscription`, `ScheduledTransfer`, `Transfer`, `PayeeMessage`, `Collection`, `WealthProduct`, `Holding`, `RiskProfile`, `Order`, `Plan`, `Conversation`, `Message`, `Challenge`, `Passkey`, `SmsMessage`, `Notification`, `SafetyLock`, `AuditEntry`, `DemoClock`, `Upload`, `SavedBill`, `BillPayment`. Money is stored as integer fen; times are China Standard Time. Every new customer gets a seeded bank: about 22 months of realistic transactions, family and friend payees (including two with the same pinyin name and a seller added today whose account is in someone else's name), two cards, subscriptions with an overlap and a forgotten trial, seeded anomalies, holdings and a risk profile.
 
 ## 5. Interfaces
 
@@ -156,13 +164,14 @@ An uploaded photo or PDF (5 MB at most) is parsed in a separate, resource-limite
 - `POST /api/demo/start`: a one-click demo account with its own seeded bank (its PIN is returned and shown on screen; red steps still need the PIN plus a one-time code or a passkey).
 - `POST /api/plans/{id}/approve`, `/sms`, `/passkey-options`, `/verify`, `/cancel`, `/answer`, `/edit`: approval, verification, stopping, answering a question and editing a step.
 - `GET /api/bank/*`: the customer reading their own bank directly (no AI): overview, transactions, report, anomalies, subscriptions, cards, payees, wealth, scheduled transfers, transfers.
+- `POST /api/screens/plan`: a payment from one of the app's screens, returned as a plan waiting for confirmation. `GET /api/directory`, `/billers`, `/bills`, `/bills/lookup`, `/qr/read`, `/qr/merchants`: the lookups those screens make.
 - `GET /api/audit`, `GET /api/audit/verify`: the audit log and chain verification.
 - `POST /api/demo/advance`, `/reset`, `/transfers/{id}`: demo tools (bank clock, fresh seed, transfer stage control).
 - Operator endpoints (the admin bearer token or an operator account): queue, conversation detail, reply, release, cancel, unlock. None approves anything.
 
 ## 6. Testing and evaluation
 
-- `backend/tests`: 87 tests through the HTTP API, covering tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
+- `backend/tests`: 96 tests through the HTTP API, covering tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
 - `evals/`: 220 everyday requests and 69 attacks, run on a fresh customer each; the report is in [eval/report-offline.md](eval/report-offline.md). See the README for the command.
 
 ## 7. Deployment

@@ -41,9 +41,9 @@ export function SiteHeader({ workspace = false, status }: { workspace?: boolean;
     } catch { setError(tr('Could not sign out. Please retry.', '退出未完成，请重试。')) }
     finally { setBusy(false) }
   }
-  const home = user ? '/assistant' : getAdminToken() ? '/operator' : '/login'
+  const home = user ? '/home' : getAdminToken() ? '/operator' : '/login'
   const links = (workspace
-    ? [['/assistant', tr('Assistant', '助手')], ['/accounts', tr('Accounts', '账户与转账')], ['/bills', tr('Spending', '账单')], ['/wealth', tr('Invest', '理财')], ['/controls', tr('Cards', '卡片与安全')], ['/ledger', tr('History', '记录')], ['/operator', tr('Staff', '客服')]]
+    ? [['/home', tr('Home', '首页')], ['/assistant', tr('Assistant', '助手')], ['/accounts', tr('Accounts', '账户与转账')], ['/bills', tr('Spending', '账单')], ['/wealth', tr('Invest', '理财')], ['/controls', tr('Cards', '卡片与安全')], ['/ledger', tr('History', '记录')], ['/operator', tr('Staff', '客服')]]
     : [['/?section=features', tr('What it does', '能做什么')], ['/how', tr('How it stays safe', '安全原理')], [home, tr('Open the app', '进入')]]
   ).filter(([to]) => to !== '/operator' || isOperator(user)).filter(([to]) => !workspace || user || to === '/operator')
   return <header className="site-header">
@@ -54,7 +54,7 @@ export function SiteHeader({ workspace = false, status }: { workspace?: boolean;
         {signedIn ? <>
           <span className="account-label" title={user?.email}>{user ? (user.demo ? tr(`${user.name} · demo`, `${user.name} · 演示`) : user.name) : tr('Operator token', '工作人员令牌')}</span>
           {workspace ? <button type="button" className="site-button secondary" disabled={busy} onClick={() => void signOut()}>{busy ? tr('Signing out…', '正在退出…') : tr('Sign out', '退出登录')}</button>
-            : <Link className="site-button" to={home}>{tr('Open the assistant', '打开助手')} <span aria-hidden>→</span></Link>}
+            : <Link className="site-button" to={home}>{tr('Open the app', '进入银行')} <span aria-hidden>→</span></Link>}
         </> : <>
           <Link className="site-signin" to="/login">{tr('Sign in', '登录')}</Link>
           <Link className="site-button" to="/signup">{tr('Get started', '开始使用')} <span aria-hidden>→</span></Link>
@@ -63,13 +63,16 @@ export function SiteHeader({ workspace = false, status }: { workspace?: boolean;
     </div>
     <div className="site-subbar">
       <nav ref={nav} aria-label={tr('Main navigation', '主导航')}>
-        {links.map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => workspace && isActive ? 'is-active' : ''}>{label}</NavLink>)}
+        {links.map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => workspace && (isActive || (to === '/home' && HOME_SERVICES.test(pathname))) ? 'is-active' : ''}>{label}</NavLink>)}
       </nav>
       {workspace && status && <span className="site-network"><span className="status-dot" />{status}</span>}
     </div>
     {error && <p className="site-error" role="alert">{error}</p>}
   </header>
 }
+
+// screens opened from the home grid: the Home tab stays lit while they are open
+const HOME_SERVICES = /^\/(send|payments|qr)$/
 
 export function SiteFooter() {
   const { tr, t } = useLang()

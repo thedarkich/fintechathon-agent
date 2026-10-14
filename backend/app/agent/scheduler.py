@@ -9,7 +9,7 @@ from sqlmodel import Session, select
 
 from app import clock
 from app.agent import audit, executor, policy
-from app.agent.actions import REGISTRY
+from app.agent.actions import REGISTRY, bills
 from app.agent.core import TIERS, Ctx
 from app.bank import analysis, ledger, transfers
 from app.bank.ledger import BankError
@@ -228,6 +228,7 @@ def tick(session: Session, user: UserAccount, lang: str = "zh") -> None:
     settle_transfers(ctx)
     salary(ctx)
     renew_subscriptions(ctx)
+    bills.run_autopays(ctx, executor.notify)
     release_reserves(ctx)
     collections(ctx)
     reminders(ctx)
