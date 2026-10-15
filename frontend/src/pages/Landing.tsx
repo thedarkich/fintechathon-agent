@@ -1,10 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang } from '../i18n'
 import { SiteHeader, SiteFooter } from '../components/SiteChrome'
 import { HeroSlider, type Slide } from '../components/HeroSlider'
 import { Icon, type IconName } from '../components/Icon'
 import { Seal } from '../components/Seal'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { getAdminToken } from '../api/client'
 import { useAuth, useStartDemo } from '../lib/auth'
 import { yuan } from '../lib/format'
@@ -93,6 +94,56 @@ function PayScreen() {
       <div className="lp-bill"><span><b>{tr('Wuhan Water', '武汉水务 水费')}</b><small>{tr('Due now', '待缴')}</small></span><b>¥52.63</b></div>
     </PhoneScreen>
   )
+}
+
+type Feature = [IconName, string, string, string, string]
+
+/** The features in one row that slides, as a bank's product tiles do: each ends in a phone showing the sentence and the answer. */
+function FeatureRail({ features, onTry, busy }: { features: Feature[]; onTry: (text: string) => void; busy: boolean }) {
+  const { tr } = useLang()
+  const rail = useRef<HTMLDivElement>(null)
+  const [page, setPage] = useState(0)
+  const [pages, setPages] = useState(1)
+  useEffect(() => {
+    const el = rail.current
+    if (!el) return
+    const measure = () => {
+      const tile = el.firstElementChild as HTMLElement | null
+      const per = tile ? Math.max(1, Math.round(el.clientWidth / tile.offsetWidth)) : 1
+      setPages(Math.max(1, Math.ceil(features.length / per)))
+      setPage(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)))
+    }
+    measure()
+    el.addEventListener('scroll', measure, { passive: true })
+    const watcher = new ResizeObserver(measure)
+    watcher.observe(el)
+    return () => { el.removeEventListener('scroll', measure); watcher.disconnect() }
+  }, [features.length])
+  const go = (to: number) => {
+    const el = rail.current
+    if (el) el.scrollTo({ left: Math.max(0, Math.min(pages - 1, to)) * el.clientWidth, behavior: 'smooth' })
+  }
+  return <>
+    <div className="lp-rail" ref={rail}>
+      {features.map(([icon, title, text, example, reply]) => (
+        <button key={title} type="button" className="lp-tile" disabled={busy} onClick={() => onTry(example)} aria-label={tr(`${title}. Try saying: ${example}`, `${title}。试试说：${example}`)}>
+          <span className="lp-tile-title">{title}</span>
+          <span className="lp-tile-text">{text}</span>
+          <span className="lp-tile-phone" aria-hidden>
+            <span className="lp-tile-me">{example}</span>
+            <span className="lp-tile-bot"><Icon name={icon} size={15} />{reply}</span>
+          </span>
+        </button>
+      ))}
+    </div>
+    {pages > 1 && (
+      <div className="lp-rail-controls">
+        <button type="button" className="lp-arrow lp-arrow-dark" onClick={() => go(page - 1)} disabled={page === 0} aria-label={tr('Previous', '上一组')}><ArrowLeft size={20} /></button>
+        <div className="lp-dots">{Array.from({ length: pages }, (_, i) => <button key={i} type="button" onClick={() => go(i)} aria-label={tr(`Page ${i + 1}`, `第 ${i + 1} 组`)} aria-current={i === page} className={i === page ? 'is-active' : ''} />)}</div>
+        <button type="button" className="lp-arrow lp-arrow-dark" onClick={() => go(page + 1)} disabled={page >= pages - 1} aria-label={tr('Next', '下一组')}><ArrowRight size={20} /></button>
+      </div>
+    )}
+  </>
 }
 
 const TIERS = {
@@ -199,13 +250,13 @@ export default function LandingPage() {
     ['/bills', 'chart', 'Spending', '账单'], ['/wealth', 'trend', 'Invest', '理财'], ['/controls', 'card', 'Cards', '卡片'], ['/how', 'shield', 'Safety', '安全'],
   ]
   const examples = [tr("What's my balance?", '我卡里还有多少钱'), tr('Where did my money go last month?', '上个月钱都花哪了'), tr('Freeze my virtual card', '冻结我的虚拟卡'), tr('Cancel iQIYI', '取消爱奇艺会员'), tr("It's my wife's birthday next month, help me prepare", '下个月老婆生日，帮我准备一下')]
-  const features: [IconName, string, string, string][] = [
-    ['arrow', tr('Send money in one sentence', '一句话转账'), tr('See who, how much and when it arrives, then confirm.', '看清收款人、金额和到账时间再确认。'), tr('Send Mom 200', '给妈妈转200')],
-    ['chart', tr('Ask where your money went', '钱花哪了，一问就知'), tr('Categories, trends and anything suspicious.', '分类、走势、可疑交易，一目了然。'), tr('Where did my money go last month?', '上个月钱都花哪了')],
-    ['card', tr('Lost your card? Freeze it now', '卡丢了，先冻结'), tr('Freeze, report lost, change a limit, just by saying so.', '冻结、挂失、调限额，说一声就办。'), tr('I lost my card', '我的卡丢了')],
-    ['bell', tr('Cancel what you don’t use', '不用的会员，一句话取消'), tr('Every monthly charge found for you, duplicates included.', '自动找出每月扣钱的会员，重复的一目了然。'), tr('What am I paying for every month?', '我有哪些自动续费')],
-    ['trend', tr('Investing, explained', '理财，问得明白'), tr('Suggestions that fit your risk test, nothing above it.', '按风险测评推荐，超出承受能力的不让买。'), tr('I have 100000 for a year. What should I invest in?', '有10万一年不用，推荐个理财')],
-    ['clock', tr('A birthday, planned in one go', '生日，一句话安排'), tr('Money set aside, flowers and a cake ordered in time.', '预留礼物钱，提前订好花和蛋糕。'), tr('My wife’s birthday is next month', '下个月老婆生日，帮我准备一下')],
+  const features: Feature[] = [
+    ['arrow', tr('Send money in a sentence', '一句话转账'), tr('See who, how much and when it arrives, then confirm.', '看清收款人、金额和到账时间再确认。'), tr('Send Mom 200', '给妈妈转200'), tr('To Wang Xiuying (Mom), ¥200.00. Confirm?', '收款人：王秀英（妈妈），¥200.00。确认吗？')],
+    ['chart', tr('Where did the money go?', '钱花哪了，一问就知'), tr('Categories, trends and anything suspicious.', '分类、走势、可疑交易，一目了然。'), tr('Where did my money go last month?', '上个月钱都花哪了'), tr('Spending by category, with dining first.', '按类别列出支出，餐饮最多。')],
+    ['card', tr('Lost a card? Freeze it now', '卡丢了，先冻结'), tr('Freeze, report lost, change a limit, just by saying so.', '冻结、挂失、调限额，说一声就办。'), tr('I lost my card', '我的卡丢了'), tr('Freeze the debit card first? One tap.', '先冻结借记卡？点一下确认。')],
+    ['bell', tr('Cancel what you don’t use', '不用的会员，取消'), tr('Every monthly charge found for you, duplicates included.', '自动找出每月扣钱的会员，重复的一目了然。'), tr('What am I paying for every month?', '我有哪些自动续费'), tr('Two music services: cancel one?', '有两个音乐会员，取消一个？')],
+    ['trend', tr('Investing, explained', '理财，问得明白'), tr('Suggestions that fit your risk test, nothing above it.', '按风险测评推荐，超出承受能力的不让买。'), tr('100000 for a year: what should I buy?', '有10万一年不用，推荐个理财'), tr('Low-risk picks that match your test.', '按你的风险测评，推荐稳健产品。')],
+    ['clock', tr('A birthday, planned', '生日，一句话安排'), tr('Money set aside, flowers and a cake ordered in time.', '预留礼物钱，提前订好花和蛋糕。'), tr('My wife’s birthday is next month', '下个月老婆生日，帮我准备一下'), tr('Set aside ¥1,000, order two days before.', '预留 ¥1,000，提前两天下单。')],
   ]
   const safety: [string, string][] = [
     [tr('Nothing moves without your yes', '动钱之前，先问你'), tr('You see who, how much and when, then tap Confirm.', '先看收款人、金额和到账时间，你点“确认”才办。')],
@@ -228,7 +279,7 @@ export default function LandingPage() {
         <section className="lp-info-card" aria-labelledby="try-title">
           <div className="lp-info-head"><h2 id="try-title">{tr('Try saying', '试着这样说')}</h2><span>{tr('Opens a demo account', '会开一个演示账户')}</span></div>
           <ul className="lp-rows">
-            {examples.slice(0, 4).map((text) => (
+            {examples.map((text) => (
               <li key={text}><button type="button" disabled={demo.busy} onClick={() => tryIt(text)}><span>“{text}”</span><Icon name="arrow" size={16} /></button></li>
             ))}
           </ul>
@@ -239,7 +290,7 @@ export default function LandingPage() {
             <ul className="lp-steps">
               {safety.map(([title, text]) => <li key={title}><b>{title}</b><span>{text}</span></li>)}
             </ul>
-            <Link to="/how" className="site-button secondary lp-white">{tr('See how it works', '看看原理')}</Link>
+            <Link to="/how" className="site-button lp-white">{tr('See how it works', '看看原理')} <span aria-hidden>→</span></Link>
           </div>
           <span className="lp-info-seal" aria-hidden><Seal kind="done" size={132} /></span>
         </section>
@@ -247,19 +298,7 @@ export default function LandingPage() {
 
       <section className="lp-section" id="features">
         <h2>{tr('One sentence does it', '一句话，能办这些事')}</h2>
-        <div className="lp-tiles">
-          {features.map(([icon, title, text, example]) => (
-            <article key={title} className="lp-tile">
-              <h3>{title}</h3>
-              <p>{text}</p>
-              <div className="lp-tile-card">
-                <span className="lp-tile-icon"><Icon name={icon} size={20} /></span>
-                <p>“{example}”</p>
-                <button type="button" disabled={demo.busy} onClick={() => tryIt(example)}>{tr('Try it', '试试这句')}</button>
-              </div>
-            </article>
-          ))}
-        </div>
+        <FeatureRail features={features} onTry={tryIt} busy={demo.busy} />
       </section>
 
       <section className="lp-section" id="calc">

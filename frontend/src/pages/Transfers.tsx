@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, errorText } from '../api/client'
 import type { Transfer, TransferStatus } from '../api/types'
 import { useLang } from '../i18n'
-import { Section } from '../components/bits'
+import { Section, Segmented } from '../components/bits'
 import { SealMark, type MarkKind } from '../components/Seal'
 import { usePhone } from '../components/Verify'
 import { useChat } from '../lib/chat'
@@ -109,16 +109,14 @@ function SmsPanel() {
     : (theirs.data?.items ?? []).map((m) => ({ id: m.id, who: lang === 'zh' ? m.payee : m.payee_en, text: lang === 'zh' ? m.text : m.text_en, at: m.at }))
   return (
     <div className="ruled bg-field">
-      <div className="flex border-b border-rule" role="tablist" aria-label={tr('Text messages', '短信')}>
-        {([['mine', tr('Your phone', '我的手机')], ['theirs', tr('Payee’s phone', '收款方手机')]] as const).map(([key, label]) => (
-          <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
-            className={`flex-1 px-4 py-2.5 text-sm font-semibold ${tab === key ? 'border-b-2 border-[var(--action)] text-ink' : 'text-ink2'}`}>{label}</button>
-        ))}
+      <div className="p-3 pb-0">
+        <Segmented stretch className="flex w-full" label={tr('Text messages', '短信')} value={tab} onChange={setTab}
+          options={[['mine', tr('Your phone', '我的手机')], ['theirs', tr('Payee’s phone', '收款方手机')]] as const} />
       </div>
       {!items.length ? <p className="px-4 py-4 text-sm text-ink2">{tr('No messages.', '暂无短信。')}</p> : (
         <ol className="max-h-80 space-y-2 overflow-y-auto p-3">
           {items.map((m) => (
-            <li key={m.id} className="rounded-box bg-sheet px-3 py-2 text-[0.85rem] leading-relaxed">
+            <li key={m.id} className="rounded-box bg-paper px-3 py-2 text-[0.85rem] leading-relaxed">
               {m.who && <span className="mb-0.5 block text-xs font-semibold text-ink2">{m.who}</span>}
               {m.text}
               <span className="mt-1 block font-mono text-[0.72rem] text-ink2">{stamp(m.at)}</span>

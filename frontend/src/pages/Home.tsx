@@ -5,6 +5,7 @@ import { Eye, EyeOff, SendHorizontal } from 'lucide-react'
 import { api } from '../api/client'
 import { useLang } from '../i18n'
 import { Icon, type IconName } from '../components/Icon'
+import { ServiceTile } from '../components/bits'
 import { useAuth } from '../lib/auth'
 import { useOverview } from '../lib/bank'
 import { useChat } from '../lib/chat'
@@ -35,6 +36,8 @@ export default function Home() {
   const overview = useOverview()
   const bills = useQuery({ queryKey: ['bills', lang], queryFn: () => api.bills(lang) })
   const recent = useQuery({ queryKey: ['transactions', 'home'], queryFn: () => api.transactions(30, '', 6) })
+  const notes = useQuery({ queryKey: ['notifications', lang], queryFn: () => api.notifications(lang) })
+  const forYou = (notes.data?.items ?? []).filter((n) => n.suggestion).slice(0, 2)
   const [hidden, setHidden] = useState(hiddenStored)
   const [ask, setAsk] = useState('')
   const data = overview.data
@@ -85,22 +88,32 @@ export default function Home() {
             </> : <div className="mt-2 h-20 animate-pulse rounded-box bg-white/15" aria-hidden />}
           </section>
 
-          <nav aria-label={tr('Services', '服务')} className="grid grid-cols-4 gap-x-1 gap-y-4 sm:gap-x-3">
-            {SERVICES.map(([to, icon, en, zh]) => (
-              <Link key={to} to={to} className="group flex flex-col items-center gap-2 rounded-box px-1 py-1 text-center">
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-rule bg-paper text-[var(--action)] shadow-[0_4px_12px_var(--shadow)] transition-colors group-hover:border-[var(--action)]">
-                  <Icon name={icon} size={26} />
-                </span>
-                <span className="text-[0.88rem] font-semibold leading-tight">{tr(en, zh)}</span>
-              </Link>
-            ))}
+          <nav aria-label={tr('Services', '服务')} className="service-panel">
+            {SERVICES.map(([to, icon, en, zh]) => <ServiceTile key={to} to={to} icon={icon} label={tr(en, zh)} />)}
           </nav>
+
+          {forYou.length > 0 && (
+            <section aria-labelledby="for-you">
+              <h2 id="for-you" className="mb-3 text-xl font-bold tracking-[-0.01em]">{tr('For you', '为你推荐')}</h2>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {forYou.map((n) => (
+                  <article key={n.id} className="flex flex-col rounded-panel p-5 text-white" style={{ background: 'var(--hero)' }}>
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20"><Icon name={n.kind === 'birthday' ? 'clock' : n.kind === 'anomaly' ? 'flag' : 'bell'} size={19} /></span>
+                    <h3 className="mt-3 text-[1.05rem] font-bold leading-snug">{n.title}</h3>
+                    <p className="mt-1 line-clamp-2 text-sm leading-relaxed">{n.body}</p>
+                    <button type="button" disabled={!!pending} onClick={() => void send(n.suggestion!)}
+                      className="mt-4 w-fit rounded-[12px] bg-cta px-4 py-2 text-sm font-bold text-cta-ink hover:brightness-105">{tr('Let the assistant do it', '让助手来办')}</button>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
 
         <div className="space-y-6">
           {due.length > 0 && (
             <section>
-              <h2 className="mb-2 text-lg font-bold">{tr('Bills', '待缴账单')}</h2>
+              <h2 className="mb-2 text-xl font-bold">{tr('Bills', '待缴账单')}</h2>
               <ul className="space-y-2">
                 {due.map((b) => (
                   <li key={b.id}>
@@ -121,7 +134,7 @@ export default function Home() {
 
           <section>
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-lg font-bold">{tr('Recent', '最近交易')}</h2>
+              <h2 className="text-xl font-bold">{tr('Recent', '最近交易')}</h2>
               <Link to="/bills" className="text-sm font-semibold text-[var(--action)]">{tr('All', '全部')}</Link>
             </div>
             {!recent.data ? <div className="h-48 animate-pulse rounded-box bg-paper2" aria-hidden /> : (

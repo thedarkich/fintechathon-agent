@@ -92,7 +92,7 @@ export function SiteHeader({ workspace = false, status }: { workspace?: boolean;
             {signedIn ? <>
               <span className="account-pill" title={user?.email}>{user ? (user.demo ? tr(`${user.name} · demo`, `${user.name} · 演示`) : user.name) : tr('Operator token', '工作人员令牌')}</span>
               {workspace ? <button type="button" className="site-signout" disabled={busy} onClick={() => void signOut()}>{busy ? tr('Signing out…', '正在退出…') : tr('Sign out', '退出')}</button>
-                : <Link className="site-pill" to={home}>{tr('Open the app', '进入银行')}</Link>}
+                : <Link className="site-pill" to={home}><span className="pill-long">{tr('Open the app', '进入银行')}</span><span className="pill-short">{tr('Open', '进入')}</span></Link>}
             </> : <Link className="site-pill" to="/login">{tr('Sign in', '登录')}</Link>}
           </div>
         </div>

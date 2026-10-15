@@ -72,7 +72,7 @@ body {
   background-color: var(--field);
 }
 /* on a grey card, fields and secondary buttons are white, as they would vanish grey on grey */
-.ruled :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select),
+.ruled :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not(.bg-transparent), textarea:not(.bg-transparent), select),
 :is(.ruled, .confirm-card, .bot-bubble) .btn-line {
   background-color: var(--paper);
 }
@@ -222,7 +222,7 @@ button {
 /* The workspace uses the same two-row navigation as the landing page. */
 .workspace { min-height: 100dvh; }
 .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--jade); flex-shrink: 0; }
-.page-content { width: 100%; max-width: 1152px; margin: 0 auto; padding: 32px 32px 64px; }
+.page-content { width: min(1280px, calc(100% - 48px)); margin: 0 auto; padding: 36px 0 72px; }
 .page-content h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
 .page-content h1 + p { margin-top: 8px; }
 .eyebrow { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); }
@@ -256,7 +256,7 @@ button {
 .skip-link:focus { top: 10px; }
 .btn, button, a, input, textarea { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 760px) {
-  .page-content { padding: 20px 16px 48px; }
+  .page-content { width: calc(100% - 32px); padding: 20px 0 48px; }
   .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .metric-card { padding: 16px; }
   .metric-card dd { font-size: 24px; margin-top: 12px; }
@@ -264,6 +264,34 @@ button {
   .page-content h1 { font-size: 28px; }
   .panel-heading { padding: 16px; }
 }
+
+/* A service: a white rounded tile with a green line icon, its name underneath; a grey panel holds a grid of them. */
+.service-panel { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px 8px; border-radius: 24px; background: var(--field); padding: 26px 16px 22px; }
+.service-tile { display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 2px; text-align: center; font-size: 14px; font-weight: 600; line-height: 1.25; color: var(--ink); }
+.service-icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 18px; background: var(--paper); color: var(--action); border: 1px solid var(--rule); box-shadow: 0 6px 16px var(--shadow); transition: transform .15s ease, border-color .15s ease; }
+.service-tile:hover .service-icon, .service-tile:focus-visible .service-icon { border-color: var(--action); transform: translateY(-2px); }
+.service-tile:disabled { opacity: .6; }
+@media (max-width: 767px) {
+  .service-panel { gap: 16px 4px; padding: 18px 6px 16px; }
+  .service-icon { width: 56px; height: 56px; border-radius: 16px; }
+  .service-tile { font-size: 12.5px; }
+}
+@media (prefers-reduced-motion: reduce) { .service-icon { transition: none; } }
+
+/* the QR screen's scanner: a green panel with a viewfinder */
+.qr-scanner { display: flex; flex-direction: column; align-items: center; text-align: center; border-radius: 24px; background: var(--hero); color: #fff; padding: 32px 24px 28px; }
+.qr-frame { position: relative; display: grid; place-items: center; width: 180px; height: 180px; margin-bottom: 20px; color: #ffffff66;
+  background: linear-gradient(#fff, #fff) top left / 34px 5px no-repeat, linear-gradient(#fff, #fff) top left / 5px 34px no-repeat,
+    linear-gradient(#fff, #fff) top right / 34px 5px no-repeat, linear-gradient(#fff, #fff) top right / 5px 34px no-repeat,
+    linear-gradient(#fff, #fff) bottom left / 34px 5px no-repeat, linear-gradient(#fff, #fff) bottom left / 5px 34px no-repeat,
+    linear-gradient(#fff, #fff) bottom right / 34px 5px no-repeat, linear-gradient(#fff, #fff) bottom right / 5px 34px no-repeat; }
+.qr-frame::after { content: ''; position: absolute; left: 14px; right: 14px; top: 50%; height: 2px; border-radius: 2px; background: var(--cta); box-shadow: 0 0 12px var(--cta); animation: qr-scan 2.4s ease-in-out infinite alternate; }
+@keyframes qr-scan { from { transform: translateY(-62px); } to { transform: translateY(62px); } }
+@media (prefers-reduced-motion: reduce) { .qr-frame::after { animation: none; } }
+.qr-scanner .btn-ink { background: var(--cta); color: var(--cta-ink); }
+
+/* on a grey card, the pill tabs' track is white */
+.ruled [role=tablist] { background-color: var(--paper); }
 
 /* lists inside the assistant's grey bubble are white */
 .bot-bubble .ruled { background-color: var(--paper); }

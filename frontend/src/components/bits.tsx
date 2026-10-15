@@ -4,6 +4,7 @@ import { getAdminToken } from '../api/client'
 import type { Tier } from '../api/types'
 import { useLang } from '../i18n'
 import { isOperator, useAuth } from '../lib/auth'
+import { Icon, type IconName } from './Icon'
 
 /** Workspace pages open for a signed-in customer. */
 export function SignedInGate({ children }: { children: ReactNode }) {
@@ -54,7 +55,7 @@ export function Section({ title, aside, id, className = '', children }: { title:
   return (
     <section id={id} className={`scroll-mt-6 ${className}`}>
       <div className="mb-3 flex min-h-9 flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">{title}</h2>
+        <h2 className="text-xl font-bold tracking-[-0.01em]">{title}</h2>
         {aside}
       </div>
       {children}
@@ -67,15 +68,22 @@ export function AskButton({ label, hint, className = 'btn btn-line py-1.5 text-s
   return <Link to={`/assistant?hint=${encodeURIComponent(hint)}`} className={className}>{label}</Link>
 }
 
+/** One service: a white tile with a green icon and its name; a link, or a button when it needs to do something first. */
+export function ServiceTile({ icon, label, to, onClick, disabled }: { icon: IconName; label: string; to?: string; onClick?: () => void; disabled?: boolean }) {
+  const inner = <><span className="service-icon"><Icon name={icon} size={28} /></span><span>{label}</span></>
+  return to ? <Link to={to} className="service-tile">{inner}</Link>
+    : <button type="button" className="service-tile" onClick={onClick} disabled={disabled}>{inner}</button>
+}
+
 /** Pill tabs: a grey track with the chosen option in solid green. */
-export function Segmented<T extends string>({ value, options, onChange, label, className = '' }: {
-  value: T; options: readonly (readonly [T, string])[]; onChange: (value: T) => void; label: string; className?: string
+export function Segmented<T extends string>({ value, options, onChange, label, className = '', stretch = false }: {
+  value: T; options: readonly (readonly [T, string])[]; onChange: (value: T) => void; label: string; className?: string; stretch?: boolean
 }) {
   return (
     <div role="tablist" aria-label={label} className={`tab-scroll inline-flex max-w-full gap-1 rounded-[14px] bg-[var(--field)] p-1 ${className}`}>
       {options.map(([key, text]) => (
         <button key={key} type="button" role="tab" aria-selected={value === key} onClick={() => onChange(key)}
-          className={`whitespace-nowrap rounded-[11px] px-4 py-1.5 text-[0.93rem] font-semibold ${value === key ? 'bg-[var(--action)] text-[var(--action-ink)]' : 'text-ink2 hover:text-ink'}`}>{text}</button>
+          className={`${stretch ? 'flex-1' : ''} whitespace-nowrap rounded-[11px] px-4 py-1.5 text-[0.93rem] font-semibold ${value === key ? 'bg-[var(--action)] text-[var(--action-ink)]' : 'text-ink2 hover:text-ink'}`}>{text}</button>
       ))}
     </div>
   )

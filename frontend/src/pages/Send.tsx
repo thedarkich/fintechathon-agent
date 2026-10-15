@@ -81,7 +81,7 @@ export default function Send() {
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)]">
         <section aria-label={tr('New transfer', '新转账')}>
           {flow.planId ? <ScreenConfirm planId={flow.planId} again={tr('Send another', '再转一笔')} onAgain={again} /> : (
-            <form onSubmit={submit} className="space-y-5">
+            <form onSubmit={submit} className="ruled space-y-5 p-6 max-sm:p-4">
               {!picked && recent.length > 0 && (
                 <div>
                   <p className="mb-2 text-sm text-ink2">{tr('Recent', '最近转账')}</p>
@@ -97,7 +97,7 @@ export default function Send() {
               )}
 
               {picked ? (
-                <div className="flex items-center gap-3 rounded-box border border-rule bg-field px-4 py-3">
+                <div className="flex items-center gap-3 rounded-box bg-paper px-4 py-3">
                   <Avatar name={picked.name} masked={picked.name.startsWith('*')} />
                   <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{picked.name}</span><span className="block text-sm text-ink2">{picked.detail}</span></span>
                   <button type="button" className="text-sm font-semibold text-[var(--action)]" onClick={() => setPicked(null)}>{tr('Change', '换一个')}</button>
@@ -107,13 +107,14 @@ export default function Send() {
 
                 {tab === 'phone' ? (
                   <div>
-                    <label className="flex items-center gap-2 rounded-box border border-rule2 bg-field px-4 focus-within:border-[var(--action)]">
+                    <label className="flex items-center gap-2 rounded-box border border-transparent bg-paper px-4 focus-within:border-[var(--action)]">
                       <span className="font-mono text-ink2">+86</span>
                       <input value={spaced(phone)} onChange={(e) => setPhone(digitsOf(e.target.value))} inputMode="tel" autoComplete="off"
                         placeholder="139 1234 5678" aria-label={tr('Phone number', '手机号')}
                         className="num min-w-0 flex-1 bg-transparent py-3 font-mono text-[1.15rem] tracking-wide outline-none focus-visible:outline-none" />
                     </label>
                     <div className="mt-2 min-h-[3.75rem]" aria-live="polite">
+                      {!valid && <p className="px-1 pt-2 text-sm text-ink2">{phone.length ? tr(`${11 - phone.length} more digits`, `还差 ${11 - phone.length} 位`) : tr('Type an 11-digit mobile number: you’ll see whose account it is before you send.', '输入 11 位手机号：转账前先告诉你这是谁的账户。')}</p>}
                       {valid && lookup.isLoading && <div className="h-14 animate-pulse rounded-box bg-paper2" />}
                       {valid && lookup.isError && <p className="text-sm font-semibold text-cinnabar">{tr('Could not look the number up. Try again in a moment.', '暂时查不到这个号码，请稍后再试。')}</p>}
                       {found?.kind === 'payee' && (
@@ -139,7 +140,7 @@ export default function Send() {
                   <div>
                     <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={tr('Search payees', '搜索收款人')} aria-label={tr('Search payees', '搜索收款人')}
                       className="w-full rounded-box border border-rule2 bg-field px-4 py-2.5 outline-none focus:border-[var(--action)]" />
-                    <ul className="mt-2 max-h-80 divide-y divide-[var(--rule)] overflow-y-auto ruled bg-field">
+                    <ul className="mt-2 max-h-80 divide-y divide-[var(--rule)] overflow-y-auto rounded-box bg-paper">
                       {shown.map((p) => {
                         const name = lang === 'zh' ? p.name : p.name_en
                         const note = lang === 'zh' ? p.note : p.note_en
@@ -179,16 +180,16 @@ export default function Send() {
           )}
         </section>
 
-        <section aria-label={tr('Transfers with this person', '与 TA 的转账')}>
-          <h2 className="mb-3 text-lg font-semibold">{payeeId ? tr('Between you', '与 TA 的转账') : tr('Latest transfers', '最近的转账')}</h2>
+        <section aria-label={tr('Transfers with this person', '与 TA 的转账')} className="rounded-panel bg-[var(--field)] p-6 max-sm:p-4">
+          <h2 className="mb-4 text-xl font-bold">{payeeId ? tr('Between you', '与 TA 的转账') : tr('Latest transfers', '最近的转账')}</h2>
           {(() => {
             const rows = payeeId ? history : (transfers.data?.items ?? []).slice(0, 6)
             if (!transfers.data) return <div className="h-40 animate-pulse rounded-box bg-paper2" aria-hidden />
-            if (!rows.length) return <p className="ruled bg-field px-4 py-4 text-sm text-ink2">{payeeId ? tr('No transfers to them yet.', '还没有给 TA 转过账。') : tr('No transfers yet.', '还没有转账。')}</p>
+            if (!rows.length) return <p className="py-6 text-center text-sm text-ink2">{payeeId ? tr('No transfers to them yet.', '还没有给 TA 转过账。') : tr('No transfers yet.', '还没有转账。')}</p>
             return (
               <ol className="space-y-2.5">
                 {rows.map((t) => (
-                  <li key={t.id} className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-[var(--accent-wash)] px-4 py-2.5">
+                  <li key={t.id} className="ml-auto w-fit min-w-[11rem] max-w-[85%] rounded-[18px] rounded-br-md bg-paper px-4 py-2.5 shadow-[0_1px_3px_var(--shadow)]">
                     {!payeeId && <p className="text-xs font-semibold text-ink2">{t.payee}</p>}
                     <p className="num font-mono text-lg font-bold">{yuan(t.fen)}</p>
                     {t.memo && <p className="text-sm">{t.memo}</p>}

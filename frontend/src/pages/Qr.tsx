@@ -7,6 +7,7 @@ import { api, errorText } from '../api/client'
 import type { QrMerchant, QrRead } from '../api/types'
 import { useLang } from '../i18n'
 import { PageHead, Segmented } from '../components/bits'
+import { Icon } from '../components/Icon'
 import { ScreenConfirm, useScreenPlan } from '../components/ScreenPlan'
 import { yuan } from '../lib/format'
 
@@ -139,15 +140,19 @@ export default function Qr() {
                 </div>
               ) : <>
                 {read && !read.valid && <NotOurs text={scanned!.text} onAgain={() => setScanned(null)} />}
-                {canScan ? <CameraScan onCode={(t) => void handle(t)} /> : (
-                  <p className="ruled bg-field px-4 py-4 text-sm text-ink2">{tr('This browser can’t read QR codes from the camera. On a phone, open the camera app and scan the shop’s code: it opens this screen. In the demo, tap a code.', '这个浏览器不能用摄像头读二维码。用手机自带相机扫商户的码，会直接打开这个页面；演示时点一下右边的码即可。')}</p>
-                )}
+                <div className="qr-scanner">
+                  {canScan ? <CameraScan onCode={(t) => void handle(t)} /> : <>
+                    <span className="qr-frame" aria-hidden><Icon name="qr" size={56} /></span>
+                    <p className="text-lg font-bold">{tr('Scan a shop’s code', '扫商户的收款码')}</p>
+                    <p className="mt-1 text-sm">{tr('On a phone, scan it with the camera app: it opens this screen. Here, tap a code on the right.', '用手机相机扫码会直接打开这个页面；在这里，点一下右边的码即可。')}</p>
+                  </>}
+                </div>
                 {error && <p role="alert" className="text-sm font-semibold text-cinnabar">{error}</p>}
               </>}
           </section>
 
           <section aria-label={tr('Demo shops', '演示商户')}>
-            <h2 className="text-lg font-semibold">{tr('Shops’ codes', '商户收款码')}</h2>
+            <h2 className="text-xl font-bold">{tr('Shops’ codes', '商户收款码')}</h2>
             <p className="mb-3 text-sm text-ink2">{tr('Demo: tap a code to scan it.', '演示：点一下就算扫码。')}</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {(shops.data?.items ?? []).map((s) => (

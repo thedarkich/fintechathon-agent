@@ -6,21 +6,13 @@ import { api, errorText } from '../api/client'
 import type { BillerCategory, Provider, SavedBill } from '../api/types'
 import { useLang } from '../i18n'
 import { Icon, type IconName } from '../components/Icon'
-import { PageHead } from '../components/bits'
+import { PageHead, ServiceTile } from '../components/bits'
 import { ScreenConfirm, useScreenPlan } from '../components/ScreenPlan'
 import { yuan } from '../lib/format'
 
 const LIST = 'divide-y divide-[var(--rule)] ruled bg-field'
 const PHONE = /^1[3-9]\d{9}$/
 
-function Tile({ icon, label, onClick }: { icon: string; label: string; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} className="flex flex-col items-center gap-2 rounded-box px-1 py-2 text-center hover:bg-paper2">
-      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent-wash)] text-[var(--action)]"><Icon name={icon as IconName} size={26} /></span>
-      <span className="text-[0.88rem] font-medium leading-tight">{label}</span>
-    </button>
-  )
-}
 
 /** Where a saved bill stands this month, in a few words. */
 function BillState({ bill }: { bill: SavedBill }) {
@@ -85,14 +77,14 @@ export default function Payments() {
               </ul>
             ) : <p className="ruled bg-field px-4 py-4 text-sm text-ink2">{tr('Nothing matches.', '没有找到。')}</p>
           ) : (
-            <nav aria-label={tr('Kinds of payment', '缴费类别')} className="grid grid-cols-4 gap-x-1 gap-y-3 sm:gap-x-3">
-              {categories.map((c) => <Tile key={c.code} icon={c.icon} label={c.name} onClick={() => open(c)} />)}
+            <nav aria-label={tr('Kinds of payment', '缴费类别')} className="service-panel">
+              {categories.map((c) => <ServiceTile key={c.code} icon={c.icon as IconName} label={c.name} onClick={() => open(c)} />)}
             </nav>
           )}
         </div>
 
         <section>
-          <h2 className="mb-2 text-lg font-semibold">{tr('My payments', '我的缴费')}</h2>
+          <h2 className="mb-2 text-xl font-bold">{tr('My payments', '我的缴费')}</h2>
           {!bills.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" aria-hidden /> : !bills.data.items.length ? (
             <p className="ruled bg-field px-4 py-4 text-sm text-ink2">{tr('Bills you pay and save show up here.', '缴费时选择“保存”，下次就会出现在这里。')}</p>
           ) : (
