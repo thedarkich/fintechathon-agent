@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLang } from '../i18n'
@@ -30,13 +30,13 @@ export default function Accounts() {
   return (
     <main tabIndex={-1} className="page-content">
       <PageHead title={tr('Accounts & transfers', '账户与转账')}
-        right={<AskButton label={tr('Send money', '转账')} hint={tr('Send Mom 200', '给妈妈转200')} className="btn btn-ink px-5 py-2" />} />
+        right={<Link to="/send" className="btn btn-ink px-5 py-2">{tr('Send money', '转账')}</Link>} />
       {!data ? <div className="h-64 animate-pulse rounded-box bg-paper2" aria-hidden /> : <>
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)]" aria-label={tr('Balances', '余额')}>
-          <div className="ruled bg-field px-5 py-5">
-            <p className="text-sm text-ink2">{tr('Total', '总资产')}</p>
+          <div className="rounded-panel px-6 py-6 text-white shadow-[0_14px_34px_var(--shadow)]" style={{ background: 'var(--hero)' }}>
+            <p className="text-sm">{tr('Total', '总资产')}</p>
             <p className="num mt-1 font-mono text-[2.1rem] font-bold leading-tight">{yuan(data.cash_fen + data.invest_fen)}</p>
-            <p className="mt-2 text-sm text-ink2">{tr(`Cash ${yuan(data.cash_fen)} · invested ${yuan(data.invest_fen)}`, `存款 ${yuan(data.cash_fen)} · 理财 ${yuan(data.invest_fen)}`)}</p>
+            <p className="mt-2 text-sm">{tr(`Cash ${yuan(data.cash_fen)} · invested ${yuan(data.invest_fen)}`, `存款 ${yuan(data.cash_fen)} · 理财 ${yuan(data.invest_fen)}`)}</p>
           </div>
           <ul className={LIST}>
             {data.accounts.map((a) => (

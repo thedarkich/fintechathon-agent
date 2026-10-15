@@ -56,7 +56,7 @@ body {
 }
 h1, h2, h3 { text-wrap: balance; }
 p, li { text-wrap: pretty; }
-.lp-slide-copy p, .lp-section-lead, .lp-tile-text { text-wrap: balance; }
+.lp-slide-copy p, .lp-section-lead, .lp-tile-text, .lp-banner-copy p, .lp-cta p { text-wrap: balance; }
 
 .keep {
   word-break: keep-all;
