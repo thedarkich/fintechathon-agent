@@ -144,7 +144,7 @@ export default function Qr() {
                   {canScan ? <CameraScan onCode={(t) => void handle(t)} /> : <>
                     <span className="qr-frame" aria-hidden><Icon name="qr" size={56} /></span>
                     <p className="text-lg font-bold">{tr('Scan a shop’s code', '扫商户的收款码')}</p>
-                    <p className="mt-1 text-sm">{tr('On a phone, scan it with the camera app: it opens this screen. Here, tap a code on the right.', '用手机相机扫码会直接打开这个页面；在这里，点一下右边的码即可。')}</p>
+                    <p className="mt-1 text-sm">{tr('On a phone, scan it with the camera app: it opens this screen. Here, tap one of the shops’ codes.', '用手机相机扫码会直接打开这个页面；在这里，点一下商户的码即可。')}</p>
                   </>}
                 </div>
                 {error && <p role="alert" className="text-sm font-semibold text-cinnabar">{error}</p>}
