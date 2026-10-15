@@ -130,7 +130,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
   }
 
   return (
-    <div className="confirm-card overflow-hidden rounded-box border bg-field" style={{ borderColor: accent, borderTopWidth: 3 }}>
+    <div className="confirm-card overflow-hidden rounded-[20px] bg-[var(--field)]" style={{ borderTop: `4px solid ${accent}` }}>
       <div className="flex items-start justify-between gap-3 px-4 pb-2 pt-3">
         <div className="min-w-0">
           <p className="text-[1.05rem] font-bold leading-tight">{title(p, tr)}</p>
@@ -188,7 +188,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
         )}
         {error && <p role="alert" className="mt-2 text-sm font-semibold text-cinnabar">{error}</p>}
 
-        <details className="mt-3 rounded-box bg-sheet px-3 py-2">
+        <details className="mt-3 rounded-box bg-paper px-3 py-2">
           <summary className="cursor-pointer text-sm font-semibold text-ink2">{waiting ? tr('Why do I need to confirm?', '为什么要确认？') : tr('How this was checked', '是怎么检查的？')}</summary>
           <div className="mt-2"><Decision plan={p} /></div>
         </details>

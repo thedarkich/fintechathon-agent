@@ -180,7 +180,7 @@ export default function Assistant() {
     <main tabIndex={-1} className="page-content !max-w-[1280px]">
       <div className="flex items-start gap-6">
       {wide && open && (
-        <aside className="sticky top-4 flex max-h-[calc(100dvh-2rem)] w-64 shrink-0 flex-col rounded-box border border-rule bg-field">{history()}</aside>
+        <aside className="sticky top-[calc(var(--header-h)+16px)] flex max-h-[calc(100dvh-var(--header-h)-2rem)] w-64 shrink-0 flex-col rounded-panel bg-[var(--field)]">{history()}</aside>
       )}
       {!wide && open && <>
         <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setDrawer(false)} aria-hidden />
@@ -189,7 +189,7 @@ export default function Assistant() {
 
       <div className="mx-auto flex min-h-[calc(100dvh-210px)] w-full min-w-0 max-w-3xl flex-1 flex-col">
         {(!open || messages.length > 0) && (
-          <div className="sticky top-0 z-10 -mx-1 flex min-h-[52px] items-center gap-2 bg-paper px-1 py-2">
+          <div className="sticky top-[var(--header-h)] z-10 -mx-1 flex min-h-[52px] items-center gap-2 bg-paper px-1 py-2">
             {!open && (
               <button type="button" onClick={() => showHistory(true)} aria-expanded={false} aria-label={tr('Show chat history', '展开对话记录')} title={tr('Chat history', '对话记录')}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rule text-ink2 hover:bg-paper2">
@@ -212,7 +212,7 @@ export default function Assistant() {
               {tips.length > 0 && (
                 <div className="mt-6 space-y-2">
                   {tips.map((n) => (
-                    <button key={n.id} type="button" disabled={!!pending} onClick={() => void send(n.suggestion!)} className="flex w-full items-start gap-3 rounded-box border border-rule bg-field px-4 py-3 text-left hover:border-[var(--action)]">
+                    <button key={n.id} type="button" disabled={!!pending} onClick={() => void send(n.suggestion!)} className="flex w-full items-start gap-3 rounded-[18px] bg-[var(--field)] px-4 py-3 text-left hover:bg-paper2">
                       <Icon name={n.kind === 'anomaly' ? 'flag' : n.kind === 'birthday' ? 'clock' : 'bell'} size={18} className="mt-0.5 shrink-0 text-[var(--action)]" />
                       <span className="min-w-0"><span className="block font-semibold">{n.title}</span><span className="block text-sm text-ink2">{n.suggestion}</span></span>
                     </button>
@@ -221,7 +221,7 @@ export default function Assistant() {
               )}
               <div className="mt-6 flex flex-wrap gap-2">
                 {SUGGESTIONS.map(([icon, en, zh]) => (
-                  <button key={zh} type="button" disabled={!!pending} onClick={() => void send(lang === 'zh' ? zh : en)} className="flex items-center gap-2 rounded-full border border-rule bg-field px-3.5 py-2 text-left text-[0.93rem] hover:border-[var(--action)]">
+                  <button key={zh} type="button" disabled={!!pending} onClick={() => void send(lang === 'zh' ? zh : en)} className="flex items-center gap-2 rounded-[12px] bg-[var(--field)] px-3.5 py-2 text-left text-[0.93rem] font-medium hover:bg-paper2">
                     <Icon name={icon} size={16} className="shrink-0 text-[var(--action)]" />
                     <span>{lang === 'zh' ? zh : en}</span>
                   </button>
@@ -246,7 +246,7 @@ export default function Assistant() {
                 <span className="mt-0.5 shrink-0">{m.role === 'operator' ? <span className="agent-avatar !h-7 !w-7"><Icon name="users" size={14} /></span> : <BrandSeal size={28} />}</span>
                 <div className="min-w-0 flex-1 space-y-2.5">
                   {m.role === 'operator' && <p className="text-xs font-semibold text-ink2">{tr('Bank staff', '人工客服')}</p>}
-                  {m.text && <ReplyText text={m.cards.some((c) => DATA_CARDS.has(c.type)) ? m.text.split('\n')[0].replace(/[:：]\s*$/, '') : m.text} />}
+                  {m.text && <div className="bot-bubble w-fit max-w-full rounded-[18px] rounded-tl-md bg-[var(--field)] px-4 py-2.5"><ReplyText text={m.cards.some((c) => DATA_CARDS.has(c.type)) ? m.text.split('\n')[0].replace(/[:：]\s*$/, '') : m.text} /></div>}
                   {m.cards.filter((card) => card.type !== 'receipt').map((card, i) => <Result key={`${m.id}-${i}`} card={card} />)}
                 </div>
               </div>
@@ -260,10 +260,10 @@ export default function Assistant() {
           <div ref={end} />
         </div>
 
-        <form onSubmit={submit} className="sticky bottom-0 -mx-1 bg-paper px-1 pb-4 pt-2">
+        <form onSubmit={submit} className="sticky bottom-[var(--tabbar-h)] -mx-1 bg-paper px-1 pb-4 pt-2">
           {escalated && <p className="mb-2 text-xs font-semibold text-ink2">{tr('A member of bank staff is handling this conversation.', '人工客服正在处理本次对话。')}</p>}
           {attachment && (
-            <div className="mb-2 flex items-center gap-3 rounded-box border border-rule bg-sheet p-2">
+            <div className="mb-2 flex items-center gap-3 rounded-[14px] bg-[var(--field)] p-2">
               {attachment.preview && <img src={attachment.preview} alt="" className="h-12 w-12 rounded-[4px] bg-white object-contain" />}
               <div className="min-w-0 flex-1 text-sm">
                 <p className="truncate font-semibold">{attachment.reading.merchant || tr('Receipt', '小票')}</p>
@@ -274,7 +274,7 @@ export default function Assistant() {
             </div>
           )}
           {uploadError && <p role="alert" className="mb-2 text-xs font-semibold text-cinnabar">{uploadError}</p>}
-          <div className="flex items-end gap-2 rounded-2xl border border-rule2 bg-field p-1.5 shadow-[0_6px_24px_var(--shadow)] focus-within:border-[var(--action)]">
+          <div className="flex items-end gap-2 rounded-[16px] border border-transparent bg-[var(--field)] p-1.5 shadow-[0_6px_24px_var(--shadow)] focus-within:border-[var(--action)]">
             <input ref={fileRef} type="file" accept=".pdf,.png,.jpg,.jpeg" className="sr-only" onChange={(e) => void attach(e.target.files?.[0])} />
             <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-ink2 hover:bg-paper2" aria-label={tr('Attach a receipt', '添加小票')} title={tr('Attach a receipt photo or PDF', '添加小票照片或 PDF')}>
               <Paperclip size={18} className={uploading ? 'step-live' : ''} />

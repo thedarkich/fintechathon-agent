@@ -55,10 +55,19 @@ export default function Home() {
 
   return (
     <main tabIndex={-1} className="page-content">
-      <h1 className="mb-5">{user?.name ? tr(`${hello}, ${user.name}`, `${hello}，${user.name}`) : hello}</h1>
+      <h1 className="mb-4">{user?.name ? tr(`${hello}, ${user.name}`, `${hello}，${user.name}`) : hello}</h1>
+      <form onSubmit={submit} className="mb-6 flex items-center gap-3 rounded-[14px] bg-[var(--field)] p-1.5 pl-4 focus-within:shadow-[0_0_0_2px_var(--action)]">
+        <Icon name="search" size={19} className="text-[var(--action)]" />
+        <input value={ask} onChange={(e) => setAsk(e.target.value)} maxLength={2000} aria-label={tr('Ask the assistant', '问问助手')}
+          placeholder={tr('Ask the assistant, e.g. where did my money go?', '问问助手，比如“上个月钱花哪了”')}
+          className="min-w-0 flex-1 bg-transparent py-2 text-[0.97rem] outline-none focus-visible:outline-none" />
+        <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[var(--action)] text-[var(--action-ink)] disabled:opacity-40" disabled={!ask.trim() || !!pending} aria-label={tr('Ask', '发送')}>
+          <SendHorizontal size={18} />
+        </button>
+      </form>
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
         <div className="space-y-6">
-          <section aria-label={tr('Current account', '活期账户')} className="rounded-[1.1rem] bg-[var(--action)] px-5 pb-5 pt-4 text-[var(--action-ink)] shadow-[0_10px_30px_var(--shadow)]">
+          <section aria-label={tr('Current account', '活期账户')} className="rounded-panel px-6 pb-6 pt-5 text-white shadow-[0_14px_34px_var(--shadow)]" style={{ background: 'var(--hero)' }}>
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm opacity-85">{checking ? `${checking.name} ·${checking.number.slice(-4)}` : tr('Current account', '活期账户')}</span>
               <button type="button" onClick={toggle} className="-mr-2 flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/15"
@@ -76,36 +85,26 @@ export default function Home() {
             </> : <div className="mt-2 h-20 animate-pulse rounded-box bg-white/15" aria-hidden />}
           </section>
 
-          <nav aria-label={tr('Services', '服务')} className="grid grid-cols-4 gap-x-1 gap-y-3 sm:gap-x-3">
-            {SERVICES.map(([to, icon, en, zh], i) => (
-              <Link key={to} to={to} className="flex flex-col items-center gap-2 rounded-box px-1 py-2 text-center hover:bg-paper2">
-                <span className={`flex h-14 w-14 items-center justify-center rounded-2xl ${i === 0 ? 'bg-[var(--action)] text-[var(--action-ink)]' : 'bg-[var(--accent-wash)] text-[var(--action)]'}`}>
+          <nav aria-label={tr('Services', '服务')} className="grid grid-cols-4 gap-x-1 gap-y-4 sm:gap-x-3">
+            {SERVICES.map(([to, icon, en, zh]) => (
+              <Link key={to} to={to} className="group flex flex-col items-center gap-2 rounded-box px-1 py-1 text-center">
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-rule bg-paper text-[var(--action)] shadow-[0_4px_12px_var(--shadow)] transition-colors group-hover:border-[var(--action)]">
                   <Icon name={icon} size={26} />
                 </span>
-                <span className="text-[0.88rem] font-medium leading-tight">{tr(en, zh)}</span>
+                <span className="text-[0.88rem] font-semibold leading-tight">{tr(en, zh)}</span>
               </Link>
             ))}
           </nav>
         </div>
 
         <div className="space-y-6">
-          <form onSubmit={submit} className="flex items-center gap-2 rounded-2xl border border-rule2 bg-field p-1.5 pl-4 focus-within:border-[var(--action)]">
-            <Icon name="chat" size={18} className="text-[var(--action)]" />
-            <input value={ask} onChange={(e) => setAsk(e.target.value)} maxLength={2000} aria-label={tr('Ask the assistant', '问问助手')}
-              placeholder={tr('Ask the assistant, e.g. where did my money go?', '问问助手，比如“上个月钱花哪了”')}
-              className="min-w-0 flex-1 bg-transparent py-2 text-[0.95rem] outline-none focus-visible:outline-none" />
-            <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--action)] text-[var(--action-ink)] disabled:opacity-40" disabled={!ask.trim() || !!pending} aria-label={tr('Ask', '发送')}>
-              <SendHorizontal size={18} />
-            </button>
-          </form>
-
           {due.length > 0 && (
             <section>
-              <h2 className="mb-2 text-lg font-semibold">{tr('Bills', '待缴账单')}</h2>
-              <ul className="divide-y divide-[var(--rule)] ruled bg-field">
+              <h2 className="mb-2 text-lg font-bold">{tr('Bills', '待缴账单')}</h2>
+              <ul className="space-y-2">
                 {due.map((b) => (
                   <li key={b.id}>
-                    <Link to={`/payments?p=${b.provider.code}&a=${encodeURIComponent(b.account)}`} className="flex items-center gap-3 px-4 py-3 hover:bg-sheet">
+                    <Link to={`/payments?p=${b.provider.code}&a=${encodeURIComponent(b.account)}`} className="flex items-center gap-3 rounded-[18px] border border-rule bg-paper px-4 py-3 shadow-[0_4px_12px_var(--shadow)] hover:border-[var(--action)]">
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-semibold">{b.provider.name}</span>
                         <span className={`block text-xs ${b.autopay ? 'text-jade' : 'text-ink2'}`}>
@@ -122,7 +121,7 @@ export default function Home() {
 
           <section>
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">{tr('Recent', '最近交易')}</h2>
+              <h2 className="text-lg font-bold">{tr('Recent', '最近交易')}</h2>
               <Link to="/bills" className="text-sm font-semibold text-[var(--action)]">{tr('All', '全部')}</Link>
             </div>
             {!recent.data ? <div className="h-48 animate-pulse rounded-box bg-paper2" aria-hidden /> : (

@@ -59,7 +59,7 @@ export function ChatHistory({ items, active, busy, onPick, onNew, onRemove, onCl
               ) : (
                 <li key={item.id} className="group relative">
                   <button type="button" disabled={busy} onClick={() => onPick(item.id)} aria-current={item.id === active ? 'page' : undefined}
-                    className={`flex w-full items-center gap-2 rounded-xl py-2 pl-3 pr-9 text-left text-[0.93rem] disabled:cursor-wait ${item.id === active ? 'bg-paper2 font-semibold' : 'hover:bg-paper2'}`}>
+                    className={`flex w-full items-center gap-2 rounded-xl py-2 pl-3 pr-9 text-left text-[0.93rem] disabled:cursor-wait ${item.id === active ? 'bg-paper font-semibold shadow-[0_1px_3px_var(--shadow)]' : 'hover:bg-paper2'}`}>
                     <span className="truncate">{item.title || tr('Untitled chat', '未命名对话')}</span>
                     {item.escalated && <Icon name="users" size={13} className="shrink-0 text-ink2" />}
                   </button>

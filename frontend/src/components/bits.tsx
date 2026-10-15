@@ -67,6 +67,20 @@ export function AskButton({ label, hint, className = 'btn btn-line py-1.5 text-s
   return <Link to={`/assistant?hint=${encodeURIComponent(hint)}`} className={className}>{label}</Link>
 }
 
+/** Pill tabs: a grey track with the chosen option in solid green. */
+export function Segmented<T extends string>({ value, options, onChange, label, className = '' }: {
+  value: T; options: readonly (readonly [T, string])[]; onChange: (value: T) => void; label: string; className?: string
+}) {
+  return (
+    <div role="tablist" aria-label={label} className={`tab-scroll inline-flex max-w-full gap-1 rounded-[14px] bg-[var(--field)] p-1 ${className}`}>
+      {options.map(([key, text]) => (
+        <button key={key} type="button" role="tab" aria-selected={value === key} onClick={() => onChange(key)}
+          className={`whitespace-nowrap rounded-[11px] px-4 py-1.5 text-[0.93rem] font-semibold ${value === key ? 'bg-[var(--action)] text-[var(--action-ink)]' : 'text-ink2 hover:text-ink'}`}>{text}</button>
+      ))}
+    </div>
+  )
+}
+
 /** A panel with a heading bar, as on the controls page. */
 export function Panel({ title, note, right, children, id }: { title: string; note?: string; right?: ReactNode; children: ReactNode; id?: string }) {
   return (

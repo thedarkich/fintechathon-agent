@@ -3,6 +3,8 @@ import { HashRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ServerBanner } from './components/ServerBanner'
 import { Header } from './components/Header'
+import { SiteFooter } from './components/SiteChrome'
+import { TabBar } from './components/TabBar'
 import { SignedInGate } from './components/bits'
 import { isServerProblem, markServer } from './lib/net'
 import { AuthProvider } from './lib/auth'
@@ -66,8 +68,10 @@ function Workspace() {
       <SignedInGate>
         <ChatProvider>
           <Suspense fallback={<Loading />}><Outlet /></Suspense>
+          <TabBar />
         </ChatProvider>
       </SignedInGate>
+      <SiteFooter />
     </div>
   )
 }

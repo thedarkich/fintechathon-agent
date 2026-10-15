@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { AuditEntry } from '../api/types'
 import { useLang } from '../i18n'
-import { PageHead, Section } from '../components/bits'
+import { PageHead, Section, Segmented } from '../components/bits'
 import { Requests } from '../components/Requests'
 import { SealMark, type MarkKind } from '../components/Seal'
 import { clock, shortAddr, timeAgo } from '../lib/format'
@@ -134,11 +134,8 @@ export default function Ledger() {
             {chain.data.ok ? tr(`Chain intact · ${chain.data.entries} entries`, `哈希链完整 · ${chain.data.entries} 条`) : tr(`Chain broken at entry ${chain.data.broken_at}`, `哈希链在第 ${chain.data.broken_at} 条断开`)}
           </p>
         )}>
-      <div className="tab-scroll flex gap-1" role="tablist" aria-label={t.ledger_title}>
-        {([['all', tr('All', '全部')], ['requests', tr('Requests & plans', '请求与计划')], ['decisions', tr('Decisions', '判定与确认')], ['actions', tr('Actions', '执行')], ['security', tr('Security', '安全')]] as const).map(([k, label]) => (
-          <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} className={`rounded-box px-3 py-1.5 text-[0.95rem] ${kind === k ? 'bg-ink text-field' : 'text-ink hover:bg-paper2'}`}>{label}</button>
-        ))}
-      </div>
+      <Segmented label={t.ledger_title} value={kind} onChange={setKind}
+        options={[['all', tr('All', '全部')], ['requests', tr('Requests & plans', '请求与计划')], ['decisions', tr('Decisions', '判定与确认')], ['actions', tr('Actions', '执行')], ['security', tr('Security', '安全')]] as const} />
 
       {entries.isLoading ? <div className="mt-3 h-64 animate-pulse rounded-box bg-paper2" aria-hidden /> : rows.length === 0 ? <p className="mt-6 text-ink2">{t.ledger_empty}</p> : <>
         {/* desktop: a ruled ledger page */}

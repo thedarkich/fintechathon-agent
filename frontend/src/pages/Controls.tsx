@@ -105,7 +105,7 @@ function CardTile({ card: c, ask, busy }: { card: BankCard; ask: (t: string) => 
         <div className="mt-3 flex flex-wrap gap-2">
           {switches.map(([key, on, label, word]) => (
             <button key={key} type="button" disabled={busy} aria-pressed={on}
-              className={`rounded-full px-3 py-1 text-[0.8rem] font-semibold ${on ? 'bg-ink text-field' : 'border border-rule text-ink2'}`}
+              className={`rounded-[10px] px-3 py-1 text-[0.8rem] font-semibold ${on ? 'bg-[var(--action)] text-[var(--action-ink)]' : 'bg-paper text-ink2'}`}
               onClick={() => ask(on ? tr(`Turn off ${word} on card ${id}`, `关闭尾号${id}的卡的${word}`) : tr(`Turn on ${word} on card ${id}`, `开通尾号${id}的卡的${word}`))}>
               {label} {on ? tr('on', '开') : tr('off', '关')}
             </button>

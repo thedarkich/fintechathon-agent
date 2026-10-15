@@ -110,12 +110,13 @@ export function SealMark({ kind, size = 30 }: { kind: MarkKind; size?: number })
   )
 }
 
-/** The brand mark: a square name seal (方章) reading 代办, top to bottom */
+/** The brand mark: a square name seal (方章) reading 代办, top to bottom, in the brand green.
+ *  A placeholder: the final logo replaces this one function. */
 export function BrandSeal({ size = 34 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden className="shrink-0">
-      <rect x="1.6" y="1.6" width="36.8" height="36.8" rx="3" fill="none" stroke="#b53b36" strokeWidth="3" />
-      <g fill="#b53b36" fontSize="15.5" fontWeight="700" textAnchor="middle" style={{ fontFamily: '"PingFang SC","Noto Sans SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif' }}>
+    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden className="shrink-0" style={{ color: 'var(--action)' }}>
+      <rect x="1.6" y="1.6" width="36.8" height="36.8" rx="9" fill="none" stroke="currentColor" strokeWidth="3" />
+      <g fill="currentColor" fontSize="15.5" fontWeight="700" textAnchor="middle" style={{ fontFamily: '"PingFang SC","Noto Sans SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif' }}>
         <text x="20" y="18.2">代</text>
         <text x="20" y="34.4">办</text>
       </g>

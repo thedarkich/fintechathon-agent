@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Directory } from '../api/types'
 import { useLang } from '../i18n'
-import { PageHead } from '../components/bits'
+import { PageHead, Segmented } from '../components/bits'
 import { ScreenConfirm, useScreenPlan } from '../components/ScreenPlan'
 import { useOverview } from '../lib/bank'
 import { stamp, yuan } from '../lib/format'
@@ -103,12 +103,7 @@ export default function Send() {
                   <button type="button" className="text-sm font-semibold text-[var(--action)]" onClick={() => setPicked(null)}>{tr('Change', '换一个')}</button>
                 </div>
               ) : <>
-                <div role="tablist" className="inline-flex rounded-box bg-paper2 p-1">
-                  {([['phone', tr('Phone number', '手机号')], ['payees', tr('Payees', '收款人')]] as const).map(([key, label]) => (
-                    <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
-                      className={`rounded-[0.6rem] px-4 py-1.5 text-[0.93rem] ${tab === key ? 'bg-field font-semibold shadow-sm' : 'text-ink2'}`}>{label}</button>
-                  ))}
-                </div>
+                <Segmented label={tr('Send to', '转给')} value={tab} onChange={setTab} options={[['phone', tr('Phone number', '手机号')], ['payees', tr('Payees', '收款人')]] as const} />
 
                 {tab === 'phone' ? (
                   <div>

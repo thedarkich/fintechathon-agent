@@ -6,7 +6,7 @@ import { BadgeCheck, Camera, Store } from 'lucide-react'
 import { api, errorText } from '../api/client'
 import type { QrMerchant, QrRead } from '../api/types'
 import { useLang } from '../i18n'
-import { PageHead } from '../components/bits'
+import { PageHead, Segmented } from '../components/bits'
 import { ScreenConfirm, useScreenPlan } from '../components/ScreenPlan'
 import { yuan } from '../lib/format'
 
@@ -105,12 +105,7 @@ export default function Qr() {
   return (
     <main tabIndex={-1} className="page-content">
       <PageHead title={tr('QR pay', '扫码付')} right={
-        <div role="tablist" className="inline-flex rounded-box bg-paper2 p-1">
-          {([['scan', tr('Pay', '付款')], ['till', tr('Demo till', '演示收银台')]] as const).map(([key, label]) => (
-            <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
-              className={`rounded-[0.6rem] px-4 py-1.5 text-[0.93rem] ${tab === key ? 'bg-field font-semibold shadow-sm' : 'text-ink2'}`}>{label}</button>
-          ))}
-        </div>} />
+        <Segmented label={tr('QR pay', '扫码付')} value={tab} onChange={setTab} options={[['scan', tr('Pay', '付款')], ['till', tr('Demo till', '演示收银台')]] as const} />} />
 
       {tab === 'till' ? <Till shops={shops.data?.items ?? []} onScan={(p) => void handle(p)} /> : (
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">

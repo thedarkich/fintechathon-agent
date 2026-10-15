@@ -25,7 +25,7 @@ function Stages({ t }: { t: Transfer }) {
   ]
   const waiting = t.status === 'accepted' ? 1 : -1 // the next stage pulses while the transfer waits
   return (
-    <ol className="ruled grid grid-cols-3 overflow-hidden bg-field" aria-label={tr('Stages', '进度')}>
+    <ol className="grid grid-cols-3 overflow-hidden rounded-box bg-paper" aria-label={tr('Stages', '进度')}>
       {boxes.map((b, i) => {
         const event = reached(b.status)
         const bad = event && (b.status === 'returned' || b.status === 'cancelled')

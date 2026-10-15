@@ -43,12 +43,14 @@ export default function How() {
   ]
 
   return <div className="public-site landing-page"><SiteHeader />
-    <main className="landing-main lp" id="main-content" tabIndex={-1}>
-      <p className="lp-eyebrow">{tr('How it stays safe', '安全原理')}</p>
-      <h1 className="mt-5 text-[clamp(32px,4.4vw,52px)] font-extrabold leading-[1.12] tracking-[-1.5px]">{tr('The AI proposes.', 'AI 只提议，')}<br /><span className="text-[var(--action)]">{tr('Rules decide. You say yes.', '规则做决定，你来点头。')}</span></h1>
-      <p className="lp-section-lead">{tr('Letting an AI act on a bank account is only safe if it can’t act alone. Here is how that works.', '让 AI 操作银行账户，前提是它不能自作主张。下面是具体做法。')}</p>
+    <main className="lp" id="main-content" tabIndex={-1}>
+      <section className="lp-banner">
+        <p className="lp-eyebrow">{tr('How it stays safe', '安全原理')}</p>
+        <h1>{tr('The AI proposes.', 'AI 只提议，')}<br />{tr('Rules decide. You say yes.', '规则做决定，你来点头。')}</h1>
+        <p>{tr('Letting an AI act on a bank account is only safe if it can’t act alone. Here is how that works.', '让 AI 操作银行账户，前提是它不能自作主张。下面是具体做法。')}</p>
+      </section>
 
-      <div className="lp-grid mt-10 !grid-cols-1 sm:!grid-cols-2 lg:!grid-cols-4">
+      <div className="lp-grid lp-grid-4">
         {roles.map(([icon, title, text], i) => (
           <article key={title} className="lp-point"><span className="lp-icon"><Icon name={icon} size={20} /></span><h3>{i + 1}. {title}</h3><p>{text}</p></article>
         ))}
@@ -56,25 +58,25 @@ export default function How() {
 
       <section className="lp-section">
         <h2>{tr('Three levels, decided by fixed rules', '三个等级，由固定规则决定')}</h2>
-        <div className="mt-6 overflow-hidden rounded-2xl border border-rule">
+        <div className="mt-8 divide-y divide-[var(--rule)] overflow-hidden rounded-panel bg-[var(--field)]">
           {levels.map(([tier, what, how]) => (
-            <div key={tier} className="grid gap-2 border-b border-rule bg-[var(--sheet)] px-5 py-4 last:border-b-0 sm:grid-cols-[9rem_1fr_16rem] sm:items-center">
+            <div key={tier} className="grid gap-2 px-6 py-5 sm:grid-cols-[9rem_1fr_16rem] sm:items-center">
               <span><TierTag tier={tier} /></span>
               <p className="text-[0.95rem] leading-relaxed">{what}</p>
               <p className="text-sm font-semibold text-ink2">{how}</p>
             </div>
           ))}
         </div>
-        <p className="mt-3 text-sm text-ink2">{tr('A warning sign only ever makes a level stricter, never looser.', '风险信号只会让等级更严，不会更松。')}</p>
+        <p className="mt-3 text-center text-sm text-ink2">{tr('A warning sign only ever makes a level stricter, never looser.', '风险信号只会让等级更严，不会更松。')}</p>
       </section>
 
       <section className="lp-section">
         <h2>{tr('One request, step by step', '一个请求的完整过程')}</h2>
         <p className="lp-section-lead">{tr('“Pay my landlord 3200 for rent”: what the AI produced, what the rules checked, and what happened.', '“给房东转3200房租”：AI 给出了什么、规则检查了什么、最后发生了什么。')}</p>
-        <div className="demo-options" role="group" aria-label={tr('Stage', '阶段')}>
+        <div className="lp-pills lp-calc-tabs" role="group" aria-label={tr('Stage', '阶段')}>
           {(['request', 'rules', 'result'] as const).map((v, i) => <button key={v} aria-pressed={view === v} onClick={() => setView(v)}>{i + 1}. {v === 'request' ? tr('What the AI proposed', 'AI 提出的计划') : v === 'rules' ? tr('What the rules checked', '规则检查') : tr('What happened', '结果')}</button>)}
         </div>
-        <div className="terminal-card max-w-3xl"><div className="terminal-bar"><div className="terminal-lights"><i /><i /><i /></div><span>{view}</span><span className="terminal-badge">{tr('EXAMPLE', '示例')}</span></div>
+        <div className="terminal-card mx-auto mt-6 max-w-3xl"><div className="terminal-bar"><div className="terminal-lights"><i /><i /><i /></div><span>{view}</span><span className="terminal-badge">{tr('EXAMPLE', '示例')}</span></div>
           <div className="terminal-body" aria-live="polite">
             {view === 'request' ? <>
               <p className="terminal-comment">{tr('The AI may only return this shape. Any extra field, unknown action or bad value is rejected.', 'AI 只能返回这种格式，多出的字段、未知操作或错误的值都会被拒绝。')}</p>
@@ -105,17 +107,17 @@ export default function How() {
         <h2>{tr('Tested, not just promised', '经过测试，不只是承诺')}</h2>
         <div className="lp-grid">
           {[['220', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['69', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['96', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
-            <article key={n} className="lp-point"><p className="cond text-[2.6rem] font-extrabold leading-none text-[var(--action)]">{n}</p><p className="mt-2">{text}</p></article>
+            <article key={n} className="lp-point"><p className="text-[2.8rem] font-extrabold leading-none text-[var(--action)]">{n}</p><p className="mt-2">{text}</p></article>
           ))}
         </div>
-        <p className="mt-3 text-sm text-ink2">{tr('Measured with the built-in rule-based planner. The AI model planner will be measured before we publish numbers for it.', '以上数字来自内置的规则规划器；接入 AI 模型后会先测量，再公布它的数字。')}</p>
+        <p className="mt-3 text-center text-sm text-ink2">{tr('Measured with the built-in rule-based planner. The AI model planner will be measured before we publish numbers for it.', '以上数字来自内置的规则规划器；接入 AI 模型后会先测量，再公布它的数字。')}</p>
       </section>
 
       <section className="lp-cta">
         <h2>{tr('See it for yourself.', '亲自试一试。')}</h2>
         <p>{tr('Try a large transfer to the seller added today, or tell it to ignore the rules, and watch what happens.', '试试给今天新加的卖家转一大笔钱，或者让它“忽略规则”，看看会发生什么。')}</p>
-        <button type="button" className="site-button" disabled={demo.busy} onClick={() => void tryIt()}>{user ? tr('Open the assistant', '打开助手') : tr('Try it now, no sign-up', '马上试试，不用注册')} <span aria-hidden>→</span></button>
-        {demo.error && <p role="alert" className="mt-3 text-sm text-cinnabar">{demo.error}</p>}
+        <button type="button" className="site-button cta" disabled={demo.busy} onClick={() => void tryIt()}>{user ? tr('Open the assistant', '打开助手') : tr('Try it now, no sign-up', '马上试试，不用注册')}</button>
+        {demo.error && <p role="alert" className="mt-3 text-sm font-semibold">{demo.error}</p>}
       </section>
     </main><SiteFooter />
   </div>

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLang } from '../i18n'
-import { PageHead, Section } from '../components/bits'
+import { PageHead, Section, Segmented } from '../components/bits'
 import { Icon } from '../components/Icon'
 import { Bars, Columns } from '../components/Results'
 import { SealMark } from '../components/Seal'
@@ -25,12 +25,9 @@ export default function Bills() {
   const flagged = anomalies.data?.items ?? []
 
   const controls = (
-    <div className="flex items-center gap-2">
-      <div className="flex gap-1" role="tablist" aria-label={tr('Period', '周期')}>
-        {([['month', tr('Month', '月')], ['year', tr('Year', '年')]] as const).map(([k, label]) => (
-          <button key={k} type="button" role="tab" aria-selected={period === k} onClick={() => { setPeriod(k); setOffset(0) }} className={`rounded-box px-3 py-1.5 text-[0.95rem] ${period === k ? 'bg-ink text-field' : 'text-ink hover:bg-paper2'}`}>{label}</button>
-        ))}
-      </div>
+    <div className="flex flex-wrap items-center gap-2">
+      <Segmented label={tr('Period', '周期')} value={period} onChange={(k) => { setPeriod(k); setOffset(0) }}
+        options={[['month', tr('Month', '月')], ['year', tr('Year', '年')]] as const} />
       <button type="button" className="btn btn-line px-2.5 py-1" onClick={() => setOffset(offset - 1)} aria-label={tr('Earlier', '上一期')}>‹</button>
       <span className="num min-w-[5.5rem] text-center font-mono font-semibold">{name}</span>
       <button type="button" className="btn btn-line px-2.5 py-1" disabled={offset >= 0} onClick={() => setOffset(offset + 1)} aria-label={tr('Later', '下一期')}>›</button>

@@ -4,7 +4,7 @@ A bilingual (中文 / English) React app with light and dark themes that works a
 
 | Page | Route | What it shows |
 |---|---|---|
-| Landing | `/` | The promise, a phone playing a transfer from request to Mum's text message, example requests, six features, safety. “Try it now” opens a demo account in one click |
+| Landing | `/` | A green banner slider (the assistant with a phone playing a transfer, transfer by phone number, QR pay and bills), example requests and the safety promise in two cards, six feature tiles, a rule check that shows whether a payment needs your OK or your PIN, and a box to just say what you need. “Try it now” opens a demo account in one click |
 | How it stays safe | `/how` | The AI proposes, the rules decide, you approve: the three levels, an example request with the rule checks, the protections, the numbers |
 | Sign in / Create account | `/login`, `/signup` | Email sign-in, the 6-digit transaction PIN, or a demo account; signing in opens Home |
 | Home | `/home` | The first screen after signing in: current account (amounts can be hidden), a grid of services, a box to ask the assistant, bills to pay, recent transactions |
@@ -38,5 +38,8 @@ npm run build      # dist/ is served by the backend
 - The assistant's replies are plain text from the backend. `components/ReplyText.tsx` lays them out: `· ` lines become a list (an amount at the end goes to the right), `提示：` / `Tip:` lines a tip, a line in brackets a small note. Keep that shape when writing replies.
 - Customer screens use plain words: 直接办 / 需确认 / 需验证 (done right away / needs your OK / needs PIN + code), never rule codes.
 - Colours come from the CSS variables in `src/index.css` (`bg-field`, `text-ink2`, `border-rule`, `text-cinnabar`, `text-jade`), so light and dark both work.
+- The look: a white page with grey rounded surfaces (`.ruled`, `bg-[var(--field)]`) and no borders; one green (`--action`) for actions and the active tab; the bright `--cta` only for the main action on a green surface; pill tabs with `Segmented` (`components/bits.tsx`). Text on green is solid white so it stays readable.
+- The header is pinned (`--header-h`); on phones the app's menu is a bottom tab bar (`components/TabBar.tsx`, `--tabbar-h`). Anything sticky uses those two variables.
+- The logo is a placeholder in `BrandSeal` (`components/Seal.tsx`); the final logo replaces that one function.
 - No CDNs or external fonts: phones in mainland China must load everything from our own server.
 - Hash routes (`/#/assistant`) are kept for WeChat's in-app browser.

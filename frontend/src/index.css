@@ -4,21 +4,26 @@
 @tailwind components;
 @tailwind utilities;
 
-/* EconomyOS-inspired visual system shared by landing, access and workspace. */
+/* One visual system for the site and the app: a white page, grey rounded surfaces, one strong green,
+   a bright mint for the main call to action on green, bold Manrope headings. */
 :root {
-  --paper: #ffffff; --paper-2: #f0f8f5; --field: #ffffff; --sheet: #fafcfb;
-  --ink: #101820; --ink-2: #68716f; --ink-hover: #080e13; --ink-off: #98a29f;
-  --rule: #e2e8e5; --rule-strong: #cdd9d4; --cinnabar: #b83f42; --cinnabar-wash: #fff1f1;
-  --jade: #377c69; --row-new: #edf8f3; --wave-1: #f0f8f5; --shadow: rgba(31,64,53,.06);
-  --action: #357366; --action-ink: #ffffff; --accent-wash: #eff9f5; --ring: #73a69a; --radius: .8rem;
+  --paper: #ffffff; --paper-2: #e9ebf0; --field: #f1f2f6; --sheet: #f7f8fa;
+  --ink: #071222; --ink-2: #5f6670; --ink-hover: #000000; --ink-off: #a3a9b2;
+  --rule: #e3e5ea; --rule-strong: #d3d7de; --cinnabar: #b83f42; --cinnabar-wash: #fff1f1;
+  --jade: #007a5a; --row-new: #e7f8f3; --wave-1: #f1f2f6; --shadow: rgba(7,18,34,.07);
+  --action: #007a5a; --action-ink: #ffffff; --accent-wash: #e7f8f3; --ring: #007a5a; --radius: 20px;
+  --cta: #64f995; --cta-ink: #071222; --dot: #faae17;
+  --hero: linear-gradient(135deg, #007a5a 0%, #00835f 100%);
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --paper: #101716; --paper-2: #1d2c27; --field: #141e1a; --sheet: #17221e;
-  --ink: #eff5f1; --ink-2: #a2b4ab; --ink-hover: #ffffff; --ink-off: #6c8278;
-  --rule: #2c3d34; --rule-strong: #405b4c; --cinnabar: #ee9598; --cinnabar-wash: #321e20;
-  --jade: #85c9aa; --row-new: #203e30; --wave-1: #1d2c27; --shadow: rgba(0,0,0,.18);
-  --action: #80b8a4; --action-ink: #0b211a; --accent-wash: #20372c; --ring: #80b8a4;
+  --paper: #0b1320; --paper-2: #1f2e42; --field: #152132; --sheet: #111b2a;
+  --ink: #eef2f6; --ink-2: #9aa6b2; --ink-hover: #ffffff; --ink-off: #5d6b7a;
+  --rule: #243447; --rule-strong: #33465c; --cinnabar: #f0959a; --cinnabar-wash: #3a1f24;
+  --jade: #3fd19e; --row-new: #12302a; --wave-1: #152132; --shadow: rgba(0,0,0,.32);
+  --action: #2bc28e; --action-ink: #04140e; --accent-wash: #12302a; --ring: #2bc28e;
+  --cta: #64f995; --cta-ink: #071222; --dot: #faae17;
+  --hero: linear-gradient(135deg, #00664b 0%, #007a5a 100%);
   color-scheme: dark;
 }
 
@@ -58,14 +63,18 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* shadcn Card: border + radius + background */
-.ruled {
-  border: 1px solid var(--rule);
+/* A card: a grey rounded surface with no border. The fill is in :where() so a bg-* class still wins. */
+.ruled,
+.ruled-strong {
   border-radius: var(--radius);
 }
-.ruled-strong {
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
+:where(.ruled, .ruled-strong) {
+  background-color: var(--field);
+}
+/* on a grey card, fields and secondary buttons are white, as they would vanish grey on grey */
+.ruled :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select),
+:is(.ruled, .confirm-card, .bot-bubble) .btn-line {
+  background-color: var(--paper);
 }
 .rule-b {
   border-bottom: 1px solid var(--rule);
@@ -85,21 +94,21 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--action);
   outline-offset: 2px;
 }
 
 .field {
   background: var(--field);
-  border: 1px solid var(--rule-strong);
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 0.625rem 0.875rem;
   width: 100%;
 }
 .field:focus {
   outline: none;
-  border-color: var(--ink);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 12%, transparent);
+  border-color: var(--action);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--action) 18%, transparent);
 }
 
 .btn {
@@ -107,10 +116,11 @@ button {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1rem;
-  font-weight: 500;
-  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+  border-radius: 12px;
+  padding: 0.625rem 1.25rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease, filter 120ms ease;
 }
 .btn-ink {
   background: var(--action);
@@ -122,12 +132,18 @@ button {
   cursor: not-allowed;
 }
 .btn-line {
-  border: 1px solid var(--rule-strong);
   background: var(--field);
+  color: var(--ink);
 }
 .btn-line:hover {
   background: var(--paper-2);
 }
+/* the bright button, for the main action on a green surface */
+.btn-cta {
+  background: var(--cta);
+  color: var(--cta-ink);
+}
+.btn-cta:hover { filter: brightness(1.05); }
 .btn-cinnabar {
   border: 1px solid color-mix(in srgb, var(--cinnabar) 40%, transparent);
   color: var(--cinnabar);
@@ -207,14 +223,14 @@ button {
 .workspace { min-height: 100dvh; }
 .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--jade); flex-shrink: 0; }
 .page-content { width: 100%; max-width: 1152px; margin: 0 auto; padding: 32px 32px 64px; }
-.page-content h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.2; }
+.page-content h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
 .page-content h1 + p { margin-top: 8px; }
 .eyebrow { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); }
 .panel-heading { padding: 20px 24px; display: flex; justify-content: space-between; gap: 12px; align-items: center; border-bottom: 1px solid var(--rule); }
 .panel-heading h2 { font-size: 16px; font-weight: 600; }
 .panel-heading p { color: var(--ink-2); font-size: 13px; margin-top: 4px; }
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
-.metric-card { border: 1px solid var(--rule); border-radius: var(--radius); background: var(--field); padding: 24px; min-width: 0; }
+.metric-card { border-radius: var(--radius); background: var(--field); padding: 24px; min-width: 0; }
 .metric-card dt, .metric-label { color: var(--ink-2); font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
 .metric-card dd { font-size: 28px; font-weight: 600; letter-spacing: -0.03em; margin-top: 16px; line-height: 1.1; }
 .metric-card small { font-size: 12px; font-weight: 400; color: var(--ink-2); margin-left: 5px; letter-spacing: 0; }
@@ -245,9 +261,12 @@ button {
   .metric-card { padding: 16px; }
   .metric-card dd { font-size: 24px; margin-top: 12px; }
   .metric-card dt { font-size: 12px; }
-  .page-content h1 { font-size: 26px; }
+  .page-content h1 { font-size: 28px; }
   .panel-heading { padding: 16px; }
 }
+
+/* lists inside the assistant's grey bubble are white */
+.bot-bubble .ruled { background-color: var(--paper); }
 
 /* The chat history slides in from the left on phones. */
 @keyframes drawer-in { from { transform: translateX(-100%); } to { transform: none; } }
