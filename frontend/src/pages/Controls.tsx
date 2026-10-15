@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { QRCodeSVG } from 'qrcode.react'
+import { Lock } from 'lucide-react'
 import { api, errorText } from '../api/client'
 import type { BankCard } from '../api/types'
 import { useLang } from '../i18n'
@@ -81,6 +82,21 @@ export default function Controls() {
 }
 
 /** One card: its state and limit, the four switches (tap to change), and what you can do with it. */
+/** The card itself, small: green for the debit card, dark for the virtual one, grey with a lock when it can't be used. */
+function CardFace({ card: c }: { card: BankCard }) {
+  const { tr } = useLang()
+  const off = c.status === 'frozen' || c.status === 'lost'
+  const face = off ? 'linear-gradient(135deg, #8a929c, #6b737d)' : c.kind === 'virtual' ? 'linear-gradient(135deg, #0d1b2e, #23364f)' : 'var(--hero)'
+  return (
+    <div className="relative flex h-[76px] w-[120px] shrink-0 flex-col justify-between overflow-hidden rounded-[12px] p-2.5 text-white shadow-[0_6px_16px_var(--shadow)]" style={{ background: face }} aria-hidden>
+      <span className="flex items-center justify-between text-[0.62rem] font-bold opacity-90">{tr('Bank Agent', '银行代办')}<span>{c.kind === 'virtual' ? tr('Virtual', '虚拟') : tr('Debit', '借记')}</span></span>
+      {c.kind === 'debit' && <span className="h-3.5 w-5 rounded-[3px] bg-[#e9d18c]" />}
+      <span className="font-mono text-[0.72rem] tracking-wider">•••• {c.last4}</span>
+      {off && <span className="absolute inset-0 grid place-items-center bg-black/25"><Lock size={20} /></span>}
+    </div>
+  )
+}
+
 function CardTile({ card: c, ask, busy }: { card: BankCard; ask: (t: string) => void; busy: boolean }) {
   const { tr } = useLang()
   const id = c.last4
@@ -94,12 +110,16 @@ function CardTile({ card: c, ask, busy }: { card: BankCard; ask: (t: string) => 
   const state = { active: tr('Active', '正常'), frozen: tr('Frozen', '已冻结'), lost: tr('Reported lost', '已挂失'), pending: tr('On its way', '寄送中') }[c.status]
   return (
     <div className={`ruled bg-field p-4 ${lost ? 'opacity-60' : ''}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-semibold">{c.name} <span className="font-mono text-[0.9rem] text-ink2">{c.last4}</span></p>
-          <p className="text-xs text-ink2">{tr(`Daily limit ${yuan(c.daily_limit_fen)} · expires ${c.expires}`, `日限额 ${yuan(c.daily_limit_fen)} · 有效期 ${c.expires}`)}</p>
+      <div className="flex items-start gap-4">
+        <CardFace card={c} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <p className="font-semibold">{c.name} <span className="font-mono text-[0.9rem] text-ink2">{c.last4}</span></p>
+            <span className={`shrink-0 text-sm font-semibold ${c.status === 'active' ? 'text-jade' : c.status === 'frozen' || lost ? 'text-cinnabar' : 'text-ink2'}`}>{state}</span>
+          </div>
+          <p className="text-xs text-ink2">{tr(`Daily limit ${yuan(c.daily_limit_fen)}`, `日限额 ${yuan(c.daily_limit_fen)}`)}</p>
+          <p className="text-xs text-ink2">{tr(`Expires ${c.expires}`, `有效期 ${c.expires}`)}</p>
         </div>
-        <span className={`shrink-0 text-sm font-semibold ${c.status === 'active' ? 'text-jade' : c.status === 'frozen' || lost ? 'text-cinnabar' : 'text-ink2'}`}>{state}</span>
       </div>
       {!lost && <>
         <div className="mt-3 flex flex-wrap gap-2">

@@ -45,10 +45,16 @@ export default function Payments() {
     return (
       <main tabIndex={-1} className="page-content">
         <button type="button" onClick={() => setParams({})} className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-[var(--action)]"><ChevronLeft size={16} />{tr('Payments', '缴费')}</button>
-        <PageHead title={category.name} />
-        <PayForm key={`${provider.code}:${params.get('a') ?? ''}`} category={category} provider={provider}
-          saved={(bills.data?.items ?? []).filter((b) => b.provider.code === provider.code)}
-          initial={params.get('a') ?? ''} onProvider={(p) => open(category, p)} />
+        <div className="mb-6 flex items-center gap-4">
+          <span className="service-icon !h-14 !w-14 shrink-0"><Icon name={category.icon as IconName} size={26} /></span>
+          <h1>{category.name}</h1>
+        </div>
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+          <PayForm key={`${provider.code}:${params.get('a') ?? ''}`} category={category} provider={provider}
+            saved={(bills.data?.items ?? []).filter((b) => b.provider.code === provider.code)}
+            initial={params.get('a') ?? ''} onProvider={(p) => open(category, p)} />
+          <HowToPay category={category.code} />
+        </div>
       </main>
     )
   }
@@ -143,15 +149,15 @@ function PayForm({ category, provider, saved, initial, onProvider }: { category:
     }
   }
 
-  if (flow.planId) return <div className="max-w-xl"><ScreenConfirm planId={flow.planId} again={tr('Done', '完成')} onAgain={again} /></div>
+  if (flow.planId) return <div><ScreenConfirm planId={flow.planId} again={tr('Done', '完成')} onAgain={again} /></div>
 
   return (
-    <div className="max-w-xl space-y-5">
+    <div className="ruled space-y-5 p-6 max-sm:p-4">
       {category.providers.length > 1 && (
         <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={tr('Provider', '缴费单位')}>
           {category.providers.map((p) => (
             <button key={p.code} type="button" role="radio" aria-checked={p.code === provider.code} onClick={() => onProvider(p)}
-              className={`rounded-full border px-4 py-1.5 text-[0.93rem] ${p.code === provider.code ? 'border-[var(--action)] bg-[var(--accent-wash)] font-semibold text-[var(--action)]' : 'border-rule bg-field'}`}>{p.name}</button>
+              className={`rounded-full border px-4 py-1.5 text-[0.93rem] ${p.code === provider.code ? 'border-[var(--action)] bg-[var(--accent-wash)] font-semibold text-[var(--action)]' : 'border-transparent bg-paper'}`}>{p.name}</button>
           ))}
         </div>
       )}
@@ -160,7 +166,7 @@ function PayForm({ category, provider, saved, initial, onProvider }: { category:
         <div className="flex flex-wrap gap-2">
           {saved.map((s) => (
             <button key={s.id} type="button" onClick={() => { setAccount(s.account); if (!mobile) setChecked(s.account) }}
-              className="rounded-full border border-rule bg-field px-3 py-1 font-mono text-sm hover:border-[var(--action)]">{s.label ? `${s.label} ` : ''}{s.account}</button>
+              className="rounded-full border border-transparent bg-paper px-3 py-1 font-mono text-sm hover:border-[var(--action)]">{s.label ? `${s.label} ` : ''}{s.account}</button>
           ))}
         </div>
       )}
@@ -178,7 +184,7 @@ function PayForm({ category, provider, saved, initial, onProvider }: { category:
           <div className="grid grid-cols-4 gap-2">
             {(provider.top_ups ?? []).map((n) => (
               <button key={n} type="button" onClick={() => { setTopUp(n); setCustom('') }}
-                className={`rounded-box border py-3 font-mono text-lg font-bold ${topUp === n ? 'border-[var(--action)] bg-[var(--accent-wash)] text-[var(--action)]' : 'border-rule bg-field'}`}>¥{n}</button>
+                className={`rounded-box border py-3 font-mono text-lg font-bold ${topUp === n ? 'border-[var(--action)] bg-[var(--accent-wash)] text-[var(--action)]' : 'border-transparent bg-paper'}`}>¥{n}</button>
             ))}
           </div>
           <input value={custom} onChange={(e) => { setCustom(e.target.value.replace(/[^\d]/g, '').slice(0, 3)); setTopUp(null) }} inputMode="numeric"
@@ -198,7 +204,7 @@ function PayForm({ category, provider, saved, initial, onProvider }: { category:
         {lookup.isError && <p role="alert" className="text-sm font-semibold text-cinnabar">{errorText(lookup.error, lang)}</p>}
         {bill && !lookup.isFetching && (
           <div className="space-y-4">
-            <dl className="divide-y divide-[var(--rule)] ruled bg-field px-4 text-[0.95rem]">
+            <dl className="divide-y divide-[var(--rule)] rounded-box bg-paper px-4 text-[0.95rem]">
               <div className="flex justify-between gap-4 py-2.5"><dt className="text-ink2">{provider.account_label}</dt><dd className="font-mono">{bill.account}</dd></div>
               {bill.holder && <div className="flex justify-between gap-4 py-2.5"><dt className="text-ink2">{tr('Name on the bill', '户名')}</dt><dd className="font-semibold">{bill.holder}</dd></div>}
               {bill.period && <div className="flex justify-between gap-4 py-2.5"><dt className="text-ink2">{tr('Bill', '账单')}</dt><dd>{lang === 'zh' ? `${bill.period.slice(0, 4)}年${Number(bill.period.slice(5))}月` : bill.period}</dd></div>}
@@ -217,11 +223,11 @@ function PayForm({ category, provider, saved, initial, onProvider }: { category:
             </>}
 
             {category.code !== 'fines' && (
-              <div className="ruled bg-field px-4 py-3">
+              <div className="rounded-box bg-paper px-4 py-3">
                 <p className="font-semibold">{tr('Automatic payment', '自动缴费')}</p>
                 {bill.autopay ? <>
                   <p className="mt-1 text-sm text-ink2">{tr(`On: each bill up to ${yuan(bill.autopay_limit_fen ?? 0)} is paid on ${bill.next_autopay_on?.slice(5) ?? ''} every month.`, `已开通：每月账单不超过 ${yuan(bill.autopay_limit_fen ?? 0)} 时自动缴，下次 ${bill.next_autopay_on ?? ''}。`)}</p>
-                  <button type="button" className="btn btn-line mt-3 py-1.5 text-sm" disabled={flow.busy}
+                  <button type="button" className="btn btn-line mt-3 !bg-[var(--field)] py-1.5 text-sm" disabled={flow.busy}
                     onClick={() => void flow.start('bill_autopay', { provider: provider.code, account: bill.account, on: false })}>{tr('Turn off', '关闭')}</button>
                 </> : <>
                   <p className="mt-1 text-sm text-ink2">{tr('Pay this bill every month by itself, but never more than:', '每月自动缴这张账单，但不超过：')}</p>
@@ -229,7 +235,7 @@ function PayForm({ category, provider, saved, initial, onProvider }: { category:
                     <span className="font-mono text-ink2">¥</span>
                     <input value={limit} onChange={(e) => setLimit(e.target.value.replace(/[^\d]/g, '').slice(0, 4))} inputMode="numeric" aria-label={tr('Monthly limit', '每月上限')}
                       className="num w-24 rounded-box border border-rule2 bg-paper px-3 py-1.5 font-mono outline-none focus:border-[var(--action)]" />
-                    <button type="button" className="btn btn-line py-1.5 text-sm" disabled={flow.busy || !(Number(limit) > 0)}
+                    <button type="button" className="btn btn-line !bg-[var(--field)] py-1.5 text-sm" disabled={flow.busy || !(Number(limit) > 0)}
                       onClick={() => void flow.start('bill_autopay', { provider: provider.code, account: bill.account, on: true, limit_yuan: Number(limit) })}>{tr('Turn on', '开通')}</button>
                   </div>
                 </>}
@@ -245,5 +251,29 @@ function PayForm({ category, provider, saved, initial, onProvider }: { category:
         )}
       </>}
     </div>
+  )
+}
+
+/** How paying works for this kind of bill: three steps and the rule that guards them. */
+function HowToPay({ category }: { category: string }) {
+  const { tr } = useLang()
+  const steps: [string, string][] = category === 'mobile'
+    ? [[tr('Type the number', '输入手机号'), tr('Your own or someone else’s', '自己的或家人的都行')], [tr('Pick an amount', '选金额'), tr('¥500 at most each time', '单次最多 ¥500')], [tr('Confirm', '确认充值'), tr('Paid from your current account', '从活期账户付款')]]
+    : category === 'fines'
+      ? [[tr('Type the plate', '输入车牌号'), tr('e.g. 鄂A12345', '例如 鄂A12345')], [tr('Check the fine', '核对罚款'), tr('What, where and how much', '违法行为和金额')], [tr('Confirm', '确认缴纳'), tr('Paid from your current account', '从活期账户付款')]]
+      : [[tr('Type the account number', '输入户号'), tr('It’s on your paper bill', '纸质账单上可以找到')], [tr('Check the bill', '核对账单'), tr('The name on it and the amount', '户名和金额对得上再缴')], [tr('Confirm', '确认缴费'), tr('Or let it pay itself, up to a limit', '也可以开通自动缴费，设上限')]]
+  return (
+    <aside className="rounded-panel p-6 text-white" style={{ background: 'var(--hero)' }} aria-label={tr('How to pay', '怎么缴')}>
+      <h2 className="text-xl font-bold">{tr('How to pay', '怎么缴')}</h2>
+      <ol className="mt-4 space-y-3">
+        {steps.map(([title, text], i) => (
+          <li key={title} className="flex gap-3 rounded-[16px] bg-white/15 px-4 py-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-[#007a5a]">{i + 1}</span>
+            <span><b className="block">{title}</b><span className="block text-sm">{text}</span></span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-4 text-sm leading-relaxed">{tr('Every payment goes through the bank’s rules: over ¥1,000 in a day needs your PIN and a code.', '每笔缴费都要过银行规则：当天累计超过 ¥1,000，需要交易密码和验证码。')}</p>
+    </aside>
   )
 }

@@ -31,6 +31,8 @@ def mask_name(name: str) -> str:
     parts = name.split()
     if len(parts) > 1:  # written in Latin letters, surname first as in Chinese
         return "* " + " ".join(parts[1:])
+    if name.isascii():  # one Latin word: only its first letter shows
+        return name[:1] + "*" * min(6, max(1, len(name) - 1))
     return "*" + name[1:]
 
 

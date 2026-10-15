@@ -97,7 +97,7 @@ export function SiteHeader({ workspace = false, status }: { workspace?: boolean;
           </div>
         </div>
         <nav ref={nav} className="site-mainnav" aria-label={tr('Main navigation', '主导航')}>
-          {links.map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => workspace && (isActive || (to === '/home' && HOME_SERVICES.test(pathname))) ? 'is-active' : ''}>{label}</NavLink>)}
+          {links.map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => (workspace || to === '/how') && (isActive || (to === '/home' && HOME_SERVICES.test(pathname))) ? 'is-active' : ''}>{label}</NavLink>)}
         </nav>
       </div>
     </div>

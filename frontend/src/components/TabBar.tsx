@@ -21,7 +21,7 @@ export function TabBar() {
   const [open, setOpen] = useState(false)
   const first = useRef<HTMLAnchorElement>(null)
   const rest = [...pages.filter(([to]) => !TABS.some(([t]) => t === to)), ['/payments', tr('Payments', '缴费')], ['/how', tr('How it stays safe', '安全原理')]] as [string, string][]
-  const inMore = rest.some(([to]) => to === pathname)
+  const inMore = rest.some(([to]) => to === pathname && to !== '/payments')  // Payments belongs to Home's tab
 
   useEffect(() => setOpen(false), [pathname])
   useEffect(() => {

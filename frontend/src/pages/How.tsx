@@ -45,9 +45,16 @@ export default function How() {
   return <div className="public-site landing-page"><SiteHeader />
     <main className="lp" id="main-content" tabIndex={-1}>
       <section className="lp-banner">
-        <p className="lp-eyebrow">{tr('How it stays safe', '安全原理')}</p>
-        <h1>{tr('The AI proposes.', 'AI 只提议，')}<br />{tr('Rules decide. You say yes.', '规则做决定，你来点头。')}</h1>
-        <p>{tr('Letting an AI act on a bank account is only safe if it can’t act alone. Here is how that works.', '让 AI 操作银行账户，前提是它不能自作主张。下面是具体做法。')}</p>
+        <div className="lp-banner-copy">
+          <p className="lp-eyebrow">{tr('How it stays safe', '安全原理')}</p>
+          <h1>{tr('The AI proposes.', 'AI 只提议，')}<br />{tr('Rules decide. You say yes.', '规则做决定，你来点头。')}</h1>
+          <p>{tr('Letting an AI act on a bank account is only safe if it can’t act alone. Here is how that works.', '让 AI 操作银行账户，前提是它不能自作主张。下面是具体做法。')}</p>
+        </div>
+        <ol className="lp-flow" aria-label={tr('Who does what', '分工')}>
+          <li><span className="lp-flow-icon"><Icon name="agents" size={20} /></span><span><b>{tr('The AI proposes', 'AI 提议')}</b><small>{tr('From a fixed list of 43 actions', '只能从固定的 43 个操作里选')}</small></span></li>
+          <li><span className="lp-flow-icon"><Icon name="shield" size={20} /></span><span><b>{tr('The rules decide', '规则决定')}</b><small>{tr('Right away, your OK, or PIN + code', '直接办、需确认，还是需验证')}</small></span></li>
+          <li><span className="lp-flow-icon"><Icon name="check" size={20} /></span><span><b>{tr('You say yes', '你来点头')}</b><small>{tr('Nothing moves before you confirm', '你确认之前，钱一分不动')}</small></span></li>
+        </ol>
       </section>
 
       <div className="lp-grid lp-grid-4">

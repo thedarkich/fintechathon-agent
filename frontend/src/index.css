@@ -54,6 +54,10 @@ body {
 .cond-x {
   letter-spacing: -0.03em;
 }
+h1, h2, h3 { text-wrap: balance; }
+p, li { text-wrap: pretty; }
+.lp-slide-copy p, .lp-section-lead, .lp-tile-text { text-wrap: balance; }
+
 .keep {
   word-break: keep-all;
   overflow-wrap: anywhere;
