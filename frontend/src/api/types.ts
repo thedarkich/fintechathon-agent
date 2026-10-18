@@ -63,6 +63,10 @@ export interface PlanStep {
   error_code: string | null
   irreversible: boolean
   fen: number | null
+  /** what a risky payment is for, chosen by the customer on the slip; asked when purpose_needed */
+  purpose?: string | null
+  purpose_needed?: boolean
+  purpose_options?: { value: string; label: string }[] | null
 }
 
 export interface Plan {

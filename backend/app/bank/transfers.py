@@ -48,6 +48,11 @@ RETURN_REASONS = {"NAME_MISMATCH": ("收款户名与账号不符", "the payee na
 REGISTERED_HOLDERS = {"6230580000673307": "周楷"}
 
 
+def holder_of(account_no: str, saved_name: str) -> str:
+    """Whose name the account is in, as the payee's bank has it: the same register the bank checks at clearing."""
+    return REGISTERED_HOLDERS.get(account_no, saved_name)
+
+
 def bank_en(bank: str) -> str:
     return BANK_EN.get(bank, bank)
 
@@ -127,7 +132,7 @@ def advance(session: Session, row: Transfer, now: datetime, *, force: bool = Fal
         row.arrive_at = clock.iso(now)
     _event(row, "clearing", when, *ROUTES[row.route])
     payee = session.get(Payee, row.payee_id)
-    holder = REGISTERED_HOLDERS.get(payee.account_no, payee.name) if payee else row.payee_name
+    holder = holder_of(payee.account_no, payee.name) if payee else row.payee_name
     reason = reason or ("NAME_MISMATCH" if holder != row.payee_name else None)
     if reason:
         _return(session, row, when, reason)

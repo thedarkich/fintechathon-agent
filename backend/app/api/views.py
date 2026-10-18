@@ -2,7 +2,7 @@
 
 from app.agent.actions import REGISTRY
 from app.agent.core import Ctx
-from app.agent.policy import explain, explain_signal
+from app.agent.policy import PURPOSES, explain, explain_signal, purpose_options
 from app.bank import transfers
 from app.models import Message, Plan
 from app.money import yuan
@@ -32,7 +32,16 @@ def details(ctx: Ctx, action: str, r: dict | None) -> list[dict]:
         rows = [row("收款人", "To", who)]
         if r.get("phone_masked"):
             rows.append(row("手机号", "Phone", r["phone_masked"]))
-        rows += [row("收款账户", "Account", f"{bank} ****{r['account_tail']}"), row("金额", "Amount", yuan(r["fen"]))]
+        rows += [row("收款账户", "Account", f"{bank} ****{r['account_tail']}")]
+        if r.get("name_check") == "mismatch":
+            rows.append(row("户名核验", "Name check", f"不一致：这个账户的户名是 {r['holder_masked']}" if zh
+                            else f"Doesn't match: the account is in the name of {r['holder_masked']}"))
+        elif r.get("name_check") == "match":
+            rows.append(row("户名核验", "Name check", "一致" if zh else "Matches the account holder"))
+        rows.append(row("金额", "Amount", yuan(r["fen"])))
+        if r.get("purpose") in PURPOSES:
+            label_zh, label_en, warn_zh, warn_en = PURPOSES[r["purpose"]]
+            rows += [row("用途", "For", label_zh if zh else label_en), row("风险提示", "Warning", warn_zh if zh else warn_en)]
         if r.get("first_time"):
             rows.append(row("提醒", "Note", "第一次转给 TA，请确认是本人" if zh else "Your first transfer to them: check it's the right person"))
         if action in ("transfer", "phone_transfer"):
@@ -110,6 +119,8 @@ def plan_view(plan: Plan, ctx: Ctx) -> dict:
             "error_code": error.get("code") if error else None,
             "irreversible": bool(s.get("irreversible")),
             "fen": (resolved or {}).get("fen"),
+            "purpose": s.get("purpose"), "purpose_needed": bool(s.get("purpose_needed")),
+            "purpose_options": purpose_options(ctx.lang) if s.get("purpose_needed") or s.get("purpose") else None,
         })
     return {"id": plan.id, "status": plan.status, "tier": plan.tier, "source": plan.source, "flags": plan.flags,
             "approval_hash": plan.approval_hash if plan.status == "awaiting_approval" else None,

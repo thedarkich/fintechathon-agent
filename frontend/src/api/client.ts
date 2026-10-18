@@ -116,6 +116,7 @@ export const api = {
   plans: (lang: Lang, limit = 100) => request<{ items: PlanRow[] }>(`/api/plans?lang=${lang}&limit=${limit}`),
   approve: (id: string, approval_hash: string, lang: Lang) => post<PlanResult>(`/api/plans/${id}/approve`, { approval_hash, lang }),
   cancel: (id: string, rollback: boolean, lang: Lang) => post<PlanResult>(`/api/plans/${id}/cancel`, { rollback, lang }),
+  purpose: (id: string, step_id: string, purpose: string, lang: Lang) => post<PlanResult>(`/api/plans/${id}/purpose`, { step_id, purpose, lang }),
   answer: (id: string, value: unknown, lang: Lang) => post<PlanResult>(`/api/plans/${id}/answer`, { value, lang }),
   sms: (id: string) => post<{ challenge_id: string; phone: string; expires_in: number }>(`/api/plans/${id}/sms`),
   passkeyOptions: (id: string) => post<unknown>(`/api/plans/${id}/passkey-options`),

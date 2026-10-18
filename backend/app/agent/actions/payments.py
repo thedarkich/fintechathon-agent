@@ -45,7 +45,16 @@ def payee_fields(ctx: Ctx, p: Payee) -> dict:
     return {"payee_id": p.id, "payee": p.name, "payee_en": p.name_en or p.name, "payee_note": p.note,
             "payee_note_en": transfers.note_en(p.note),
             "bank": p.bank, "account_tail": p.account_no[-4:],
-            "payee_new": (ctx.now - created) < timedelta(hours=24)}
+            "payee_new": (ctx.now - created) < timedelta(hours=24), **name_check(p)}
+
+
+def name_check(p: Payee) -> dict:
+    """Before any money moves, ask the payee's bank whose name the account is in (as the UK's Confirmation of
+    Payee does) and show the answer on the slip. Only a masked name comes back, never the full name."""
+    holder = transfers.holder_of(p.account_no, p.name)
+    if holder == p.name:
+        return {"name_check": "match"}
+    return {"name_check": "mismatch", "holder_masked": directory.mask_name(holder)}
 
 
 def amount_fen(value: float | None, ctx: Ctx, *, field_name="amount_yuan") -> int:
@@ -127,7 +136,8 @@ def phone_payee(ctx: Ctx, phone: str) -> dict:
                      "That number isn't linked to a bank account, so it can't receive a transfer. Check the number.")
     return {"payee_id": None, "payee": found["masked"], "payee_en": found["masked"], "payee_note": None,
             "payee_note_en": None, "bank": found["bank"], "account_tail": found["account_no"][-4:],
-            "payee_new": True, "first_time": True, "directory_account": found["account_no"], **numbers}
+            "payee_new": True, "first_time": True, "directory_account": found["account_no"],
+            "name_check": "match", **numbers}  # the directory itself names the account holder
 
 
 def transfer_resolve(ctx: Ctx, args: TransferArgs) -> dict:
@@ -217,12 +227,13 @@ class PhoneTransferArgs(Args):
     phone: str = Field(pattern=r"^1[3-9]\d{9}$")
     amount_yuan: float | None = Field(default=None, gt=0)
     memo: str | None = Field(default=None, max_length=40)
+    arrival: Literal["instant", "standard", "next_day"] = "instant"
 
 
 def phone_transfer_resolve(ctx: Ctx, args: PhoneTransferArgs) -> dict:
     who = phone_payee(ctx, args.phone)
     return {**who, **money_fields(ctx, args.amount_yuan, args.memo, "checking"),
-            "route": transfers.route_for(who["bank"]), "arrival": "instant"}
+            "route": transfers.route_for(who["bank"]), "arrival": args.arrival}
 
 
 def phone_transfer_describe(ctx: Ctx, r: dict) -> str:

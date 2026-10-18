@@ -60,6 +60,10 @@ The thresholds match the brief exactly. **Today's agent payments** = transfers +
 Risk signals that raise a tier (never lower one):
 - `S_NEW_PAYEE_LARGE`: payments over ¥500 in total (including earlier and scheduled ones) to a payee added in the last 24 hours → red.
 - `S_FLAGGED_REQUEST`: the request was flagged by screening → yellow becomes red.
+- `S_NAME_MISMATCH`: before anything is sent, the payee's bank says the account is held by someone other than the payee chosen → red (the slip shows the holder's masked name, like the UK's Confirmation of Payee).
+- `S_SCAM_PURPOSE`: the customer says the payment is for an investment someone recommended, a “safe account”, or a fee to get a loan, refund or prize → red, and the money arrives next day.
+
+**Payment purpose.** A transfer carrying `S_NEW_PAYEE_LARGE` or `S_NAME_MISMATCH` cannot be approved until the customer says what it is for, on the slip (`POST /api/plans/{id}/purpose`): family or friends, buying something, an investment someone recommended, a “safe account”, a fee, or something else. Each answer brings its own warning. The purpose is stored on the step, not in the planner's arguments, so the AI can never answer it; answering changes the approval hash.
 - `S_LOCK`: an active safety lock blocks the step outright (§7).
 
 A step approved at one tier is checked again when it actually runs. If the tier is now higher, the step waits for the higher approval.
@@ -103,10 +107,10 @@ A step approved at one tier is checked again when it actually runs. If the tier 
 After approval a transfer belongs to the bank, not the agent (`bank/transfers.py`), and moves through `accepted → clearing → arrived`, or ends `returned` (the payee's bank refuses it) or `cancelled` (the customer stops a delayed transfer). Money leaves when it is accepted and comes back on a return or cancel. Every stage is a timestamped event, written to the audit log and shown on the Transfers page.
 
 - **Route**: a payee at our own bank (演示银行, Demo Bank) is a same-bank transfer and arrives at once. Any other bank goes through a simulated 超级网银 (the central bank's online interbank system: real time, around the clock). The ¥50,000 single-transfer cap keeps every transfer within it.
-- **Arrival**: instant, standard (2 hours later) or next day (early morning), the choices banks in mainland China must offer under the PBOC's 2016 anti-telecom-fraud notice (银发〔2016〕261号). Exact timings vary by bank; these are the demo bank's own.
-- **Risky transfers wait** (`policy.safer_arrival`, fixed code): a transfer carrying `S_NEW_PAYEE_LARGE`, `S_FLAGGED_REQUEST` or `S_FLAGGED_CONTENT` arrives in 2 hours instead of now. The slip says so and the approval hash covers it; the model can neither request nor skip it.
+- **Arrival**: instant, standard (2 hours later) or next day (early morning), the choices banks in mainland China must offer under the PBOC's 2016 anti-telecom-fraud notice (银发〔2016〕261号); the customer picks one on the Transfers screen. Exact timings vary by bank; these are the demo bank's own.
+- **Risky transfers wait** (`policy.safer_arrival`, fixed code): a transfer carrying `S_NEW_PAYEE_LARGE`, `S_NAME_MISMATCH`, `S_FLAGGED_REQUEST` or `S_FLAGGED_CONTENT` arrives in 2 hours instead of now, and one carrying `S_SCAM_PURPOSE` arrives next day; the rules never make a transfer faster than the customer chose. The slip says so and the approval hash covers it; the model can neither request nor skip it.
 - **Cancel**: `transfer_cancel` (yellow) stops a delayed transfer until its arrival time; afterwards the bank refuses.
-- **Name check**: at clearing the payee's bank compares the name with the account holder on record and returns the money if they differ (`REGISTERED_HOLDERS`; the seeded seller added today gave an account in someone else's name).
+- **Name check**: before sending, the slip shows whether the account holder matches the payee (`S_NAME_MISMATCH` when not); at clearing the payee's bank checks again and returns the money if they differ (`REGISTERED_HOLDERS`; the seeded seller added today gave an account in someone else's name).
 - **Phones**: the customer's simulated phone gets return and cancel texts; the payee's phone gets the arrival text their own bank would send (`PayeeMessage`), for the two-phone demo.
 - **Demo control**: `POST /api/demo/transfers/{id}` clears a waiting transfer now or makes the payee's bank return it (name mismatch, frozen account, refused); delayed transfers also clear on their own as bank time passes.
 

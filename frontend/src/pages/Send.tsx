@@ -43,6 +43,7 @@ export default function Send() {
   const [filter, setFilter] = useState('')
   const [amount, setAmount] = useState('')
   const [memo, setMemo] = useState('')
+  const [arrival, setArrival] = useState<'instant' | 'standard' | 'next_day'>('instant')
   const flow = useScreenPlan()
   const valid = PHONE.test(phone)
   const lookup = useQuery({
@@ -68,12 +69,12 @@ export default function Send() {
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (!ready) return
-    const extra = memo.trim() ? { memo: memo.trim() } : {}
+    const extra = { ...(memo.trim() ? { memo: memo.trim() } : {}), ...(arrival !== 'instant' ? { arrival } : {}) }
     if (picked) void flow.start('transfer', { payee: picked.id, amount_yuan: Number(amount), ...extra })
     else void flow.start('phone_transfer', { phone, amount_yuan: Number(amount), ...extra })
   }
   const pick = (p: Picked) => { setPicked(p); setPhone('') }
-  const again = () => { flow.reset(); setAmount(''); setMemo('') }
+  const again = () => { flow.reset(); setAmount(''); setMemo(''); setArrival('instant') }
 
   return (
     <main tabIndex={-1} className="page-content">
@@ -171,6 +172,14 @@ export default function Send() {
               </div>
               <input value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={40} placeholder={tr('Note (optional)', '备注（可选）')} aria-label={tr('Note', '备注')}
                 className="w-full rounded-box border border-rule2 bg-field px-4 py-2.5 outline-none focus:border-[var(--action)]" />
+              <div>
+                <p className="mb-1.5 text-sm text-ink2">{tr('When should it arrive?', '什么时候到账？')}</p>
+                <Segmented stretch className="flex w-full" label={tr('Arrival', '到账时间')} value={arrival} onChange={setArrival}
+                  options={[['instant', tr('Now', '实时')], ['standard', tr('In 2 hours', '2 小时后')], ['next_day', tr('Tomorrow', '次日')]] as const} />
+                <p className="mt-1.5 text-xs text-ink2">{arrival === 'instant'
+                  ? tr('A later arrival gives you time to cancel if something feels wrong.', '选择延时到账，发现不对时还来得及撤销。')
+                  : tr('You can cancel it any time before it arrives.', '到账之前随时可以撤销。')}</p>
+              </div>
               {flow.error && <p role="alert" className="text-sm font-semibold text-cinnabar">{flow.error}</p>}
               <button className="btn btn-ink w-full py-3 text-base" disabled={!ready || flow.busy}>
                 {ready ? tr(`Send ${yuan(Math.round(Number(amount) * 100))}`, `转账 ${yuan(Math.round(Number(amount) * 100))}`) : tr('Send', '转账')}

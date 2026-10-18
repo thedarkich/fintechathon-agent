@@ -50,7 +50,7 @@ def test_risky_transfer_waits_two_hours_and_can_be_cancelled(bank):
     plan = plan_of(bank.chat("给周凯转800"))  # a payee added today, over ¥500
     assert plan["tier"] == "red" and "2 小时后到账" in plan["steps"][0]["text"]
     before = balance(bank)
-    assert bank.verify(plan).status_code == 200
+    assert bank.verify(bank.purpose(plan)).status_code == 200
     transfer = latest(bank)
     assert transfer["status"] == "accepted" and transfer["cancellable"]
     assert transfer["arrival"] == "standard" and transfer["arrival_reason"] == "S_NEW_PAYEE_LARGE"
@@ -65,8 +65,8 @@ def test_risky_transfer_waits_two_hours_and_can_be_cancelled(bank):
 
 
 def test_payee_bank_returns_a_name_mismatch(bank):
-    plan = plan_of(bank.chat("给周凯转800"))
-    bank.verify(plan)
+    plan = bank.purpose(plan_of(bank.chat("给周凯转800")))  # the customer goes ahead despite the name warning
+    assert bank.verify(plan).status_code == 200
     before_return, before_txns = balance(bank), set(checking_txns(bank))
     bank.post("/api/demo/advance", {"hours": 3})  # the arrival time passes; the other bank checks the name
     transfer = latest(bank)
@@ -126,3 +126,62 @@ def test_a_column_added_later_is_added_to_an_existing_database(tmp_path):
     con = sqlite3.connect(database)
     assert 'debit_txn_id' in [row[1] for row in con.execute('PRAGMA table_info(transfer)')]
     con.close()
+
+
+def rows_of(plan) -> dict:
+    return {d["label"]: d["value"] for d in plan["steps"][0]["details"]}
+
+
+def test_name_is_checked_before_any_money_moves(bank):
+    mom = plan_of(bank.chat("给妈妈转100"))
+    assert mom["tier"] == "yellow" and rows_of(mom)["户名核验"] == "一致" and not mom["steps"][0]["purpose_needed"]
+    seller = plan_of(bank.chat("给周凯转100"))  # saved as 周凯, but the account is held by 周楷
+    rows = rows_of(seller)
+    assert seller["tier"] == "red" and seller["steps"][0]["signal_codes"] == ["S_NAME_MISMATCH"]
+    assert rows["户名核验"].startswith("不一致") and "*楷" in rows["户名核验"] and "周楷" not in rows["户名核验"]
+    assert rows["到账"].startswith("2 小时后")  # the rules delay it, so it can still be cancelled
+    english = plan_of(bank.chat("send 100 to Zhou Kai", lang="en"))
+    assert "Doesn't match" in rows_of(english)["Name check"]
+
+
+def test_a_risky_payment_says_what_it_is_for_before_approval(bank):
+    plan = plan_of(bank.chat("给周凯转800"))
+    step = plan["steps"][0]
+    assert step["purpose_needed"] and len(step["purpose_options"]) == 6
+    code = bank.post(f"/api/plans/{plan['id']}/sms").json()
+    refused = bank.verify(plan)
+    assert refused.status_code == 409 and refused.json()["code"] == "PURPOSE_NEEDED"
+    chosen = bank.purpose(plan, "goods")
+    assert chosen["approval_hash"] != plan["approval_hash"]  # the slip changed, so it needs a fresh yes
+    assert "担保交易" in rows_of(chosen)["风险提示"] and not chosen["steps"][0]["purpose_needed"]
+    assert bank.verify(plan).json()["code"] == "PLAN_CHANGED"
+    assert code and bank.verify(chosen).status_code == 200
+
+
+def test_a_scam_purpose_is_warned_and_held_until_tomorrow(bank):
+    plan = bank.purpose(plan_of(bank.chat("给周凯转800")), "safe_account")
+    rows = rows_of(plan)
+    assert "S_SCAM_PURPOSE" in plan["steps"][0]["signal_codes"] and plan["tier"] == "red"
+    assert "安全账户" in rows["风险提示"] and rows["到账"].startswith("次日凌晨")
+    assert bank.verify(plan).status_code == 200
+    transfer = latest(bank)
+    assert transfer["arrival"] == "next_day" and transfer["arrival_reason"] == "S_SCAM_PURPOSE" and transfer["cancellable"]
+
+
+def test_the_ai_cannot_fill_in_the_purpose(bank):
+    from app.agent.planner import PlanOut, StepOut, validate
+
+    errors = validate(PlanOut(steps=[StepOut(id="s1", action="transfer", args={"payee": "周凯", "amount_yuan": 800, "purpose": "family"})]), "")
+    assert errors  # purpose is not an argument the planner can set
+    plain = plan_of(bank.chat("给妈妈转100"))
+    assert bank.post(f"/api/plans/{plain['id']}/purpose", {"step_id": "s1", "purpose": "family"}).status_code == 404
+
+
+def test_the_customer_chooses_when_the_money_arrives(bank):
+    response = bank.post("/api/screens/plan", {"action": "transfer", "args": {"payee": "王秀英", "amount_yuan": 100, "arrival": "next_day"}, "lang": "zh"})
+    plan = response.json()["plan"]
+    assert plan["tier"] == "yellow" and rows_of(plan)["到账"].startswith("次日凌晨")
+    assert bank.approve(plan).status_code == 200
+    transfer = latest(bank)
+    assert transfer["status"] == "accepted" and transfer["arrival"] == "next_day" and transfer["arrival_reason"] is None
+    assert transfer["cancellable"]

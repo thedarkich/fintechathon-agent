@@ -33,6 +33,24 @@ def language(text: str) -> str:
     return "zh" if re.search(r"[一-鿿]", text) else "en"
 
 
+def confirm(client: TestClient, plan: dict | None, lang: str) -> None:
+    """Confirm an earlier turn as its customer would; anything that can't be confirmed is left as it is."""
+    if not plan or plan["status"] != "awaiting_approval":
+        return
+    for step in plan["steps"]:
+        if step.get("purpose_needed"):
+            plan = client.post(f"/api/plans/{plan['id']}/purpose", headers=ORIGIN,
+                               json={"step_id": step["id"], "purpose": "other", "lang": lang}).json()["plan"]
+    if plan["tier"] != "red":
+        client.post(f"/api/plans/{plan['id']}/approve", headers=ORIGIN, json={"approval_hash": plan["approval_hash"], "lang": lang})
+        return
+    challenge = client.post(f"/api/plans/{plan['id']}/sms", headers=ORIGIN).json()
+    code = re.search(r"\d{6}", client.get("/api/phone").json()["items"][0]["text"]).group(0)
+    client.post(f"/api/plans/{plan['id']}/verify", headers=ORIGIN,
+                json={"approval_hash": plan["approval_hash"], "pin": "246813", "method": "sms",
+                      "challenge_id": challenge["challenge_id"], "code": code, "lang": lang})
+
+
 def reply_of(body: dict) -> str:
     replies = [m["text"] for m in body.get("messages", []) if m["role"] == "assistant"]
     return replies[-1] if replies else ""
@@ -97,13 +115,11 @@ def run(paths: list[Path], *, model: bool) -> dict:
                     email = f"eval-{uuid.uuid4().hex[:10]}@example.test"
                     client.post("/api/register", json={"name": "Eval Customer", "email": email,
                                                        "password": "evaluation password", "pin": "246813"}, headers=ORIGIN)
-                    # earlier turns of the same case: yellow plans are confirmed, as a customer would
+                    # earlier turns of the same case are confirmed, as a customer would: a purpose when the slip
+                    # asks for one, a tap for yellow, the PIN and the SMS code for red
                     for text in case.get("before", []):
                         earlier = client.post("/api/chat", json={"message": text, "lang": language(text)}, headers=ORIGIN).json()
-                        plan = earlier.get("plan")
-                        if plan and plan["status"] == "awaiting_approval" and plan["tier"] == "yellow":
-                            client.post(f"/api/plans/{plan['id']}/approve", headers=ORIGIN,
-                                        json={"approval_hash": plan["approval_hash"], "lang": language(text)})
+                        confirm(client, earlier.get("plan"), language(text))
                     attachment = None
                     if case.get("attachment"):
                         file = ROOT / case["attachment"]

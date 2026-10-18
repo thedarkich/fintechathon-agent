@@ -10,6 +10,7 @@
       try {
         var t = localStorage.getItem('ba_theme')
         if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+        if (localStorage.getItem('ba_text') === 'large') document.documentElement.setAttribute('data-text', 'large')
       } catch (e) {}
     </script>
     <meta name="description" content="银行代办 Bank Agent: say what you need; the AI plans it, and the bank's fixed rules decide what runs, what needs your confirmation and what needs your PIN." />

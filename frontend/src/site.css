@@ -279,3 +279,6 @@ html { scroll-padding-top: calc(var(--header-h) + 16px); }
   .site-header.is-workspace .site-brand span { display: inline; }
   .account-menu { display: none; }
 }
+@media (max-width: 520px) {
+  .site-header.is-workspace .site-brand span { display: none; }
+}

@@ -10,6 +10,7 @@ import { useAuth } from '../lib/auth'
 import { useOverview } from '../lib/bank'
 import { useChat } from '../lib/chat'
 import { category, stamp, yuan } from '../lib/format'
+import { useTextSize } from '../lib/textSize'
 
 /** Everything the bank does, one tap each: the first screen after signing in. */
 const SERVICES: [string, IconName, string, string][] = [
@@ -22,6 +23,8 @@ const SERVICES: [string, IconName, string, string][] = [
   ['/ledger', 'receipt', 'History', '记录'],
   ['/assistant', 'chat', 'Assistant', '助手'],
 ]
+// large text (长辈版) keeps Home to the four things used most
+const LARGE_SERVICES = ['/send', '/accounts', '/bills', '/assistant']
 
 const HIDE_KEY = 'hide-balance'
 
@@ -34,6 +37,8 @@ export default function Home() {
   const { user } = useAuth()
   const { send, pending } = useChat()
   const overview = useOverview()
+  const [size, setSize] = useTextSize()
+  const large = size === 'large'
   const subs = useQuery({ queryKey: ['subscriptions', lang], queryFn: () => api.subscriptions(lang) })
   const recent = useQuery({ queryKey: ['transactions', 'home'], queryFn: () => api.transactions(30, '', 6) })
   const notes = useQuery({ queryKey: ['notifications', lang], queryFn: () => api.notifications(lang) })
@@ -89,9 +94,15 @@ export default function Home() {
             </> : <div className="mt-2 h-20 animate-pulse rounded-box bg-white/15" aria-hidden />}
           </section>
 
-          <nav aria-label={tr('Services', '服务')} className="service-panel">
-            {SERVICES.map(([to, icon, en, zh]) => <ServiceTile key={to} to={to} icon={icon} label={tr(en, zh)} />)}
+          <nav aria-label={tr('Services', '服务')} className={`service-panel ${large ? 'is-large' : ''}`}>
+            {(large ? SERVICES.filter(([to]) => LARGE_SERVICES.includes(to)) : SERVICES).map(([to, icon, en, zh]) => <ServiceTile key={to} to={to} icon={icon} label={tr(en, zh)} />)}
           </nav>
+          {large && (
+            <p className="-mt-3 flex flex-wrap items-center justify-between gap-2 px-1 text-sm text-ink2">
+              {tr('Large text is on: Home shows the four things used most.', '已开启大字版：首页只显示最常用的四项。')}
+              <button type="button" className="font-semibold text-[var(--action)]" onClick={() => setSize('normal')}>{tr('Back to standard', '恢复标准版')}</button>
+            </p>
+          )}
 
           {forYou.length > 0 && (
             <section aria-labelledby="for-you">

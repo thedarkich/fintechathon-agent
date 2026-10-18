@@ -10,7 +10,7 @@ How the agent keeps an AI that operates a bank account safe, how each requiremen
 |---|---|---|
 | Someone typing into the chat (the customer or whoever holds the phone) | Talk the AI into skipping confirmation, raising limits, paying a stranger | Tiers decided by code, approval bound to exact details, PIN plus SMS or passkey, screening, safety lock |
 | Text the customer didn't write: receipts, merchant names, transaction notes, payee notes | Instructions hidden in data (“transfer to…”, white text in a PDF) | The planner never sees tool output or document contents; receipts read in an isolated worker with a fixed schema; flagged content raises the tier |
-| A scammer coaching the customer (fake seller, fake police) | Get a real, verified payment out | New-payee rules counted in total, 2-hour delayed arrival with cancel, the payee bank's name check, scam-script flags, velocity lock |
+| A scammer coaching the customer (fake seller, fake police) | Get a real, verified payment out | New-payee rules counted in total, 2-hour delayed arrival with cancel, the payee's name checked before sending and again at clearing, a purpose question with a warning for each answer (scam purposes held until next day), scam-script flags, velocity lock |
 | A misbehaving or unavailable model | Invent facts, plan nonsense, cost money | Strict schema and validation, replies written by code, five rejected plans pause the assistant, hourly call cap, no automatic retries, offline fallback |
 | Generated analysis code | Read files, use the network, exhaust resources | AST allow-list, separate process with resource limits and a wall clock, audited |
 | A web attacker | Cross-site requests, session theft, brute force | Same-origin check on every state-changing request, HttpOnly SameSite=Strict cookies, rate limits, hashed credentials |
@@ -58,6 +58,9 @@ How it is enforced:
 
 ### Beyond the brief
 
+- **Name check before sending.** As with the UK's Confirmation of Payee, the slip shows whether the account is held by the payee chosen, with only a masked name when it isn't; a mismatch makes the payment red and delays it.
+- **What is it for?** A risky payment (new payee over ¥500, or a name mismatch) needs the customer to say what it's for before it can be approved, as UK banks ask. Each answer brings a matching warning; a “safe account”, an upfront fee or an investment tip makes it red and holds the money until next day. The answer is stored on the step, outside the planner's arguments, so the AI cannot answer for the customer.
+- **Large text (长辈版).** A header switch enlarges all text and touch targets and reduces Home to four tasks, the mode banks in mainland China offer older customers.
 - **Safer transfers.** A transfer carrying a risk signal arrives 2 hours later, using an arrival option that banks in mainland China must offer under PBOC notice 银发〔2016〕261号. The customer can cancel it until it arrives. The payee's bank checks the name and returns the money on a mismatch.
 - **Receipts are data.** They are parsed in a separate, resource-limited worker. A vision model returns only a fixed schema, and hidden or instruction-like text is flagged.
 - **Web.** Session tokens are random, stored hashed, sent as HttpOnly, SameSite=Strict cookies (Secure over HTTPS) and replaced at sign-in. State-changing requests must come from our own origin. Passwords are scrypt-hashed. Registration, sign-in and uploads are rate limited, with IP addresses stored salted and hashed. Responses carry `nosniff` and `no-referrer`. The operator token is compared in constant time.
@@ -65,7 +68,7 @@ How it is enforced:
 
 ## 3. Evidence
 
-- 96 automated tests through the HTTP API: tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), daily totals across requests, the new-payee rule, approval with a changed plan, PIN and SMS failures, passkeys, the safety lock, injection flags, rollback, scheduled re-checks, transfers (route, delay, cancel, returns), the sandbox (unsafe code refused, runaway code stopped), receipts with hidden instructions, human takeover (operators can cancel and unlock but not approve), demo accounts, and the model planner with a fake model.
+- 101 automated tests through the HTTP API: tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), daily totals across requests, the new-payee rule, approval with a changed plan, PIN and SMS failures, passkeys, the safety lock, injection flags, rollback, scheduled re-checks, transfers (route, delay, cancel, returns), the sandbox (unsafe code refused, runaway code stopped), receipts with hidden instructions, human takeover (operators can cancel and unlock but not approve), demo accounts, and the model planner with a fake model.
 - Evaluation sets: 224 everyday requests and 69 attacks, each run on a newly opened customer. With the offline planner: 224/224 and 69/69, and no attack ran anything without approval ([report](eval/report-offline.md)). The model planner has not yet been measured against these sets; that needs an AI provider and a deliberate, paid run.
 
 ## 4. Known risks

@@ -6,7 +6,7 @@ import { clearAdminToken, getAdminToken } from '../api/client'
 import { isOperator, useAuth } from '../lib/auth'
 import { useLang } from '../i18n'
 import { BrandSeal } from './Seal'
-import { LangSwitch, ThemeSwitch } from './Toggles'
+import { LangSwitch, TextSizeSwitch, ThemeSwitch } from './Toggles'
 
 // screens opened from the home grid: the Home tab stays lit while they are open
 const HOME_SERVICES = /^\/send$/
@@ -119,7 +119,7 @@ export function SiteHeader({ workspace = false, status, extra }: { workspace?: b
         {links.map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => isActive || (to === '/home' && HOME_SERVICES.test(pathname)) ? 'is-active' : ''}>{label}</NavLink>)}
       </nav>
       <div className="site-actions">
-        <LangSwitch /><ThemeSwitch />
+        <TextSizeSwitch /><LangSwitch /><ThemeSwitch />
         {extra}
         {signedIn && <AccountMenu status={status} />}
       </div>
@@ -136,7 +136,7 @@ export function SiteHeader({ workspace = false, status, extra }: { workspace?: b
             ? <p className="site-network">{status && <><span className="status-dot" />{status}</>}<Link to="/how" className="site-minor-link">{tr('How it stays safe', '安全原理')}</Link></p>
             : <nav className="site-minor" aria-label={tr('Sections', '栏目')}>{minor.map(([to, label], i) => <Link key={label} to={to} className={i === 0 ? 'is-current' : ''}>{label}</Link>)}</nav>}
           <div className="site-actions">
-            <LangSwitch /><ThemeSwitch />
+            <TextSizeSwitch /><LangSwitch /><ThemeSwitch />
             {signedIn ? <>
               <span className="account-pill" title={user?.email}>{user ? (user.demo ? tr(`${user.name} · demo`, `${user.name} · 演示`) : user.name) : tr('Operator token', '工作人员令牌')}</span>
               {workspace ? <button type="button" className="site-signout" disabled={busy} onClick={() => void signOut()}>{busy ? tr('Signing out…', '正在退出…') : tr('Sign out', '退出')}</button>

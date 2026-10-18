@@ -83,7 +83,7 @@ def test_chat_transfer_to_an_unsaved_number_uses_the_phone_directory(bank):
     # ¥100 + ¥500 to a payee added today is over ¥500: red, and the money waits 2 hours as on the screen
     second = bank.chat(f"给{phone}转500")["plan"]
     assert second["tier"] == "red" and "S_NEW_PAYEE_LARGE" in second["steps"][0]["signal_codes"]
-    assert bank.verify(second).json()["plan"]["status"] == "done"
+    assert bank.verify(bank.purpose(second, "family")).json()["plan"]["status"] == "done"
     transfer = next(t for t in bank.get("/api/bank/transfers").json()["items"] if t["plan_id"] == second["id"])
     assert transfer["status"] == "accepted" and transfer["arrival_reason"] == "S_NEW_PAYEE_LARGE" and transfer["cancellable"]
 

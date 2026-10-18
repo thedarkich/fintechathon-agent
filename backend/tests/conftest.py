@@ -43,6 +43,12 @@ class Bank:
     def approve(self, plan):
         return self.post(f"/api/plans/{plan['id']}/approve", {"approval_hash": plan["approval_hash"]})
 
+    def purpose(self, plan, value="goods", step="s1"):
+        """Say what a risky payment is for, as the customer does on the slip; returns the re-checked plan."""
+        response = self.post(f"/api/plans/{plan['id']}/purpose", {"step_id": step, "purpose": value})
+        assert response.status_code == 200, response.text
+        return response.json()["plan"]
+
     def sms_code(self):
         with Session(self.runtime.engine) as session:
             message = session.exec(select(SmsMessage).order_by(SmsMessage.at.desc()).limit(1)).first()

@@ -62,6 +62,9 @@ export const markColor = (kind: MarkKind) =>
   kind === 'done' || kind === 'query' ? 'var(--jade)' : kind === 'blocked' || kind === 'flag' ? 'var(--cinnabar)' : kind === 'pending' || kind === 'cancelled' || kind === 'undone' ? 'var(--ink-2)' : 'var(--ink)'
 
 const MONEY = ['transfer', 'phone_transfer', 'schedule_transfer', 'merchant_order', 'wealth_subscribe']
+// slip rows that warn: a name that doesn't match the account, and the warning that comes with a payment's purpose
+const ALARM = /^(不一致|Doesn't match)/
+const ALARM_LABEL = /^(风险提示|Warning)$/
 
 /** One step's state as a small symbol: done, waiting for you, scheduled, failed or not run. */
 function StepIcon({ s }: { s: PlanStep }) {
@@ -113,6 +116,8 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
   const ruleSetsTier = !!deciding?.rule && { G: 'green', Y: 'yellow', R: 'red' }[deciding.rule[0]] === p.tier
   const reasons = [...(ruleSetsTier || !signals.length ? [deciding?.rule_text ?? ''] : []), ...signals].filter(Boolean)
   const failed = p.steps.find((s) => s.error)
+  const asking = waiting ? pending.filter((s) => s.purpose_options) : []
+  const needsPurpose = pending.some((s) => s.purpose_needed)
   const seal = sealFor(p)
   const accent = waiting ? (p.tier === 'red' ? 'var(--cinnabar)' : 'var(--ink)') : p.status === 'done' || p.status === 'scheduled' ? 'var(--jade)' : 'var(--rule-strong)'
 
@@ -145,7 +150,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
             {single.details.map((d) => (
               <div key={d.label} className="flex items-baseline justify-between gap-4 py-2 text-[0.93rem]">
                 <dt className="shrink-0 text-ink2">{d.label}</dt>
-                <dd className={`min-w-0 text-right ${d.value === yuan(single.fen ?? -1) ? 'num font-mono text-lg font-bold' : 'font-semibold'}`}>{d.value}</dd>
+                <dd className={`min-w-0 text-right ${d.value === yuan(single.fen ?? -1) ? 'num font-mono text-lg font-bold' : 'font-semibold'} ${ALARM.test(d.value) || ALARM_LABEL.test(d.label) ? 'text-cinnabar' : ''}`}>{d.value}</dd>
               </div>
             ))}
           </dl>
@@ -174,12 +179,29 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
         {p.status === 'scheduled' && <p className="mt-2.5 text-sm leading-snug text-ink2">{tr('The rest runs at its time, after the rules check it again. You can still stop it.', '剩下的步骤会按时执行，执行前会再检查一次，现在仍可停止。')}</p>}
         {p.status === 'clarifying' && <p className="mt-2.5 text-sm leading-snug text-ink2">{tr('Answer the question above to continue.', '回答上面的问题即可继续。')}</p>}
 
+        {asking.map((s) => (
+          <fieldset key={s.id} className="mt-3 rounded-box bg-paper px-3 py-3">
+            <legend className="float-left w-full font-semibold">{tr('What is this payment for?', '这笔钱是做什么用的？')}</legend>
+            <p className="mb-2 text-xs text-ink2">{tr('Your answer decides the warning you see, and some answers hold the money until tomorrow. Only you can answer this, not the assistant.', '你的回答决定看到哪条提醒，有的回答会让钱次日才到账。只能由你本人选择，助手不会替你回答。')}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {s.purpose_options!.map((o) => (
+                <button key={o.value} type="button" aria-pressed={s.purpose === o.value} disabled={busy}
+                  onClick={() => void act(() => api.purpose(p.id, s.id, o.value, lang))}
+                  className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${s.purpose === o.value ? 'border-[var(--action)] bg-[var(--action)] text-[var(--action-ink)]' : 'border-rule bg-field hover:border-[var(--action)]'}`}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        ))}
+
         {waiting && (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {p.tier === 'red'
-              ? <button type="button" className="btn border-cinnabar bg-cinnabar px-5 py-2 text-white hover:brightness-110" disabled={busy} onClick={() => setVerifying(true)}>{tr('Verify and confirm', '验证并确认')}</button>
-              : <button type="button" className="btn btn-ink px-6 py-2" disabled={busy} onClick={() => void act(() => api.approve(p.id, p.approval_hash!, lang))}>{tr('Confirm', '确认')}</button>}
+              ? <button type="button" className="btn border-cinnabar bg-cinnabar px-5 py-2 text-white hover:brightness-110" disabled={busy || needsPurpose} onClick={() => setVerifying(true)}>{tr('Verify and confirm', '验证并确认')}</button>
+              : <button type="button" className="btn btn-ink px-6 py-2" disabled={busy || needsPurpose} onClick={() => void act(() => api.approve(p.id, p.approval_hash!, lang))}>{tr('Confirm', '确认')}</button>}
             <button type="button" className="btn btn-line px-5 py-2" disabled={busy} onClick={() => void act(() => api.cancel(p.id, false, lang))}>{tr('Cancel', '取消')}</button>
+            {needsPurpose && <span className="text-xs text-ink2">{tr('Choose what it is for first.', '请先选择用途。')}</span>}
           </div>
         )}
         {p.status === 'scheduled' && <button type="button" className="btn btn-line mt-3 py-1.5" disabled={busy} onClick={() => void act(() => api.cancel(p.id, true, lang))}>{tr('Stop and undo', '停止并撤销')}</button>}

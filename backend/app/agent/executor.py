@@ -138,6 +138,8 @@ def prepare(ctx: Ctx, plan: Plan) -> Plan:
             plan.status = "failed"
             save(plan, steps)
             return plan
+        if step.get("purpose"):  # the customer's own answer on the slip, never a planner argument
+            resolved["purpose"] = step["purpose"]
         step["resolved"] = resolved
         step["run_at_resolved"] = clock.iso(when) if when else None
         audit.append(ctx.session, ctx.user.id, "resolution", {"step": step["id"], "action": step["action"],
@@ -152,10 +154,10 @@ def prepare(ctx: Ctx, plan: Plan) -> Plan:
             earlier_by_day[pay_day] = earlier_by_day.get(pay_day, 0) + decision["payment_fen"]
             earlier_by_payee[payee] = earlier_by_payee.get(payee, 0) + decision["payment_fen"]
         if later := policy.safer_arrival(action, resolved, decision):  # shown on the slip and covered by its hash
-            resolved.update(arrival=later,
-                            arrival_reason=next(s for s in decision["signals"] if s in policy.SAFER_ARRIVAL_SIGNALS))
+            resolved.update(arrival=later[0], arrival_reason=later[1])
         step.update(tier=decision["tier"], rule=decision["rule"], signals=decision["signals"],
-                    day_total_fen=decision["day_total_fen"])
+                    day_total_fen=decision["day_total_fen"],
+                    purpose_needed=policy.purpose_needed(action, resolved, decision) and not step.get("purpose"))
         audit.append(ctx.session, ctx.user.id, "policy", {"step": step["id"], **decision}, plan.id)
         if decision["blocked_by"]:
             fail_step(ctx, plan, step, "LOCKED", "安全锁已开启，该操作暂时不能执行。",
@@ -193,6 +195,8 @@ def approve(ctx: Ctx, plan: Plan, supplied_hash: str, *, verified: bool, method:
         raise PlanError(409, "PLAN_CHANGED", "The plan changed. Review it again.", "计划内容已变化，请重新确认。")
     if plan.tier == "red" and not verified:
         raise PlanError(403, "VERIFICATION_REQUIRED", "This needs strong verification.", "该操作需要强验证。")
+    if any(s.get("status") == "pending" and s.get("purpose_needed") for s in plan.steps):
+        raise PlanError(409, "PURPOSE_NEEDED", "Say what this payment is for first.", "请先选择这笔付款的用途。")
     steps = copy.deepcopy(plan.steps)
     for step in steps:
         if step.get("status") == "pending":
@@ -376,6 +380,25 @@ def answer(ctx: Ctx, plan: Plan, value) -> Plan:
     audit.append(ctx.session, ctx.user.id, "clarification", {"step": step["id"], "field": field_name, "answered": True}, plan.id)
     save(plan, steps)
     plan.status = "clarifying"
+    return prepare(ctx, plan)
+
+
+def set_purpose(ctx: Ctx, plan: Plan, step_id: str, purpose: str) -> Plan:
+    """The customer says what a risky payment is for. It changes the warning, can raise the tier and delay
+    arrival, and gives the slip a new hash, so an earlier confirmation can't approve it."""
+    if plan.status != "awaiting_approval":
+        raise PlanError(409, "NOT_EDITABLE", "Only a plan waiting for approval can be changed.", "只有待确认的计划可以修改。")
+    if purpose not in policy.PURPOSES:
+        raise PlanError(422, "BAD_CHOICE", "Pick one of the offered choices.", "请从给出的选项中选择。")
+    steps = copy.deepcopy(plan.steps)
+    step = next((s for s in steps if s["id"] == step_id), None)
+    if step is None or step.get("status") != "pending" or not (step.get("purpose_needed") or step.get("purpose")):
+        raise PlanError(404, "STEP_NOT_FOUND", "That step doesn't ask what it is for.", "该步骤不需要选择用途。")
+    step["purpose"] = purpose
+    for key in ("resolved", "tier", "rule", "signals", "status", "approved_tier", "purpose_needed"):
+        step.pop(key, None)
+    audit.append(ctx.session, ctx.user.id, "purpose", {"step": step_id, "purpose": purpose}, plan.id)
+    save(plan, steps)
     return prepare(ctx, plan)
 
 

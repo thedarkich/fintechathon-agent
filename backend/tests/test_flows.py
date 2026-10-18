@@ -241,8 +241,9 @@ def test_scheduled_transfer_rechecked_at_run_time(bank):
 
 def test_new_payee_limit_counts_payments_together(bank):
     first = plan_of(bank.chat("给周凯转400"))
-    assert first["tier"] == "yellow"  # ¥400 to a payee added today is under the ¥500 signal
-    bank.approve(first)
+    # ¥400 to a payee added today is under the ¥500 signal; it is red only because the account is in another name
+    assert first["steps"][0]["signal_codes"] == ["S_NAME_MISMATCH"]
+    assert bank.verify(bank.purpose(first)).status_code == 200
     second = plan_of(bank.chat("再给周凯转400"))  # ¥800 in total
     assert second["tier"] == "red" and "S_NEW_PAYEE_LARGE" in second["steps"][0]["signal_codes"]
 

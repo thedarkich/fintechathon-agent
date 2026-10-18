@@ -58,6 +58,12 @@ class EditIn(BaseModel):
     lang: Literal["zh", "en"] = "zh"
 
 
+class PurposeIn(BaseModel):
+    step_id: str = Field(pattern=r"^s\d{1,2}$")
+    purpose: str = Field(max_length=20)
+    lang: Literal["zh", "en"] = "zh"
+
+
 def runtime(request: Request):
     return request.app.state.runtime
 
@@ -266,6 +272,19 @@ async def edit(request: Request, plan_id: str, body: EditIn, user_id: str = Depe
         ctx = context(session, user, plan, body.lang)
         try:
             plan = executor.edit(ctx, plan, body.step_id, body.args)
+        except PlanError as exc:
+            raise plan_error(exc) from None
+        return respond(session, ctx, plan)
+
+
+@router.post("/plans/{plan_id}/purpose")
+async def purpose(request: Request, plan_id: str, body: PurposeIn, user_id: str = Depends(require_user)):
+    """What a risky payment is for, chosen by the customer on the slip (the AI never fills this in)."""
+    with Session(runtime(request).engine) as session:
+        user, plan = load(session, user_id, plan_id)
+        ctx = context(session, user, plan, body.lang)
+        try:
+            plan = executor.set_purpose(ctx, plan, body.step_id, body.purpose)
         except PlanError as exc:
             raise plan_error(exc) from None
         return respond(session, ctx, plan)

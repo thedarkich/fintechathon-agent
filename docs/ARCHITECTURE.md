@@ -63,7 +63,7 @@ flowchart LR
 | Planner | `agent/planner.py`, `agent/offline.py`, `app/llm.py` | Model planner (any OpenAI-compatible endpoint, JSON output, no automatic retries, hourly call cap) or the deterministic Chinese/English offline planner. Both produce the same plan format. |
 | Validation | `agent/planner.py::validate` | Rejects unknown actions, unknown fields, bad arguments, dependency cycles, references without dependencies, more than 8 steps, and questions that contain numbers. |
 | Resolution | `agent/resolve.py`, each action's `resolve` | Matches the customer's words to their own payees, cards, subscriptions, products and transactions. Ambiguity becomes a question with choices built by code. |
-| Policy | `agent/policy.py`, `agent/locks.py` | Gives each step a tier from fixed rules, adds risk signals (which only raise a tier), applies safety locks, and chooses delayed arrival for risky transfers. |
+| Policy | `agent/policy.py`, `agent/locks.py` | Gives each step a tier from fixed rules, adds risk signals (which only raise a tier), checks the payee's name before sending, asks what a risky payment is for, applies safety locks, and chooses delayed arrival for risky transfers. |
 | Approval and verification | `agent/executor.py`, `agent/verify.py` | Binds an approval to a hash of the exact details. Red tier needs the 6-digit PIN plus an SMS code or a passkey (WebAuthn). |
 | Executor | `agent/executor.py`, `agent/scheduler.py`, `agent/actions/control.py` | Runs steps in dependency order, waits for scheduled times, re-checks each step's tier when it runs, compensates finished steps in reverse order on failure or request, stops a plan or a scheduled transfer when the customer says so, hands over to a person. |
 | Bank | `bank/ledger.py`, `bank/transfers.py`, `bank/analysis.py`, `agent/actions/*` | The simulated bank: ledger, transfer clearing, cards, subscriptions, wealth, reserves, merchant orders, bill analysis. |
@@ -169,7 +169,7 @@ Next to the assistant, the app has screens for what people do most: a home scree
 
 ## 6. Testing and evaluation
 
-- `backend/tests`: 96 tests through the HTTP API, covering tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
+- `backend/tests`: 101 tests through the HTTP API, covering tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
 - `evals/`: 224 everyday requests and 69 attacks, run on a fresh customer each; the report is in [eval/report-offline.md](eval/report-offline.md). See the README for the command.
 
 ## 7. Deployment

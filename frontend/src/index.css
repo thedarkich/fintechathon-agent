@@ -292,3 +292,17 @@ button {
 @keyframes drawer-in { from { transform: translateX(-100%); } to { transform: none; } }
 .drawer-in { animation: drawer-in .18s ease-out; }
 @media (prefers-reduced-motion: reduce) { .drawer-in { animation: none; } }
+
+/* Large text (长辈版): every rem-sized thing 25% bigger; the header's fixed sizes follow; Home shows four big tiles. */
+:root[data-text="large"] { font-size: 125%; }
+:root[data-text="large"] body { line-height: 1.6; }
+:root[data-text="large"] .site-mainnav a { font-size: 17px; }
+:root[data-text="large"] .tabbar a, :root[data-text="large"] .tabbar button { font-size: 13.5px; }
+.service-panel.is-large { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.service-panel.is-large .service-tile { flex-direction: row; justify-content: flex-start; gap: 14px; padding: 6px 10px; font-size: 20px; text-align: left; }
+.service-panel.is-large .service-icon { width: 72px; height: 72px; }
+@media (max-width: 767px) {
+  .service-panel.is-large { gap: 14px 8px; padding: 16px 10px; }
+  .service-panel.is-large .service-tile { flex-direction: column; text-align: center; font-size: 18px; }
+  .service-panel.is-large .service-icon { width: 64px; height: 64px; }
+}

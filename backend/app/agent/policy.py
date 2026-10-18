@@ -34,7 +34,35 @@ SIGNAL_TEXT = {
     "S_NEW_PAYEE_LARGE": ("向 24 小时内新加的收款人累计付款超过 ¥500", "Over ¥500 in total to a payee added in the last 24 hours"),
     "S_FLAGGED_REQUEST": ("请求中有试图绕过安全规则的内容", "The request tried to get around the safety rules"),
     "S_FLAGGED_CONTENT": ("上传的小票里有隐藏文字或给机器的指令", "The uploaded receipt contains hidden text or instructions aimed at a machine"),
+    "S_NAME_MISMATCH": ("收款账户的户名和你填写的姓名不一致", "The account is in a different name from the payee you chose"),
+    "S_SCAM_PURPOSE": ("你选的用途是常见的诈骗情形", "The purpose you chose is a common scam"),
 }
+
+# What a risky payment is for, asked of the customer on the slip (never filled in by the AI). Each answer
+# brings the warning that fits it; the scam purposes also raise the tier and hold the money until tomorrow.
+PURPOSES = {
+    "family": ("家人或朋友", "Family or friends",
+               "如果对方是用新号码或短信找你要钱，请先打 TA 平时的电话确认。",
+               "If they asked by text or from a new number, call them on the number you already know first."),
+    "goods": ("买东西或付服务费", "Buying something",
+              "二手买卖请用平台的担保交易付款。卖家要求直接银行转账，是常见的骗局。",
+              "For second-hand buys, pay through the platform's own checkout. A seller asking for a direct bank transfer is a common scam."),
+    "investment": ("别人推荐的投资", "An investment someone recommended",
+                   "网上认识的人推荐的“投资机会”是最常见的诈骗。正规理财请在本行“理财”页购买。",
+                   "“Investment opportunities” from people met online are the most common scam. Buy real investments on your bank's Invest page."),
+    "safe_account": ("转到“安全账户”", "Moving money to a “safe account”",
+                     "警察和银行绝不会让你把钱转到“安全账户”。这是诈骗，请不要转。",
+                     "Police and banks never ask you to move money to a “safe account”. This is a scam: don't send it."),
+    "fee": ("贷款、退款或中奖的手续费", "A fee to get a loan, refund or prize",
+            "要你先交钱才能放贷、退款或领奖的，都是诈骗。",
+            "Being asked to pay first to get a loan, a refund or a prize is always a scam."),
+    "other": ("其他", "Something else",
+              "转出前请确认你认识收款人，钱一旦到账很难追回。",
+              "Make sure you know who you're paying: money is hard to get back once it arrives."),
+}
+SCAM_PURPOSES = ("investment", "safe_account", "fee")
+# a payment carrying one of these must say what it is for before it can be approved
+PURPOSE_SIGNALS = ("S_NEW_PAYEE_LARGE", "S_NAME_MISMATCH")
 
 
 def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_same_day_fen: int = 0,
@@ -55,6 +83,12 @@ def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_s
         if to_payee > NEW_PAYEE_FEN:
             signals.append("S_NEW_PAYEE_LARGE")
             tier = higher(tier, "red")
+    if payment and resolved.get("name_check") == "mismatch":
+        signals.append("S_NAME_MISMATCH")
+        tier = higher(tier, "red")
+    if payment and resolved.get("purpose") in SCAM_PURPOSES:
+        signals.append("S_SCAM_PURPOSE")
+        tier = higher(tier, "red")
     if flagged and tier == "yellow":
         signals.append("S_FLAGGED_REQUEST")
         tier = "red"
@@ -67,16 +101,31 @@ def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_s
             "payment_fen": payment, "blocked_by": lock.reason if lock else None}
 
 
-SAFER_ARRIVAL_SIGNALS = ("S_NEW_PAYEE_LARGE", "S_FLAGGED_REQUEST", "S_FLAGGED_CONTENT")
+SAFER_ARRIVAL_SIGNALS = ("S_SCAM_PURPOSE", "S_NEW_PAYEE_LARGE", "S_NAME_MISMATCH", "S_FLAGGED_REQUEST", "S_FLAGGED_CONTENT")
 
 
-def safer_arrival(action: Action, resolved: dict, decision: dict) -> str | None:
-    """A transfer with a risk signal arrives in 2 hours instead of now, so the customer can still cancel it.
-    Fixed code: the model can neither ask for nor skip this."""
-    if action.name in ("transfer", "phone_transfer") and resolved.get("arrival", "instant") == "instant" \
-            and any(s in decision["signals"] for s in SAFER_ARRIVAL_SIGNALS):
-        return "standard"
+def safer_arrival(action: Action, resolved: dict, decision: dict) -> tuple[str, str] | None:
+    """A transfer with a risk signal arrives in 2 hours instead of now, so the customer can still cancel it;
+    one for a scam purpose waits until tomorrow. Returns (arrival, the signal behind it), never a faster arrival
+    than the customer chose. Fixed code: the model can neither ask for nor skip this."""
+    if action.name not in ("transfer", "phone_transfer"):
+        return None
+    chosen = resolved.get("arrival", "instant")
+    reason = next((s for s in SAFER_ARRIVAL_SIGNALS if s in decision["signals"]), None)
+    if reason == "S_SCAM_PURPOSE" and chosen != "next_day":
+        return "next_day", reason
+    if reason and chosen == "instant":
+        return "standard", reason
     return None
+
+
+def purpose_needed(action: Action, resolved: dict, decision: dict) -> bool:
+    return bool(action.payment) and action.name in ("transfer", "phone_transfer") \
+        and any(s in decision["signals"] for s in PURPOSE_SIGNALS)
+
+
+def purpose_options(lang: str) -> list[dict]:
+    return [{"value": key, "label": zh if lang == "zh" else en} for key, (zh, en, _, _) in PURPOSES.items()]
 
 
 def explain(rule: str, lang: str) -> str:

@@ -1,5 +1,6 @@
 import { Moon, Sun } from 'lucide-react'
 import { useLang } from '../i18n'
+import { useTextSize } from '../lib/textSize'
 import { useTheme } from '../lib/theme'
 
 /** 中文 / EN, both always visible so nobody has to guess that the page comes in two languages. */
@@ -28,6 +29,26 @@ export function LangSwitch({ size = 'md' }: { size?: 'md' | 'lg' }) {
         </button>
       ))}
     </div>
+  )
+}
+
+/** Large text (大字版) on or off: the entry banks in China give older customers, always in the header. */
+export function TextSizeSwitch() {
+  const { tr } = useLang()
+  const [size, setSize] = useTextSize()
+  const large = size === 'large'
+  const label = large ? tr('Standard text size', '标准字号') : tr('Large text', '大字版')
+  return (
+    <button
+      type="button"
+      onClick={() => setSize(large ? 'normal' : 'large')}
+      aria-pressed={large}
+      aria-label={tr('Large text', '大字版')}
+      title={label}
+      className={`inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] px-2 text-[0.9rem] font-bold ${large ? 'bg-[var(--action)] text-[var(--action-ink)]' : 'text-ink2 hover:bg-[var(--field)] hover:text-ink'}`}
+    >
+      {tr('A+', '大字')}
+    </button>
   )
 }
 
