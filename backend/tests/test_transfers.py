@@ -3,7 +3,7 @@
 from sqlmodel import Session, select
 
 from app.bank import ledger
-from app.models import BankAccount, PayeeMessage, SmsMessage
+from app.models import BankAccount, PayeeMessage, SmsMessage, Txn
 
 
 def plan_of(body):
@@ -14,6 +14,13 @@ def balance(bank) -> int:
     with Session(bank.runtime.engine) as session:
         user_id = session.exec(select(BankAccount.user_id)).first()
         return ledger.checking(session, user_id).balance_fen
+
+
+def checking_txns(bank) -> dict[str, Txn]:
+    with Session(bank.runtime.engine) as session:
+        user_id = session.exec(select(BankAccount.user_id)).first()
+        account = ledger.checking(session, user_id)
+        return {t.id: t for t in session.exec(select(Txn).where(Txn.account_id == account.id))}
 
 
 def latest(bank, lang="zh"):
@@ -60,11 +67,14 @@ def test_risky_transfer_waits_two_hours_and_can_be_cancelled(bank):
 def test_payee_bank_returns_a_name_mismatch(bank):
     plan = plan_of(bank.chat("给周凯转800"))
     bank.verify(plan)
-    before_return = balance(bank)
+    before_return, before_txns = balance(bank), set(checking_txns(bank))
     bank.post("/api/demo/advance", {"hours": 3})  # the arrival time passes; the other bank checks the name
     transfer = latest(bank)
     assert transfer["status"] == "returned" and "户名" in transfer["reason"]
-    assert balance(bank) == before_return + 80_000
+    new = [t for i, t in checking_txns(bank).items() if i not in before_txns]
+    assert [t.amount_fen for t in new if t.kind == "refund"] == [80_000]
+    # a renewal that falls due in those three hours (depends on today's date) posts as well
+    assert balance(bank) == before_return + sum(t.amount_fen for t in new)
     with Session(bank.runtime.engine) as session:
         assert session.exec(select(PayeeMessage)).first() is None  # nothing reached the payee
     notes = bank.get("/api/notifications").json()["items"]

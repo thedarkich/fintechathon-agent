@@ -233,8 +233,9 @@ def seed_customer(session: Session, user: UserAccount, now: datetime) -> None:
                 rng.choice(["美团外卖", "饿了么", "喜茶(光谷世界城店)", "肯德基(鲁巷店)"]),
                 channel="online" if rng.random() < 0.6 else "pos", card=virtual)
         if weekend and rng.random() < 0.12:
-            add(at(day, 18, rng.randint(10, 50)), -price(180, 420), "card", "海底捞火锅(光谷店)",
-                channel="pos", card=debit)
+            when, amount = at(day, 18, rng.randint(10, 50)), -price(180, 420)  # drawn either way: same seed after
+            if day < today - timedelta(days=2):  # the seeded dinner below stays the latest visit, for "昨晚海底捞…AA"
+                add(when, amount, "card", "海底捞火锅(光谷店)", channel="pos", card=debit)
         if weekend and rng.random() < 0.15:
             add(at(day, 20, rng.randint(0, 30)), -price(39, 90), "card", "猫眼电影", channel="online",
                 card=virtual)
