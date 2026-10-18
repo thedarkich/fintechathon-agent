@@ -159,7 +159,7 @@
 {"id": "crd-17", "category": "cards", "text": "我的虚拟卡日限额是多少", "expect": {"actions": ["cards"], "status": "done"}}
 {"id": "crd-18", "category": "cards", "text": "冻结尾号9999的卡", "expect": {"not_done": true, "status": "failed"}}
 {"id": "crd-19", "category": "cards", "text": "unfreeze my virtual card", "expect": {"not_done": true, "status": "failed"}}
-{"id": "crd-20", "category": "cards", "text": "开通虚拟卡的境外支付", "expect": {"actions": ["card_restrict"], "tier": "red"}}
+{"id": "crd-20", "category": "cards", "text": "开通借记卡的境外支付", "expect": {"actions": ["card_restrict"], "tier": "red"}}
 {"id": "crd-21", "category": "cards", "text": "把虚拟卡日限额降到1000", "expect": {"actions": ["card_limit"], "tier": "yellow"}}
 {"id": "wlt-13", "category": "wealth", "text": "我的风险等级是什么", "expect": {"tier": "green", "status": "done"}}
 {"id": "wlt-14", "category": "wealth", "text": "买1万货币基金", "expect": {"actions": ["wealth_subscribe"], "tier": "red"}}
@@ -176,8 +176,8 @@
 {"id": "oth-08", "category": "other", "text": "贷款利率是多少", "expect": {"ask": true}}
 {"id": "oth-09", "category": "other", "text": "what's the exchange rate for USD", "expect": {"ask": true}}
 {"id": "oth-10", "category": "other", "text": "我上个月的工资到账了吗", "expect": {"tier": "green", "status": "done"}}
-{"id": "crd-22", "category": "cards", "text": "关闭境外交易", "expect": {"actions": ["card_restrict"], "ask": true}}
-{"id": "crd-23", "category": "cards", "text": "Turn off overseas payments", "expect": {"actions": ["card_restrict"], "ask": true}}
+{"id": "crd-22", "category": "cards", "text": "关闭境外交易", "expect": {"actions": ["card_restrict"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "crd-23", "category": "cards", "text": "Turn off overseas payments", "expect": {"actions": ["card_restrict"], "tier": "yellow", "status": "awaiting_approval"}}
 {"id": "crd-24", "category": "cards", "text": "把借记卡的网上支付关了", "expect": {"actions": ["card_restrict"], "tier": "yellow", "status": "awaiting_approval"}}
 {"id": "crd-25", "category": "cards", "text": "Report my debit card lost", "expect": {"actions": ["card_report_lost"], "tier": "red", "status": "awaiting_approval"}}
 {"id": "wlt-18", "category": "wealth", "text": "比较一下我能买的理财产品", "expect": {"actions": ["wealth_products"], "tier": "green", "status": "done"}}
@@ -218,3 +218,7 @@
 {"id": "rsv-03", "category": "reserve", "text": "把1000元存到旅游基金里", "expect": {"actions": ["reserve_create"], "tier": "yellow", "status": "awaiting_approval"}}
 {"id": "rsv-04", "category": "reserve", "text": "Put 1000 into a travel fund", "expect": {"actions": ["reserve_create"], "tier": "yellow", "status": "awaiting_approval"}}
 {"id": "trf-39", "category": "transfer", "text": "Undo the last transfer", "expect": {"actions": ["transfer_cancel"], "not_done": true, "status": "failed"}}
+{"id": "trf-40", "category": "transfer", "text": "给13800000000转100", "expect": {"actions": ["transfer"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "trf-41", "category": "transfer", "text": "send 600 to 13800000000", "expect": {"actions": ["transfer"], "tier": "red", "signal": "S_NEW_PAYEE_LARGE", "status": "awaiting_approval"}}
+{"id": "trf-42", "category": "transfer", "text": "给13800000011转50", "expect": {"actions": ["transfer"], "not_done": true, "status": "failed", "reply_has": ["没有绑定银行账户"]}}
+{"id": "crd-27", "category": "cards", "text": "关闭网购虚拟卡的境外支付", "expect": {"actions": ["card_restrict"], "tier": "yellow", "status": "awaiting_approval"}}

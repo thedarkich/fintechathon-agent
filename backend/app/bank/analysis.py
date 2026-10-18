@@ -150,7 +150,7 @@ def anomalies(session: Session, user_id: str, today: date, days: int = 30) -> li
         name = normalize(re.sub(r"\(.*?\)", "", t.counterparty))
         if t.status == "declined" and t.country != "CN":
             flag(t, "OVERSEAS_DECLINED",
-                 "An overseas charge was attempted and declined (overseas payments are off).",
+                 "An overseas charge was attempted and declined (overseas payments are off on that card).",
                  "有一笔境外扣款尝试被拒绝（该卡已关闭境外支付）。")
             continue
         if t.status != "posted" or t.kind != "card" or t.channel == "auto":

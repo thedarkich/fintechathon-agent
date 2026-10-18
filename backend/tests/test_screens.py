@@ -110,3 +110,41 @@ def test_qr_codes_and_payments_count_towards_the_day(bank):
         txn = session.exec(select(Txn).where(Txn.kind == "qr")).one()
         assert txn.amount_fen == -1850 and txn.channel == "pos"
     assert screen(bank, "qr_pay", code="M1001", amount_yuan=990)["tier"] == "red"  # ¥18.50 + ¥990 > ¥1,000
+
+
+def test_chat_transfer_to_an_unsaved_number_uses_the_phone_directory(bank):
+    phone = next(numbers(True))
+    masked = directory.lookup(phone)["masked"]
+    plan = bank.chat(f"给{phone}转100")["plan"]
+    step = plan["steps"][0]
+    assert plan["status"] == "awaiting_approval" and plan["tier"] == "yellow" and step["action"] == "transfer"
+    rows = {d["label"]: d["value"] for d in step["details"]}
+    assert rows["收款人"] == masked and rows["手机号"] == directory.mask_phone(phone) and "提醒" in rows
+    assert masked in step["text"] and "第一次转给 TA" in step["text"]
+    assert bank.approve(plan).json()["plan"]["status"] == "done"
+    with Session(bank.runtime.engine) as session:
+        assert session.exec(select(Payee).where(Payee.phone == phone)).one().name == masked
+    kinds = [e["kind"] for e in bank.get("/api/audit", plan_id=plan["id"]).json()["items"]]
+    assert {"resolution", "policy", "approved", "transfer", "step_done"} <= set(kinds)
+    assert bank.get("/api/audit/verify").json()["ok"]
+    # ¥100 + ¥500 to a payee added today is over ¥500: red, and the money waits 2 hours as on the screen
+    second = bank.chat(f"给{phone}转500")["plan"]
+    assert second["tier"] == "red" and "S_NEW_PAYEE_LARGE" in second["steps"][0]["signal_codes"]
+    assert bank.verify(second).json()["plan"]["status"] == "done"
+    transfer = next(t for t in bank.get("/api/bank/transfers").json()["items"] if t["plan_id"] == second["id"])
+    assert transfer["status"] == "accepted" and transfer["arrival_reason"] == "S_NEW_PAYEE_LARGE" and transfer["cancellable"]
+
+
+def test_chat_transfer_over_500_to_a_new_number_is_red_and_delayed(bank):
+    plan = bank.chat(f"给{next(numbers(True))}转600")["plan"]
+    step = plan["steps"][0]
+    assert plan["tier"] == "red" and "S_NEW_PAYEE_LARGE" in step["signal_codes"]
+    assert any(d["value"].startswith("2 小时后") for d in step["details"])
+
+
+def test_chat_transfer_prefers_a_saved_payee_and_refuses_unlinked_numbers(bank):
+    saved = bank.chat(f"给{MOM}转100")["plan"]["steps"][0]
+    assert "王秀英" in saved["text"] and "phone_masked" not in saved.get("resolved", {})
+    assert all(d["label"] != "提醒" for d in saved["details"])
+    body = bank.chat(f"给{next(numbers(False))}转50")
+    assert body["plan"]["status"] == "failed" and "没有绑定银行账户" in body["messages"][-1]["text"]

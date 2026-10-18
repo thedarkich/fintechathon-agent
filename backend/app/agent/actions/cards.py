@@ -7,7 +7,7 @@ from sqlmodel import select
 
 from app import clock
 from app.agent.core import Action, Args, Ask, Ctx, Refuse, register
-from app.agent.resolve import card_label, find_card
+from app.agent.resolve import Found, card_label, find_card
 from app.bank import ledger
 from app.models import Card
 from app.money import to_fen, yuan
@@ -20,7 +20,10 @@ MAX_LIMIT = {"debit": 5_000_000, "virtual": 1_000_000}
 
 
 def pick_card(ctx: Ctx, text: str | None, statuses: set[str], verb_zh: str, verb_en: str) -> Card:
-    found = find_card(ctx.session, ctx.user.id, text, statuses=statuses)
+    return chosen_card(find_card(ctx.session, ctx.user.id, text, statuses=statuses), verb_zh, verb_en)
+
+
+def chosen_card(found: Found, verb_zh: str, verb_en: str) -> Card:
     if found.value is not None:
         return found.value
     if found.options:
@@ -130,13 +133,25 @@ class RestrictArgs(Args):
     contactless: bool | None = None
 
 
+def switch_changes(args: RestrictArgs, card: Card) -> dict:
+    return {key: wanted for key, (attr, _, _) in SWITCHES.items()
+            if (wanted := getattr(args, key)) is not None and wanted != getattr(card, attr)}
+
+
 def restrict_resolve(ctx: Ctx, args: RestrictArgs) -> dict:
-    card = pick_card(ctx, args.card, {"active", "frozen"}, "设置", "change")
-    changes = {}
-    for key, (attr, _, _) in SWITCHES.items():
-        wanted = getattr(args, key)
-        if wanted is not None and wanted != getattr(card, attr):
-            changes[key] = wanted
+    wanted = {key: getattr(args, key) for key in SWITCHES if getattr(args, key) is not None}
+    found = find_card(ctx.session, ctx.user.id, args.card, statuses={"active", "frozen"})
+    if found.value is None and len(found.options) > 1 and wanted:
+        # no single card named ("关闭境外交易"): only the cards this would change are worth asking about
+        useful = [c for c in found.options if switch_changes(args, c)]
+        if not useful:
+            states_zh = "、".join(("开启" if on else "关闭") + SWITCHES[k][1] for k, on in wanted.items())
+            states_en = ", ".join(f"{SWITCHES[k][2]} {'on' if on else 'off'}" for k, on in wanted.items())
+            raise Refuse("NO_CHANGE", f"您的卡都已经{states_zh}了，不用再改。",
+                         f"Every card already has {states_en}; nothing to change.")
+        found = Found(value=useful[0]) if len(useful) == 1 else Found(options=useful)
+    card = chosen_card(found, "设置", "change")
+    changes = switch_changes(args, card)
     if not changes:
         raise Refuse("NO_CHANGE", "这张卡已经是这个设置了。", "The card is already set that way.")
     return {**card_fields(ctx, card), "changes": changes}

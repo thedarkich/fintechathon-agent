@@ -140,7 +140,8 @@ def seed_customer(session: Session, user: UserAccount, now: datetime) -> None:
                  account_id=checking.id, daily_limit_fen=2_000_000, expires="09/30", created_at=opened)
     virtual = Card(user_id=user.id, kind="virtual", name="网购虚拟卡", name_en="Online shopping card",
                    last4="8831", account_id=checking.id, daily_limit_fen=300_000, atm_enabled=False,
-                   contactless_enabled=False, expires="04/28", created_at=at(start + timedelta(days=40), 15))
+                   contactless_enabled=False, overseas_enabled=True,  # for overseas shopping sites; the debit card's are off
+                   expires="04/28", created_at=at(start + timedelta(days=40), 15))
     session.add_all([checking, savings, debit, virtual])
 
     payees = {}

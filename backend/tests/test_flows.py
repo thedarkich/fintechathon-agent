@@ -381,3 +381,16 @@ def test_chat_list_titles_and_hiding(bank):
     opened = bank.get("/api/conversation", conversation_id=first).json()
     assert opened["conversation_id"] == first and opened["messages"][0]["text"] == "查一下余额"
     assert bank.get("/api/conversation").json()["conversation_id"] != second
+
+
+def test_overseas_switch_picks_the_card_it_would_change(bank):
+    plan = plan_of(bank.chat("关闭境外交易"))  # only the online shopping card still allows overseas payments
+    assert plan["status"] == "awaiting_approval" and plan["tier"] == "yellow"
+    assert plan["steps"][0]["rule"] == "Y_RISK_REDUCING" and "8831" in plan["steps"][0]["text"]
+    assert bank.approve(plan).json()["plan"]["status"] == "done"
+    with Session(bank.runtime.engine) as session:
+        assert not any(c.overseas_enabled for c in session.exec(select(Card)))
+    body = bank.chat("Turn off overseas payments", lang="en")  # nothing left to change: said directly, no question
+    assert body["plan"]["status"] == "failed"
+    assert "Every card already has overseas payments off" in body["messages"][-1]["text"]
+    assert plan_of(bank.chat("开通借记卡的境外支付"))["tier"] == "red"

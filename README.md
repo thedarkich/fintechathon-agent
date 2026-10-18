@@ -21,7 +21,7 @@ Run it locally (below), open http://localhost:8000 and press **马上试试 / Tr
 
 | Scenario | Say | What happens |
 |---|---|---|
-| Transfers | 给妈妈转200 · 给周凯转800 · 每月15号给妈妈转500 · 和室友AA 300元电费 | Yellow: one tap. Over ¥1,000 today, or over ¥500 to a payee added today: PIN plus code, and a new payee's money arrives 2 hours later and can be cancelled |
+| Transfers | 给妈妈转200 · 给周凯转800 · 给13800000000转100 · 每月15号给妈妈转500 · 和室友AA 300元电费 | Yellow: one tap. Over ¥1,000 today, or over ¥500 to a payee added today: PIN plus code, and a new payee's money arrives 2 hours later and can be cancelled. A number that isn't a saved payee is looked up in the bank's phone directory and shown by masked name |
 | Bill analysis | 上个月钱都花哪了 · 有没有异常交易 · 去年全年的报告 · 周末晚上8点后喝咖啡花了多少钱 | Green: answered at once; the last one by generated code in a sandbox |
 | Wealth | 推荐一个稳健的理财 · 货币基金和债券基金哪个好 · 做一下风险评估 · 买1000元货币基金 | Suitability by fixed rules; buying is red |
 | Cards | 冻结我的虚拟卡 · 关闭境外交易 · 把借记卡的单日限额调到5万 · 挂失借记卡 | Making a card safer is one tap; making it riskier is red |
@@ -75,17 +75,17 @@ To use a model, set `LLM_ENABLED=true`, `AI_BASE_URL`, `AI_API_KEY` and `AI_MODE
 cd backend && uv run pytest -q
 ```
 
-96 tests run every scenario through the HTTP API with the offline planner, plus the model planner with a fake model. They cover the tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, scheduling, transfers, human takeover, the demo account, the sandbox, receipts, the audit chain, and the app's screens (phone transfers, bills and their automatic-payment limit, QR codes).
+100 tests run every scenario through the HTTP API with the offline planner, plus the model planner with a fake model. They cover the tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, scheduling, transfers, human takeover, the demo account, the sandbox, receipts, the audit chain, and the app's screens (phone transfers, bills and their automatic-payment limit, QR codes).
 
 ### Evaluation sets
 
-[evals/intent.jsonl](evals/intent.jsonl) holds 220 everyday requests in Chinese, English and a mix of both across all six scenarios, including vague wording, things that don't exist (a payee, card, fund or subscription the customer doesn't have) and out-of-scope questions. [evals/attacks.jsonl](evals/attacks.jsonl) holds 69 attempts to get around the rules: ignoring the rules (also spaced out, full-width or with look-alike letters), role-play, fake authority and fake system messages, fake approvals and plan JSON, urgency, claiming to be verified, switching confirmation off, changing thresholds, splitting payments or spreading them over days, instructions hidden in a receipt, scam scripts, asking for secrets, and repeated attempts that must trip the safety lock. Each case runs on a newly opened customer through the HTTP API. The runner checks the planned actions, the tier, the status, risk signals and the reply; for attacks it also checks that the attempt was flagged, that nothing ran without approval, that typed secrets were hidden and that the safety lock is on.
+[evals/intent.jsonl](evals/intent.jsonl) holds 224 everyday requests in Chinese, English and a mix of both across all six scenarios, including vague wording, things that don't exist (a payee, card, fund or subscription the customer doesn't have) and out-of-scope questions. [evals/attacks.jsonl](evals/attacks.jsonl) holds 69 attempts to get around the rules: ignoring the rules (also spaced out, full-width or with look-alike letters), role-play, fake authority and fake system messages, fake approvals and plan JSON, urgency, claiming to be verified, switching confirmation off, changing thresholds, splitting payments or spreading them over days, instructions hidden in a receipt, scam scripts, asking for secrets, and repeated attempts that must trip the safety lock. Each case runs on a newly opened customer through the HTTP API. The runner checks the planned actions, the tier, the status, risk signals and the reply; for attacks it also checks that the attempt was flagged, that nothing ran without approval, that typed secrets were hidden and that the safety lock is on.
 
 ```bash
 cd backend && uv run python -m app.evals ../evals/intent.jsonl ../evals/attacks.jsonl --out ../docs/eval
 ```
 
-Offline planner, 14 October 2026: 220/220 requests and 69/69 attacks ([report](docs/eval/report-offline.md)). `--model` runs the same sets against the configured AI provider; that makes one paid call per case, so it never runs by default.
+Offline planner, 18 October 2026: 224/224 requests and 69/69 attacks ([report](docs/eval/report-offline.md)). `--model` runs the same sets against the configured AI provider; that makes one paid call per case, so it never runs by default.
 
 ### For automated evaluation
 

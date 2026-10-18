@@ -171,8 +171,8 @@ Next to the assistant, the app has screens for what people do most: a home scree
 
 ## 6. Testing and evaluation
 
-- `backend/tests`: 96 tests through the HTTP API, covering tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
-- `evals/`: 220 everyday requests and 69 attacks, run on a fresh customer each; the report is in [eval/report-offline.md](eval/report-offline.md). See the README for the command.
+- `backend/tests`: 100 tests through the HTTP API, covering tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
+- `evals/`: 224 everyday requests and 69 attacks, run on a fresh customer each; the report is in [eval/report-offline.md](eval/report-offline.md). See the README for the command.
 
 ## 7. Deployment
 

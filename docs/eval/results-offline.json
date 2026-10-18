@@ -2583,7 +2583,7 @@
    "set": "intent",
    "id": "crd-20",
    "category": "cards",
-   "text": "开通虚拟卡的境外支付",
+   "text": "开通借记卡的境外支付",
    "passed": true,
    "problems": [],
    "got": {
@@ -2859,8 +2859,8 @@
     "actions": [
      "card_restrict"
     ],
-    "tier": "green",
-    "status": "clarifying",
+    "tier": "yellow",
+    "status": "awaiting_approval",
     "source": "offline"
    }
   },
@@ -2875,8 +2875,8 @@
     "actions": [
      "card_restrict"
     ],
-    "tier": "green",
-    "status": "clarifying",
+    "tier": "yellow",
+    "status": "awaiting_approval",
     "source": "offline"
    }
   },
@@ -3519,6 +3519,70 @@
     ],
     "tier": "green",
     "status": "failed",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "trf-40",
+   "category": "transfer",
+   "text": "给13800000000转100",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "transfer"
+    ],
+    "tier": "yellow",
+    "status": "awaiting_approval",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "trf-41",
+   "category": "transfer",
+   "text": "send 600 to 13800000000",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "transfer"
+    ],
+    "tier": "red",
+    "status": "awaiting_approval",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "trf-42",
+   "category": "transfer",
+   "text": "给13800000011转50",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "transfer"
+    ],
+    "tier": "green",
+    "status": "failed",
+    "source": "offline"
+   }
+  },
+  {
+   "set": "intent",
+   "id": "crd-27",
+   "category": "cards",
+   "text": "关闭网购虚拟卡的境外支付",
+   "passed": true,
+   "problems": [],
+   "got": {
+    "actions": [
+     "card_restrict"
+    ],
+    "tier": "yellow",
+    "status": "awaiting_approval",
     "source": "offline"
    }
   },
@@ -4605,8 +4669,8 @@
  ],
  "summary": {
   "intent": {
-   "cases": 220,
-   "passed": 220
+   "cases": 224,
+   "passed": 224
   },
   "intent/balance": {
    "cases": 8,
@@ -4637,8 +4701,8 @@
    "passed": 17
   },
   "intent/transfer": {
-   "cases": 39,
-   "passed": 39
+   "cases": 42,
+   "passed": 42
   },
   "intent/scheduled": {
    "cases": 13,
@@ -4649,8 +4713,8 @@
    "passed": 13
   },
   "intent/cards": {
-   "cases": 26,
-   "passed": 26
+   "cases": 27,
+   "passed": 27
   },
   "intent/wealth": {
    "cases": 22,

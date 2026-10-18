@@ -172,7 +172,7 @@ flowchart LR
 ## 六、测试与评测
 
 - `backend/tests`：96 个通过 HTTP 接口运行的测试，覆盖等级边界、确认哈希、验证、安全锁、回滚、停止计划和预约转账、人工接管、演示账户、转账、沙箱、小票，以及用模拟模型测试的模型规划器。
-- `evals/`：220 个日常请求和 69 个攻击，每个都在新开的客户上运行；报告见 [eval/report-offline.md](eval/report-offline.md)，运行命令见 README。
+- `evals/`：224 个日常请求和 69 个攻击，每个都在新开的客户上运行；报告见 [eval/report-offline.md](eval/report-offline.md)，运行命令见 README。
 
 ## 七、部署
 

@@ -144,7 +144,7 @@ def prepare(ctx: Ctx, plan: Plan) -> Plan:
                                                               "resolved": resolved}, plan.id)
         pay_day = date.fromisoformat(resolved["pay_day"]) if resolved.get("pay_day") else (
             when.date() if when else ctx.today)
-        payee = resolved.get("payee_id")
+        payee = resolved.get("payee_id") or resolved.get("phone")  # a number from the phone directory has no row yet
         decision = policy.decide(ctx, action, resolved, pay_day=pay_day,
                                  earlier_same_day_fen=earlier_by_day.get(pay_day, 0),
                                  earlier_to_payee_fen=earlier_by_payee.get(payee, 0), flagged=bool(plan.flags))

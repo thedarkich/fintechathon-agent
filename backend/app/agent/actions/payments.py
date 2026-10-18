@@ -94,23 +94,68 @@ def source_account(ctx: Ctx, kind: str) -> BankAccount:
     return row
 
 
-def transfer_resolve(ctx: Ctx, args: TransferArgs) -> dict:
-    payee = resolve_payee(ctx, args.payee)
-    fen = amount_fen(args.amount_yuan, ctx)
+def money_fields(ctx: Ctx, amount_yuan: float | None, memo: str | None, from_account: str) -> dict:
+    fen = amount_fen(amount_yuan, ctx)
     if fen > SINGLE_TRANSFER_CAP:
         raise Refuse("OVER_SINGLE_CAP", f"单笔转账上限为 {yuan(SINGLE_TRANSFER_CAP)}。",
                      f"A single transfer can be at most {yuan(SINGLE_TRANSFER_CAP)}.")
-    source = source_account(ctx, args.from_account)
+    source = source_account(ctx, from_account)
     if source.balance_fen < fen:
         raise Refuse("INSUFFICIENT_FUNDS", f"{source.name}余额 {yuan(source.balance_fen)}，不足以转账 {yuan(fen)}。",
                      f"{source.name_en} has {yuan(source.balance_fen)}, not enough for {yuan(fen)}.")
-    return {**payee_fields(ctx, payee), "fen": fen, "memo": args.memo, "source_id": source.id,
-            "source": source.name, "source_en": source.name_en, "route": transfers.route_for(payee.bank),
-            "arrival": args.arrival}
+    return {"fen": fen, "memo": memo, "source_id": source.id, "source": source.name, "source_en": source.name_en}
+
+
+def full_phone(text: str) -> str | None:
+    """A whole mainland mobile number typed in place of a payee: '13800000000', '+86 138-0000-0000'."""
+    digits = re.sub(r"^\+?86", "", re.sub(r"[\s\-()]", "", text))
+    return digits if directory.valid(digits) else None
+
+
+def phone_payee(ctx: Ctx, phone: str) -> dict:
+    """Who a phone number pays: the saved payee with that number, or else the account the bank's phone
+    directory finds, shown by masked name and treated as a payee added just now."""
+    if ctx.user.phone and phone == ctx.user.phone:
+        raise Refuse("OWN_NUMBER", "这是您自己的手机号。", "That is your own phone number.")
+    numbers = {"phone": phone, "phone_masked": directory.mask_phone(phone)}
+    saved = ctx.session.exec(select(Payee).where(Payee.user_id == ctx.user.id, Payee.phone == phone)).first()
+    if saved is not None:
+        return {**payee_fields(ctx, saved), **numbers}
+    found = directory.lookup(phone)
+    if found is None:
+        raise Refuse("PHONE_NOT_FOUND", "这个手机号没有绑定银行账户，不能用手机号转账。请核对号码。",
+                     "That number isn't linked to a bank account, so it can't receive a transfer. Check the number.")
+    return {"payee_id": None, "payee": found["masked"], "payee_en": found["masked"], "payee_note": None,
+            "payee_note_en": None, "bank": found["bank"], "account_tail": found["account_no"][-4:],
+            "payee_new": True, "first_time": True, "directory_account": found["account_no"], **numbers}
+
+
+def transfer_resolve(ctx: Ctx, args: TransferArgs) -> dict:
+    phone = full_phone(args.payee)
+    try:
+        who = payee_fields(ctx, resolve_payee(ctx, args.payee))
+    except Refuse as missing:
+        if phone is None or missing.code != "PAYEE_NOT_FOUND":
+            raise
+        who = phone_payee(ctx, phone)  # not a saved payee: the phone directory, as on the Transfers screen
+    return {**who, **money_fields(ctx, args.amount_yuan, args.memo, args.from_account),
+            "route": transfers.route_for(who["bank"]), "arrival": args.arrival}
+
+
+def directory_payee(ctx: Ctx, r: dict) -> Payee:
+    """The payee row for a number found in the phone directory, saved when the money is sent so the next
+    transfer to them is one tap from Recent (and counts as a payee added today)."""
+    payee = ctx.session.exec(select(Payee).where(Payee.user_id == ctx.user.id, Payee.phone == r["phone"])).first()
+    if payee is None:
+        payee = Payee(user_id=ctx.user.id, name=r["payee"], name_en=r["payee_en"], phone=r["phone"], bank=r["bank"],
+                      account_no=r["directory_account"], note="手机号转账", created_at=clock.iso(ctx.now))
+        ctx.session.add(payee)
+        ctx.session.flush()
+    return payee
 
 
 def transfer_run(ctx: Ctx, r: dict) -> dict:
-    payee = ctx.session.get(Payee, r["payee_id"])
+    payee = ctx.session.get(Payee, r["payee_id"]) if r.get("payee_id") else directory_payee(ctx, r)
     source = ledger.account(ctx.session, ctx.user.id, r["source_id"])
     row = transfers.send(ctx.session, ctx.user, payee, source, r["fen"], now=ctx.now, memo=r["memo"],
                          arrival=r.get("arrival", "instant"), arrival_reason=r.get("arrival_reason"),
@@ -129,6 +174,8 @@ def arrival_text(ctx: Ctx, r: dict) -> str:
 
 
 def transfer_describe(ctx: Ctx, r: dict) -> str:
+    if r.get("phone_masked"):
+        return phone_transfer_describe(ctx, r)
     memo = ctx.t(f"，备注“{r['memo']}”", f", note “{r['memo']}”") if r.get("memo") else ""
     new = ctx.t("（今天新添加的收款人）", " (payee added today)") if r.get("payee_new") else ""
     return ctx.t(f"从{r['source']}向 {describe_payee(ctx, r)}{new} 转账 {yuan(r['fen'])}{memo}{arrival_text(ctx, r)}",
@@ -173,42 +220,9 @@ class PhoneTransferArgs(Args):
 
 
 def phone_transfer_resolve(ctx: Ctx, args: PhoneTransferArgs) -> dict:
-    if ctx.user.phone and args.phone == ctx.user.phone:
-        raise Refuse("OWN_NUMBER", "这是您自己的手机号。", "That is your own phone number.")
-    fen = amount_fen(args.amount_yuan, ctx)
-    if fen > SINGLE_TRANSFER_CAP:
-        raise Refuse("OVER_SINGLE_CAP", f"单笔转账上限为 {yuan(SINGLE_TRANSFER_CAP)}。",
-                     f"A single transfer can be at most {yuan(SINGLE_TRANSFER_CAP)}.")
-    source = source_account(ctx, "checking")
-    if source.balance_fen < fen:
-        raise Refuse("INSUFFICIENT_FUNDS", f"{source.name}余额 {yuan(source.balance_fen)}，不足以转账 {yuan(fen)}。",
-                     f"{source.name_en} has {yuan(source.balance_fen)}, not enough for {yuan(fen)}.")
-    common = {"fen": fen, "memo": args.memo, "source_id": source.id, "source": source.name, "source_en": source.name_en,
-              "arrival": "instant", "phone": args.phone, "phone_masked": directory.mask_phone(args.phone)}
-    saved = ctx.session.exec(select(Payee).where(Payee.user_id == ctx.user.id, Payee.phone == args.phone)).first()
-    if saved is not None:
-        return {**payee_fields(ctx, saved), **common, "route": transfers.route_for(saved.bank)}
-    found = directory.lookup(args.phone)
-    if found is None:
-        raise Refuse("PHONE_NOT_FOUND", "这个手机号没有绑定银行账户，不能用手机号转账。请核对号码。",
-                     "That number isn't linked to a bank account, so it can't receive a transfer. Check the number.")
-    # someone the customer has never paid: shown by masked name, and treated as a payee added just now
-    return {"payee_id": None, "payee": found["masked"], "payee_en": found["masked"], "payee_note": None,
-            "payee_note_en": None, "bank": found["bank"], "account_tail": found["account_no"][-4:],
-            "payee_new": True, "first_time": True, "directory_account": found["account_no"], **common,
-            "route": transfers.route_for(found["bank"])}
-
-
-def phone_transfer_run(ctx: Ctx, r: dict) -> dict:
-    payee = ctx.session.get(Payee, r["payee_id"]) if r.get("payee_id") else None
-    if payee is None:
-        payee = ctx.session.exec(select(Payee).where(Payee.user_id == ctx.user.id, Payee.phone == r["phone"])).first()
-    if payee is None:  # saved now, so the next transfer to them is one tap from Recent
-        payee = Payee(user_id=ctx.user.id, name=r["payee"], name_en=r["payee_en"], phone=r["phone"], bank=r["bank"],
-                      account_no=r["directory_account"], note="手机号转账", created_at=clock.iso(ctx.now))
-        ctx.session.add(payee)
-        ctx.session.flush()
-    return transfer_run(ctx, {**r, "payee_id": payee.id})
+    who = phone_payee(ctx, args.phone)
+    return {**who, **money_fields(ctx, args.amount_yuan, args.memo, "checking"),
+            "route": transfers.route_for(who["bank"]), "arrival": "instant"}
 
 
 def phone_transfer_describe(ctx: Ctx, r: dict) -> str:
@@ -223,7 +237,7 @@ def phone_transfer_describe(ctx: Ctx, r: dict) -> str:
 register(Action(
     name="phone_transfer", args=PhoneTransferArgs,
     help="Send money to a phone number; the bank's phone directory finds the account and shows a masked name.",
-    resolve=phone_transfer_resolve, run=phone_transfer_run, describe=phone_transfer_describe, reply=transfer_reply,
+    resolve=phone_transfer_resolve, run=transfer_run, describe=phone_transfer_describe, reply=transfer_reply,
     rule="PAYMENT", payment=lambda r: r["fen"], screen_only=True,
     card=lambda ctx, r, res: {"type": "receipt", "action": "transfer", **res},
 ))
