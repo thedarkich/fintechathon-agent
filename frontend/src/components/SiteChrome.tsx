@@ -8,7 +8,7 @@ import { BrandSeal } from './Seal'
 import { LangSwitch, ThemeSwitch } from './Toggles'
 
 // screens opened from the home grid: the Home tab stays lit while they are open
-const HOME_SERVICES = /^\/(send|payments|qr)$/
+const HOME_SERVICES = /^\/send$/
 
 /** Signing out from the header or from the phone's More sheet. */
 export function useSignOut() {

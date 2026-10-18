@@ -220,37 +220,6 @@ class PayeeMessage(SQLModel, table=True):
     text_en: str
 
 
-class SavedBill(SQLModel, table=True):
-    """A bill the customer pays from the Payments screen: provider, account and, optionally, automatic payment."""
-
-    id: str = Field(default_factory=new_id, primary_key=True)
-    user_id: str = Field(index=True)
-    provider: str  # code in bank.billers.PROVIDERS
-    account: str  # 户号, phone number or plate, as the provider knows it
-    label: str | None = None
-    autopay: bool = False
-    autopay_limit_fen: int | None = None  # a bill above this is not paid automatically; the customer is told instead
-    next_autopay_on: str | None = None
-    found_in_history: bool = False  # set up from the customer's past direct debits rather than typed in
-    status: str = "active"  # active | removed
-    created_at: str
-
-
-class BillPayment(SQLModel, table=True):
-    """One payment towards a provider's bill for a month (or a mobile top-up)."""
-
-    id: str = Field(default_factory=new_id, primary_key=True)
-    user_id: str = Field(index=True)
-    provider: str
-    account: str
-    period: str  # YYYY-MM
-    amount_fen: int
-    at: str
-    auto: bool = False
-    txn_id: str | None = None
-    plan_id: str | None = None
-
-
 class Collection(SQLModel, table=True):
     """A split-bill (AA) collection request sent to payees. No money leaves the account."""
 

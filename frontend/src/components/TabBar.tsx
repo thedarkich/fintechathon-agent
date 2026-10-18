@@ -9,7 +9,7 @@ import { useSignOut, useWorkspaceLinks } from './SiteChrome'
 const TABS: [string, IconName, string, string][] = [
   ['/home', 'home', 'Home', '首页'],
   ['/send', 'send', 'Transfers', '转账'],
-  ['/qr', 'qr', 'Scan', '扫码'],
+  ['/bills', 'chart', 'Spending', '账单'],
   ['/assistant', 'chat', 'Assistant', '助手'],
 ]
 
@@ -20,8 +20,8 @@ export function TabBar() {
   const { signOut, busy, error } = useSignOut()
   const [open, setOpen] = useState(false)
   const first = useRef<HTMLAnchorElement>(null)
-  const rest = [...pages.filter(([to]) => !TABS.some(([t]) => t === to)), ['/payments', tr('Payments', '缴费')], ['/how', tr('How it stays safe', '安全原理')]] as [string, string][]
-  const inMore = rest.some(([to]) => to === pathname && to !== '/payments')  // Payments belongs to Home's tab
+  const rest = [...pages.filter(([to]) => !TABS.some(([t]) => t === to)), ['/how', tr('How it stays safe', '安全原理')]] as [string, string][]
+  const inMore = rest.some(([to]) => to === pathname)
 
   useEffect(() => setOpen(false), [pathname])
   useEffect(() => {
@@ -35,7 +35,7 @@ export function TabBar() {
   return <>
     <nav className="tabbar" aria-label={tr('Main navigation', '主导航')}>
       {TABS.map(([to, icon, en, zh]) => (
-        <NavLink key={to} to={to} className={({ isActive }) => isActive || (to === '/home' && pathname === '/payments') ? 'is-active' : ''}>
+        <NavLink key={to} to={to} className={({ isActive }) => isActive ? 'is-active' : ''}>
           <Icon name={icon} size={22} /><span>{tr(en, zh)}</span>
         </NavLink>
       ))}

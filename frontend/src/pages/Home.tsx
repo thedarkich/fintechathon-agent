@@ -13,13 +13,13 @@ import { category, stamp, yuan } from '../lib/format'
 
 /** Everything the bank does, one tap each: the first screen after signing in. */
 const SERVICES: [string, IconName, string, string][] = [
-  ['/qr', 'qr', 'QR pay', '扫码付'],
   ['/send', 'send', 'Transfers', '转账'],
-  ['/payments', 'receipt', 'Payments', '缴费'],
   ['/accounts', 'bank', 'My bank', '我的银行'],
   ['/bills', 'chart', 'Spending', '账单'],
   ['/wealth', 'trend', 'Invest', '理财'],
   ['/controls', 'card', 'Cards', '卡片'],
+  ['/controls#subscriptions', 'bell', 'Subscriptions', '自动续费'],
+  ['/ledger', 'receipt', 'History', '记录'],
   ['/assistant', 'chat', 'Assistant', '助手'],
 ]
 
@@ -34,7 +34,7 @@ export default function Home() {
   const { user } = useAuth()
   const { send, pending } = useChat()
   const overview = useOverview()
-  const bills = useQuery({ queryKey: ['bills', lang], queryFn: () => api.bills(lang) })
+  const subs = useQuery({ queryKey: ['subscriptions', lang], queryFn: () => api.subscriptions(lang) })
   const recent = useQuery({ queryKey: ['transactions', 'home'], queryFn: () => api.transactions(30, '', 6) })
   const notes = useQuery({ queryKey: ['notifications', lang], queryFn: () => api.notifications(lang) })
   const forYou = (notes.data?.items ?? []).filter((n) => n.suggestion).slice(0, 2)
@@ -45,7 +45,8 @@ export default function Home() {
   const money = (fen: number) => (hidden ? '¥ ••••' : yuan(fen))
   const hour = data ? Number(new Date(data.now).toLocaleString('en-GB', { timeZone: 'Asia/Shanghai', hour: '2-digit', hour12: false })) : 12
   const hello = hour < 11 ? tr('Good morning', '早上好') : hour < 18 ? tr('Good afternoon', '下午好') : tr('Good evening', '晚上好')
-  const due = (bills.data?.items ?? []).filter((b) => b.due_fen)
+  const renewing = (subs.data?.items ?? []).filter((s) => s.status === 'active')
+    .sort((a, b) => a.next_charge_on.localeCompare(b.next_charge_on)).slice(0, 4)
 
   const toggle = () => {
     setHidden(!hidden)
@@ -111,20 +112,24 @@ export default function Home() {
         </div>
 
         <div className="space-y-6">
-          {due.length > 0 && (
+          {renewing.length > 0 && (
             <section>
-              <h2 className="mb-2 text-xl font-bold">{tr('Bills', '待缴账单')}</h2>
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-xl font-bold">{tr('Coming up', '即将扣费')}</h2>
+                <Link to="/controls#subscriptions" className="text-sm font-semibold text-[var(--action)]">{tr('All', '全部')}</Link>
+              </div>
               <ul className="space-y-2">
-                {due.map((b) => (
-                  <li key={b.id}>
-                    <Link to={`/payments?p=${b.provider.code}&a=${encodeURIComponent(b.account)}`} className="flex items-center gap-3 rounded-[18px] border border-rule bg-paper px-4 py-3 shadow-[0_4px_12px_var(--shadow)] hover:border-[var(--action)]">
+                {renewing.map((s) => (
+                  <li key={s.id}>
+                    <Link to="/controls#subscriptions" className="flex items-center gap-3 rounded-[18px] border border-rule bg-paper px-4 py-3 shadow-[0_4px_12px_var(--shadow)] hover:border-[var(--action)]">
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-semibold">{b.provider.name}</span>
-                        <span className={`block text-xs ${b.autopay ? 'text-jade' : 'text-ink2'}`}>
-                          {b.autopay && b.next_autopay_on ? tr(`Pays itself on ${b.next_autopay_on.slice(5)}`, `${b.next_autopay_on.slice(5)} 自动缴费`) : tr('Due now', '待缴')}
+                        <span className="block truncate font-semibold">{s.merchant}</span>
+                        <span className={`block text-xs ${s.remind_days_before ? 'text-jade' : 'text-ink2'}`}>
+                          {tr(`Renews ${s.next_charge_on.slice(5)}`, `${s.next_charge_on.slice(5)} 续费`)}
+                          {s.remind_days_before ? tr(` · reminder ${s.remind_days_before} days before`, ` · 提前 ${s.remind_days_before} 天提醒`) : ''}
                         </span>
                       </span>
-                      <span className="num font-mono font-semibold">{money(b.due_fen!)}</span>
+                      <span className="num font-mono font-semibold">{money(s.fen)}</span>
                     </Link>
                   </li>
                 ))}

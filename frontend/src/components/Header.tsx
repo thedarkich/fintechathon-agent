@@ -7,7 +7,7 @@ import { useAuth } from '../lib/auth'
 import { SiteHeader } from './SiteChrome'
 
 const PAGE_TITLES: Record<string, [string, string]> = {
-  home: ['Home', '首页'], send: ['Transfers', '转账'], payments: ['Payments', '缴费'], qr: ['QR pay', '扫码付'],
+  home: ['Home', '首页'], send: ['Transfers', '转账'],
   assistant: ['Assistant', '助手'], accounts: ['Accounts & transfers', '账户与转账'], bills: ['Spending', '账单'],
   wealth: ['Invest', '理财'], controls: ['Cards & security', '卡片与安全'], ledger: ['History', '记录'], operator: ['Staff', '客服'],
 }

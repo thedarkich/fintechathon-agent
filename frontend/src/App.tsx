@@ -35,8 +35,6 @@ const TeamAccess = page(() => import('./pages/TeamAccess'))
 const Assistant = page(() => import('./pages/Assistant'))
 const Home = page(() => import('./pages/Home'))
 const Send = page(() => import('./pages/Send'))
-const Payments = page(() => import('./pages/Payments'))
-const Qr = page(() => import('./pages/Qr'))
 const Accounts = page(() => import('./pages/Accounts'))
 const How = page(() => import('./pages/How'))
 const Bills = page(() => import('./pages/Bills'))
@@ -94,8 +92,8 @@ export default function App() {
                 <Route element={<Workspace />}>
                   <Route path="/home" element={<Home />} />
                   <Route path="/send" element={<Send />} />
-                  <Route path="/payments" element={<Payments />} />
-                  <Route path="/qr" element={<Qr />} />
+                  <Route path="/payments" element={<Navigate to="/home" replace />} />
+                  <Route path="/qr" element={<Navigate to="/home" replace />} />
                   <Route path="/assistant" element={<Assistant />} />
                   <Route path="/accounts" element={<Accounts />} />
                   <Route path="/transfers" element={<Navigate to="/accounts#transfers" replace />} />

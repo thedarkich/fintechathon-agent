@@ -1,10 +1,10 @@
-"""The app's own screens: transfer by phone number, Payments and QR pay go through the same rules as chat."""
+"""The app's own screen for transfer by phone number goes through the same rules as chat."""
 
 from sqlmodel import Session, select
 
 from app.agent.planner import PlanOut, StepOut, catalogue, validate
-from app.bank import directory, qr
-from app.models import BillPayment, Notification, Payee, Txn
+from app.bank import directory
+from app.models import Payee
 
 MOM = "13971230418"  # a saved payee in the demo data
 
@@ -57,59 +57,12 @@ def test_scam_words_in_a_note_raise_the_tier(bank):
 
 
 def test_screen_actions_stay_out_of_chat(bank):
-    assert "phone_transfer" not in catalogue() and "qr_pay" not in catalogue()
-    assert validate(PlanOut(steps=[StepOut(id="s1", action="qr_pay", args={"code": "M1001", "amount_yuan": 5})]), "") \
-        == ["SCREEN_ONLY:qr_pay"]
+    assert "phone_transfer" not in catalogue()
+    assert validate(PlanOut(steps=[StepOut(id="s1", action="phone_transfer", args={"phone": MOM, "amount_yuan": 5})]), "") \
+        == ["SCREEN_ONLY:phone_transfer"]
     assert bank.post("/api/screens/plan", {"action": "password_change", "args": {}}).status_code == 422
-    screen(bank, "qr_pay", code="M1001", amount_yuan=18)
+    screen(bank, "phone_transfer", phone=MOM, amount_yuan=18)
     assert bank.get("/api/conversations").json()["items"] == []  # screen requests are not chats
-
-
-def test_pay_a_bill_then_nothing_is_due(bank):
-    lookup = bank.get("/api/bills/lookup", provider="sgcc", account="4201123456").json()
-    assert lookup["due_fen"] > 0 and lookup["holder"].startswith("*")
-    plan = screen(bank, "bill_pay", provider="sgcc", account="4201123456", save=True)
-    assert plan["tier"] == "yellow" and plan["steps"][0]["fen"] == lookup["due_fen"]
-    assert bank.approve(plan).json()["plan"]["status"] == "done"
-    assert bank.get("/api/bills/lookup", provider="sgcc", account="4201123456").json()["due_fen"] == 0
-    assert screen(bank, "bill_pay", provider="sgcc", account="4201123456")["status"] == "failed"  # NOTHING_DUE
-    assert any(b["account"] == "4201123456" for b in bank.get("/api/bills").json()["items"])
-    assert bank.get("/api/bills/lookup", provider="sgcc", account="12").status_code == 422
-
-
-def test_bills_paid_by_direct_debit_become_automatic_payments(bank):
-    items = bank.get("/api/bills").json()["items"]
-    electricity = next(b for b in items if b["provider"]["code"] == "sgcc")
-    assert electricity["autopay"] and electricity["autopay_limit_fen"] == 30_000
-    bank.post("/api/demo/advance", {"days": 40})
-    with Session(bank.runtime.engine) as session:
-        assert session.exec(select(BillPayment).where(BillPayment.provider == "sgcc", BillPayment.auto == True)).first()  # noqa: E712
-
-
-def test_autopay_never_pays_over_its_limit(bank):
-    plan = screen(bank, "bill_autopay", provider="donghu", account="88001234", on=True, limit_yuan=50)
-    assert plan["tier"] == "yellow"
-    bank.approve(plan)
-    bank.post("/api/demo/advance", {"days": 40})
-    with Session(bank.runtime.engine) as session:
-        assert not session.exec(select(BillPayment).where(BillPayment.provider == "donghu")).first()
-        assert session.exec(select(Notification).where(Notification.key.startswith("autopay:"))).first()
-
-
-def test_qr_codes_and_payments_count_towards_the_day(bank):
-    shop = bank.get("/api/qr/merchants").json()["items"][0]
-    assert bank.get("/api/qr/read", p=shop["payload"]).json()["valid"]
-    link = "https://bank.example/#/qr?p=" + qr.payload("M1002", 1850, "A-77")
-    read = bank.get("/api/qr/read", p=link).json()
-    assert read["fen"] == 1850 and read["order"] == "A-77"
-    assert not bank.get("/api/qr/read", p="https://phish.example/login").json()["valid"]
-    first = screen(bank, "qr_pay", code="M1002", amount_yuan=18.5, order="A-77")
-    assert first["tier"] == "yellow"
-    bank.approve(first)
-    with Session(bank.runtime.engine) as session:
-        txn = session.exec(select(Txn).where(Txn.kind == "qr")).one()
-        assert txn.amount_fen == -1850 and txn.channel == "pos"
-    assert screen(bank, "qr_pay", code="M1001", amount_yuan=990)["tier"] == "red"  # ¥18.50 + ¥990 > ¥1,000
 
 
 def test_chat_transfer_to_an_unsaved_number_uses_the_phone_directory(bank):

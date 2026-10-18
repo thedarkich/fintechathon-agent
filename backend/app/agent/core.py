@@ -78,7 +78,7 @@ class Action:
     card: Callable[[Ctx, dict, dict], dict | None] | None = None
     schedulable: bool = False
     examples: list[str] = field(default_factory=list)
-    screen_only: bool = False  # started from a screen (phone transfer, bills, QR), never from a chat plan
+    screen_only: bool = False  # started from a screen (transfer by phone number), never from a chat plan
 
     @property
     def query(self) -> bool:

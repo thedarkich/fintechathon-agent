@@ -83,15 +83,19 @@ function TransferScreen() {
   )
 }
 
-function PayScreen() {
+/** The cross-scenario plan: one sentence becomes money set aside now and two orders that wait for their day. */
+function PlanScreen() {
   const { tr } = useLang()
+  const steps: [string, string, string][] = [
+    [tr('Gift money', '礼物钱'), tr('Set aside now', '已预留'), '¥1,000'],
+    [tr('Roses', '鲜花'), tr('Orders 11-20', '11-20 下单'), '¥199'],
+    [tr('Cake', '蛋糕'), tr('Orders 11-20', '11-20 下单'), '¥168'],
+  ]
   return (
-    <PhoneScreen title={tr('QR pay', '扫码付')}>
-      <div className="lp-who"><span className="lp-avatar"><Icon name="qr" size={18} /></span><div><b>{tr('Luckin Coffee', '瑞幸咖啡（光谷广场店）')}</b><small className="lp-ok">{tr('Registered with the bank', '本行登记商户')}</small></div></div>
-      <p className="lp-big">¥18.50</p>
-      <span className="lp-btn">{tr('Pay ¥18.50', '付款 ¥18.50')}</span>
-      <div className="lp-bill"><span><b>{tr('State Grid', '国家电网 电费')}</b><small>{tr('Pays itself on 10-20, up to ¥300', '10-20 自动缴，上限 ¥300')}</small></span><b>¥233.85</b></div>
-      <div className="lp-bill"><span><b>{tr('Wuhan Water', '武汉水务 水费')}</b><small>{tr('Due now', '待缴')}</small></span><b>¥52.63</b></div>
+    <PhoneScreen title={tr('Birthday plan', '生日计划')}>
+      <div className="lp-who"><span className="lp-avatar"><Icon name="clock" size={18} /></span><div><b>{tr('Chen Jing · 11-22', '陈静 · 11-22')}</b><small className="lp-ok">{tr('Wife’s birthday', '老婆的生日')}</small></div></div>
+      {steps.map(([what, when, amount]) => <div key={what} className="lp-bill"><span><b>{what}</b><small>{when}</small></span><b>{amount}</b></div>)}
+      <p className="lp-fine">{tr('Checked again before each order. Stop it any time.', '下单前会再检查一次，随时可以叫停。')}</p>
     </PhoneScreen>
   )
 }
@@ -154,19 +158,22 @@ const TIERS = {
 /** How the bank's fixed rules would treat a payment: the same thresholds as the server's policy. */
 function RuleCheck({ onTry }: { onTry: (path: string) => void }) {
   const { tr } = useLang()
-  const [kind, setKind] = useState<'transfer' | 'bill' | 'qr'>('transfer')
+  const [kind, setKind] = useState<'transfer' | 'invest'>('transfer')
   const [amount, setAmount] = useState(200)
   const [paid, setPaid] = useState(0)
   const [fresh, setFresh] = useState(false)
+  const transfer = kind === 'transfer'
   const total = paid + amount
-  const newPayee = kind === 'transfer' && fresh && amount > 500
-  const tier = total > 1000 || newPayee ? 'red' : 'yellow'
-  const why = newPayee
-    ? tr(`Over ¥500 to a payee added today: your PIN and a code, and the money arrives 2 hours later so you can still cancel.`, '给今天新加的收款人超过 ¥500：需要交易密码和验证码，钱 2 小时后到账，到账前可以撤销。')
-    : total > 1000
-      ? tr(`Today's payments would reach ${yuan(total * 100)}, over ¥1,000: your PIN and an SMS code, or a passkey.`, `今天累计将达 ${yuan(total * 100)}，超过 ¥1,000：需要交易密码和短信验证码，或通行密钥。`)
-      : tr(`Today's payments stay at ${yuan(total * 100)}, under ¥1,000: you see the details and tap Confirm.`, `今天累计 ${yuan(total * 100)}，不超过 ¥1,000：看清楚后点“确认”即可。`)
-  const kinds = [['transfer', tr('Transfer', '转账')], ['bill', tr('Pay a bill', '缴费')], ['qr', tr('QR pay', '扫码付')]] as const
+  const newPayee = transfer && fresh && amount > 500
+  const tier = !transfer || total > 1000 || newPayee ? 'red' : 'yellow'
+  const why = !transfer
+    ? tr('Buying an investment always needs your PIN and an SMS code, or a passkey, whatever the amount. Only products within your risk level can be bought.', '买理财不论金额，都要交易密码加短信验证码，或通行密钥；只能买不超过你风险等级的产品。')
+    : newPayee
+      ? tr(`Over ¥500 to a payee added today: your PIN and a code, and the money arrives 2 hours later so you can still cancel.`, '给今天新加的收款人超过 ¥500：需要交易密码和验证码，钱 2 小时后到账，到账前可以撤销。')
+      : total > 1000
+        ? tr(`Today's payments would reach ${yuan(total * 100)}, over ¥1,000: your PIN and an SMS code, or a passkey.`, `今天累计将达 ${yuan(total * 100)}，超过 ¥1,000：需要交易密码和短信验证码，或通行密钥。`)
+        : tr(`Today's payments stay at ${yuan(total * 100)}, under ¥1,000: you see the details and tap Confirm.`, `今天累计 ${yuan(total * 100)}，不超过 ¥1,000：看清楚后点“确认”即可。`)
+  const kinds = [['transfer', tr('Transfer', '转账')], ['invest', tr('Buy a fund', '买理财')]] as const
   return (
     <div className="lp-calc">
       <div role="tablist" className="lp-pills lp-calc-tabs">
@@ -178,11 +185,13 @@ function RuleCheck({ onTry }: { onTry: (path: string) => void }) {
           <p className="lp-calc-amount">{yuan(amount * 100)}</p>
           <input id="calc-amount" type="range" min={10} max={3000} step={10} value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
           <div className="lp-calc-scale"><span>¥10</span><span>¥3,000</span></div>
-          <p className="lp-calc-label">{tr('Already paid today', '今天已经付了')}</p>
-          <div className="lp-pills">
-            {[0, 300, 800].map((n) => <button key={n} type="button" aria-pressed={paid === n} onClick={() => setPaid(n)}>{yuan(n * 100)}</button>)}
-          </div>
-          {kind === 'transfer' && <>
+          {transfer && <>
+            <p className="lp-calc-label">{tr('Already paid today', '今天已经付了')}</p>
+            <div className="lp-pills">
+              {[0, 300, 800].map((n) => <button key={n} type="button" aria-pressed={paid === n} onClick={() => setPaid(n)}>{yuan(n * 100)}</button>)}
+            </div>
+          </>}
+          {transfer && <>
             <p className="lp-calc-label">{tr('Who to', '收款人')}</p>
             <div className="lp-pills">
               <button type="button" aria-pressed={!fresh} onClick={() => setFresh(false)}>{tr('Paid before', '转过的人')}</button>
@@ -197,7 +206,7 @@ function RuleCheck({ onTry }: { onTry: (path: string) => void }) {
             <p className="lp-calc-why">{why}</p>
           </div>
           <div className="lp-actions">
-            <button type="button" className="site-button cta" onClick={() => onTry(kind === 'transfer' ? '/send' : kind === 'bill' ? '/payments' : '/qr')}>{tr('Try it with a demo account', '用演示账户试试')}</button>
+            <button type="button" className="site-button cta" onClick={() => onTry(transfer ? '/send' : '/wealth')}>{tr('Try it with a demo account', '用演示账户试试')}</button>
             <Link to="/how" className="site-button ghost">{tr('The rules', '规则原理')}</Link>
           </div>
           <p className="lp-calc-note">{tr('An illustration of the bank’s fixed rules; nothing is sent.', '示意规则判断，不会提交任何内容。')}</p>
@@ -241,13 +250,13 @@ export default function LandingPage() {
     { key: 'phone', title: <>{tr('See who it is,', '先看清是谁，')}<br />{tr('then send.', '再转账。')}</>,
       lead: tr('Type a phone number and the bank shows whose account it is, with the name masked. A first transfer to someone new is checked harder.', '输入手机号，银行先告诉你这是谁的账户（姓名打码）。第一次转给新的人，检查更严。'),
       visual: <TransferScreen /> },
-    { key: 'pay', title: <>{tr('Scan, pay bills,', '扫码付、缴费，')}<br />{tr('one step each.', '一步到位。')}</>,
-      lead: tr('Pay a shop by its code, top up a phone, pay electricity and water, or let a bill pay itself, never above the limit you set.', '扫商户的码付款，充话费、交水电，也可以让账单自动缴，但绝不超过你设的上限。'),
-      visual: <PayScreen /> },
+    { key: 'plan', title: <>{tr('Plan it once,', '说一次，')}<br />{tr('it happens on time.', '到点就办。')}</>,
+      lead: tr('“My wife’s birthday is next month”: money is set aside now, flowers and a cake are ordered two days before. Every step is checked again when it runs, and you can stop it any time.', '“下个月老婆生日”：现在预留礼物钱，提前两天订花和蛋糕。每一步执行前都会再检查一次，随时可以叫停。'),
+      visual: <PlanScreen /> },
   ]
   const services: [string, IconName, string, string][] = [
-    ['/qr', 'qr', 'QR pay', '扫码付'], ['/send', 'send', 'Transfers', '转账'], ['/payments', 'receipt', 'Payments', '缴费'], ['/assistant', 'chat', 'Assistant', '助手'],
-    ['/bills', 'chart', 'Spending', '账单'], ['/wealth', 'trend', 'Invest', '理财'], ['/controls', 'card', 'Cards', '卡片'], ['/how', 'shield', 'Safety', '安全'],
+    ['/send', 'send', 'Transfers', '转账'], ['/bills', 'chart', 'Spending', '账单'], ['/wealth', 'trend', 'Invest', '理财'], ['/controls', 'card', 'Cards', '卡片'],
+    ['/controls#subscriptions', 'bell', 'Subscriptions', '自动续费'], ['/accounts', 'bank', 'My bank', '我的银行'], ['/assistant', 'chat', 'Assistant', '助手'], ['/how', 'shield', 'Safety', '安全'],
   ]
   const examples = [tr("What's my balance?", '我卡里还有多少钱'), tr('Where did my money go last month?', '上个月钱都花哪了'), tr('Freeze my virtual card', '冻结我的虚拟卡'), tr('Cancel iQIYI', '取消爱奇艺会员'), tr("It's my wife's birthday next month, help me prepare", '下个月老婆生日，帮我准备一下')]
   const features: Feature[] = [

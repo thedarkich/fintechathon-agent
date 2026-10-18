@@ -282,18 +282,6 @@ button {
 }
 @media (prefers-reduced-motion: reduce) { .service-icon { transition: none; } }
 
-/* the QR screen's scanner: a green panel with a viewfinder */
-.qr-scanner { display: flex; flex-direction: column; align-items: center; text-align: center; border-radius: 24px; background: var(--hero); color: #fff; padding: 32px 24px 28px; }
-.qr-frame { position: relative; display: grid; place-items: center; width: 180px; height: 180px; margin-bottom: 20px; color: #ffffff66;
-  background: linear-gradient(#fff, #fff) top left / 34px 5px no-repeat, linear-gradient(#fff, #fff) top left / 5px 34px no-repeat,
-    linear-gradient(#fff, #fff) top right / 34px 5px no-repeat, linear-gradient(#fff, #fff) top right / 5px 34px no-repeat,
-    linear-gradient(#fff, #fff) bottom left / 34px 5px no-repeat, linear-gradient(#fff, #fff) bottom left / 5px 34px no-repeat,
-    linear-gradient(#fff, #fff) bottom right / 34px 5px no-repeat, linear-gradient(#fff, #fff) bottom right / 5px 34px no-repeat; }
-.qr-frame::after { content: ''; position: absolute; left: 14px; right: 14px; top: 50%; height: 2px; border-radius: 2px; background: var(--cta); box-shadow: 0 0 12px var(--cta); animation: qr-scan 2.4s ease-in-out infinite alternate; }
-@keyframes qr-scan { from { transform: translateY(-62px); } to { transform: translateY(62px); } }
-@media (prefers-reduced-motion: reduce) { .qr-frame::after { animation: none; } }
-.qr-scanner .btn-ink { background: var(--cta); color: var(--cta-ink); }
-
 /* on a grey card, the pill tabs' track is white */
 .ruled [role=tablist] { background-color: var(--paper); }
 

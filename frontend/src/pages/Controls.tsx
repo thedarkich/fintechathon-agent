@@ -24,8 +24,9 @@ export default function Controls() {
   const location = useLocation()
   const subs = useQuery({ queryKey: ['subscriptions', lang], queryFn: () => api.subscriptions(lang) })
   const [status, setStatus] = useState<Status>(null)
-  useEffect(() => { if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView() }, [location.hash])
   const d = overview.data
+  // the sections render once the bank has loaded, so scroll to one only then
+  useEffect(() => { if (location.hash && d) document.getElementById(location.hash.slice(1))?.scrollIntoView() }, [location.hash, !!d])
   const ask = (text: string) => void send(text)
   const active = subs.data?.items.filter((s) => s.status === 'active') ?? []
 
@@ -40,7 +41,7 @@ export default function Controls() {
           </div>
         </Section>
 
-        <Section title={tr('Subscriptions', '自动续费')} className="mt-10"
+        <Section id="subscriptions" title={tr('Subscriptions', '自动续费')} className="mt-10"
           aside={subs.data && <span className="text-sm text-ink2">{tr(`${yuan(subs.data.monthly_fen)} a month`, `每月约 ${yuan(subs.data.monthly_fen)}`)}</span>}>
           {!subs.data ? <div className="h-24 animate-pulse rounded-box bg-paper2" /> : !active.length ? <p className={EMPTY}>{tr('No active subscriptions.', '没有正在扣费的订阅。')}</p> : <>
             {subs.data.overlaps.length > 0 && <p className="mb-3 rounded-box bg-[var(--cinnabar-wash)] px-4 py-2.5 text-sm">{subs.data.overlaps.map((o) => tr(`You pay for ${o.merchants.length} ${o.group} services.`, `你同时订阅了 ${o.merchants.length} 个${o.group === 'music' ? '音乐' : '视频'}会员。`)).join(' ')}</p>}

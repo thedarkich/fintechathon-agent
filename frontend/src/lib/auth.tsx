@@ -114,5 +114,5 @@ export const landingFor = (user: User | null, path: string) => (!user && getAdmi
 
 export function workspaceDestination(value: string | null) {
   if (!value) return '/home'
-  return /^\/(home|send|payments|qr|assistant|accounts|transfers|bills|wealth|controls|ledger|operator)(?:\?[^#]*)?$/.test(value) ? value : '/home'
+  return /^\/(home|send|assistant|accounts|transfers|bills|wealth|controls|ledger|operator)(?:\?[^#]*)?$/.test(value) ? value : '/home'
 }

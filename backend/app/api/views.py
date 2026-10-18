@@ -87,32 +87,6 @@ def details(ctx: Ctx, action: str, r: dict | None) -> list[dict]:
         if r.get("undo") and r.get("done"):
             rows.append(row("撤销", "Undone", f"已完成的 {r['done']} 步" if zh else f"{r['done']} finished step(s)"))
         return rows
-    if action == "bill_pay":
-        rows = [row("缴费单位", "Provider", r["provider_name"] if zh else r["provider_name_en"]),
-                row("手机号" if r["category"] == "mobile" else "户号", "Phone" if r["category"] == "mobile" else "Account", r["account"])]
-        if r.get("holder"):
-            rows.append(row("户名", "Name on bill", r["holder"]))
-        if r.get("period"):
-            rows.append(row("账单", "Bill", f"{r['period'][:4]}年{int(r['period'][5:])}月" if zh else r["period"]))
-        if r.get("detail"):
-            rows.append(row("违法行为", "Offence", r["detail"][0 if zh else 1]))
-        rows += [row("金额", "Amount", yuan(r["fen"])), row("付款账户", "From", r["source"] if zh else r["source_en"])]
-        return rows
-    if action == "bill_autopay":
-        rows = [row("账单", "Bill", f"{r['provider_name']} {r['category_name']}" if zh else f"{r['provider_name_en']} {r['category_name_en']}"),
-                row("户号", "Account", r["account"])]
-        if r["on"]:
-            rows += [row("每月上限", "Monthly limit", yuan(r["limit_fen"])), row("首次", "First", r["first_on"]),
-                     row("超过上限", "Over the limit", "不扣款，提醒你手动缴" if zh else "not paid; you're asked to pay it")]
-        else:
-            rows.append(row("自动缴费", "Automatic payment", "关闭" if zh else "off"))
-        return rows
-    if action == "qr_pay":
-        rows = [row("商户", "Shop", r["merchant"] if zh else r["merchant_en"]), row("金额", "Amount", yuan(r["fen"]))]
-        if r.get("order"):
-            rows.append(row("订单号", "Order", r["order"]))
-        rows.append(row("付款账户", "From", r["source"] if zh else r["source_en"]))
-        return rows
     if action == "transfer_cancel":
         return [row("撤销给", "Transfer to", r["payee"] if zh else r["payee_en"]), row("金额", "Amount", yuan(r["fen"]))]
     return []

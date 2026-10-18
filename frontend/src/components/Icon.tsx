@@ -4,22 +4,18 @@ import {
   ArrowRight,
   Bell,
   Bot,
-  Car,
   ChartColumn,
   Check,
   Clock,
   CreditCard,
-  Droplet,
   FileText,
   Flag,
-  Flame,
   House,
   Inbox,
   Landmark,
   LayoutGrid,
   Lock,
   MessageSquareText,
-  QrCode,
   Receipt,
   Search,
   Shield,
@@ -28,15 +24,13 @@ import {
   Upload,
   Users,
   Wallet,
-  Wifi,
-  Zap,
   type LucideIcon,
 } from 'lucide-react'
 
 export type IconName =
   | 'grid' | 'inbox' | 'agents' | 'shield' | 'arrow' | 'wallet' | 'activity' | 'upload' | 'clock' | 'file' | 'search' | 'check' | 'flag'
   | 'chat' | 'bank' | 'chart' | 'trend' | 'card' | 'bell' | 'lock' | 'phone' | 'receipt' | 'users'
-  | 'qr' | 'send' | 'bolt' | 'drop' | 'flame' | 'wifi' | 'home' | 'car'
+  | 'send' | 'home'
 
 const icons: Record<IconName, LucideIcon> = {
   grid: LayoutGrid,
@@ -62,14 +56,8 @@ const icons: Record<IconName, LucideIcon> = {
   phone: Smartphone,
   receipt: Receipt,
   users: Users,
-  qr: QrCode,
   send: ArrowLeftRight,
-  bolt: Zap,
-  drop: Droplet,
-  flame: Flame,
-  wifi: Wifi,
   home: House,
-  car: Car,
 }
 
 export function Icon({ name, size = 20, className = '' }: { name: IconName; size?: number; className?: string }) {

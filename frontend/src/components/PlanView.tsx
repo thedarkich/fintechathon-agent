@@ -61,7 +61,7 @@ export function statusLabel(status: PlanStatus, t: Strings): string {
 export const markColor = (kind: MarkKind) =>
   kind === 'done' || kind === 'query' ? 'var(--jade)' : kind === 'blocked' || kind === 'flag' ? 'var(--cinnabar)' : kind === 'pending' || kind === 'cancelled' || kind === 'undone' ? 'var(--ink-2)' : 'var(--ink)'
 
-const MONEY = ['transfer', 'phone_transfer', 'schedule_transfer', 'merchant_order', 'wealth_subscribe', 'bill_pay', 'qr_pay']
+const MONEY = ['transfer', 'phone_transfer', 'schedule_transfer', 'merchant_order', 'wealth_subscribe']
 
 /** One step's state as a small symbol: done, waiting for you, scheduled, failed or not run. */
 function StepIcon({ s }: { s: PlanStep }) {

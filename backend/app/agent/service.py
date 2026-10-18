@@ -49,9 +49,7 @@ def screens_conversation(session: Session, user: UserAccount) -> Conversation:
 
 
 # what History calls a screen request that never got as far as its details
-SCREEN_LABELS = {"transfer": ("转账", "Transfer"), "phone_transfer": ("手机号转账", "Transfer by phone number"),
-                 "bill_pay": ("缴费", "Pay a bill"), "bill_autopay": ("自动缴费", "Automatic bill payment"),
-                 "qr_pay": ("扫码付款", "Pay by QR code")}
+SCREEN_LABELS = {"transfer": ("转账", "Transfer"), "phone_transfer": ("手机号转账", "Transfer by phone number")}
 
 
 class ScreenError(Exception):

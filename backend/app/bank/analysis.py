@@ -15,7 +15,7 @@ from app.bank.categories import normalize
 from app.clock import CST
 from app.models import Subscription, Txn
 
-SPEND_KINDS = {"card", "direct_debit", "transfer_out", "order", "bill", "qr"}
+SPEND_KINDS = {"card", "direct_debit", "transfer_out", "order"}
 MUSIC = ("网易云音乐", "qq音乐", "酷狗", "酷我", "apple music", "spotify")
 VIDEO = ("腾讯视频", "爱奇艺", "优酷", "芒果tv", "哔哩哔哩", "bilibili")
 
