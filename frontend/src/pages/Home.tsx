@@ -14,11 +14,11 @@ import { category, stamp, yuan } from '../lib/format'
 /** Everything the bank does, one tap each: the first screen after signing in. */
 const SERVICES: [string, IconName, string, string][] = [
   ['/send', 'send', 'Transfers', '转账'],
-  ['/accounts', 'bank', 'My bank', '我的银行'],
+  ['/accounts', 'bank', 'Accounts', '账户'],
   ['/bills', 'chart', 'Spending', '账单'],
   ['/wealth', 'trend', 'Invest', '理财'],
   ['/controls', 'card', 'Cards', '卡片'],
-  ['/controls#subscriptions', 'bell', 'Subscriptions', '自动续费'],
+  ['/controls?tab=subscriptions', 'bell', 'Subscriptions', '自动续费'],
   ['/ledger', 'receipt', 'History', '记录'],
   ['/assistant', 'chat', 'Assistant', '助手'],
 ]
@@ -116,12 +116,12 @@ export default function Home() {
             <section>
               <div className="mb-2 flex items-center justify-between">
                 <h2 className="text-xl font-bold">{tr('Coming up', '即将扣费')}</h2>
-                <Link to="/controls#subscriptions" className="text-sm font-semibold text-[var(--action)]">{tr('All', '全部')}</Link>
+                <Link to="/controls?tab=subscriptions" className="text-sm font-semibold text-[var(--action)]">{tr('All', '全部')}</Link>
               </div>
               <ul className="space-y-2">
                 {renewing.map((s) => (
                   <li key={s.id}>
-                    <Link to="/controls#subscriptions" className="flex items-center gap-3 rounded-[18px] border border-rule bg-paper px-4 py-3 shadow-[0_4px_12px_var(--shadow)] hover:border-[var(--action)]">
+                    <Link to="/controls?tab=subscriptions" className="flex items-center gap-3 rounded-[18px] border border-rule bg-paper px-4 py-3 shadow-[0_4px_12px_var(--shadow)] hover:border-[var(--action)]">
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-semibold">{s.merchant}</span>
                         <span className={`block text-xs ${s.remind_days_before ? 'text-jade' : 'text-ink2'}`}>

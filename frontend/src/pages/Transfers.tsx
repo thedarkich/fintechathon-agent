@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Check, Undo2 } from 'lucide-react'
 import { api, errorText } from '../api/client'
 import type { Transfer, TransferStatus } from '../api/types'
 import { useLang } from '../i18n'
@@ -13,7 +14,7 @@ const MARK: Record<TransferStatus, MarkKind> = {
   accepted: 'pending', clearing: 'pending', arrived: 'done', returned: 'undone', cancelled: 'cancelled',
 }
 
-/** The stages a transfer passes through; the last box reads 已退回 or 已撤销 when it didn't arrive. */
+/** The stages a transfer passes through; the last box reads Returned or Cancelled when it didn't arrive. */
 function Stages({ t }: { t: Transfer }) {
   const { tr } = useLang()
   const reached = (status: TransferStatus) => t.events.find((e) => e.status === status)
@@ -33,12 +34,12 @@ function Stages({ t }: { t: Transfer }) {
           <li key={b.status} className={`flex min-h-[4.4rem] flex-col items-center justify-center gap-1 px-1 py-2 text-center ${i < 2 ? 'border-r border-rule' : ''}`}>
             <span className={`text-[0.8rem] ${event ? 'font-semibold' : 'text-ink2'}`}>{tr(b.en, b.zh)}</span>
             {event ? (
-              <span className="seal-stamp inline-flex h-7 min-w-7 items-center justify-center rounded-[2px] px-1 text-[0.78rem] font-bold"
-                style={{ border: `2px solid ${bad ? 'var(--ink-2)' : 'var(--cinnabar)'}`, color: bad ? 'var(--ink-2)' : 'var(--cinnabar)', ['--seal-rot' as string]: `${i % 2 ? 5 : -6}deg` }}>
-                {b.status === 'accepted' ? '受' : b.status === 'clearing' ? '清' : b.status === 'arrived' ? '到' : b.status === 'returned' ? '退' : '撤'}
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full" aria-hidden
+                style={{ color: bad ? 'var(--ink-2)' : 'var(--jade)', background: `color-mix(in srgb, ${bad ? 'var(--ink-2)' : 'var(--jade)'} 14%, transparent)` }}>
+                {bad ? <Undo2 size={15} strokeWidth={2.4} /> : <Check size={15} strokeWidth={2.6} />}
               </span>
             ) : (
-              <span className={`h-7 w-7 rounded-[2px] border-2 border-dashed border-rule ${i === waiting ? 'step-live' : ''}`} aria-hidden />
+              <span className={`h-7 w-7 rounded-full border-2 border-dashed border-rule ${i === waiting ? 'step-live' : ''}`} aria-hidden />
             )}
             <span className="num font-mono text-[0.7rem] text-ink2">{event ? stamp(event.at).slice(6) : ''}</span>
           </li>
@@ -110,6 +111,7 @@ function SmsPanel() {
   return (
     <div className="ruled bg-field">
       <div className="p-3 pb-0">
+        <p className="mb-2 px-1 text-sm font-semibold">{tr('Text messages', '短信')} <span className="font-normal text-ink2">{tr('(simulated phones)', '（模拟手机）')}</span></p>
         <Segmented stretch className="flex w-full" label={tr('Text messages', '短信')} value={tab} onChange={setTab}
           options={[['mine', tr('Your phone', '我的手机')], ['theirs', tr('Payee’s phone', '收款方手机')]] as const} />
       </div>

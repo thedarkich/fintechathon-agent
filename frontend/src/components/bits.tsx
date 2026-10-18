@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Link, Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { getAdminToken } from '../api/client'
 import type { Tier } from '../api/types'
 import { useLang } from '../i18n'
@@ -87,6 +87,30 @@ export function Segmented<T extends string>({ value, options, onChange, label, c
       ))}
     </div>
   )
+}
+
+/**
+ * The page's open tab, kept in the address (?tab=…) so a link or a reload opens the same tab.
+ * An older #anchor link (e.g. /accounts#transfers) opens the tab of that name.
+ */
+export function useTab<T extends string>(keys: readonly T[], fallback: T): [T, (tab: T) => void] {
+  const [params, setParams] = useSearchParams()
+  const location = useLocation()
+  const wanted = (params.get('tab') ?? location.hash.slice(1)) as T
+  const tab = keys.includes(wanted) ? wanted : fallback
+  const choose = (next: T) => setParams((current) => {
+    const p = new URLSearchParams(current)
+    if (next === fallback) p.delete('tab'); else p.set('tab', next)
+    return p
+  }, { replace: true })
+  return [tab, choose]
+}
+
+/** A page split into a few parts: one tab per part, so the page shows one thing at a time. */
+export function PageTabs<T extends string>({ value, options, onChange, label }: {
+  value: T; options: readonly (readonly [T, string])[]; onChange: (tab: T) => void; label: string
+}) {
+  return <Segmented className="mb-6" label={label} value={value} options={options} onChange={onChange} />
 }
 
 /** A panel with a heading bar, as on the controls page. */

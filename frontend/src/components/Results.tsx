@@ -143,7 +143,7 @@ export function Result({ card }: { card: Card }) {
       return (
         <div className="flex flex-wrap items-center gap-3 border-l-2 border-cinnabar bg-field px-3 py-2.5 text-sm">
           <span className="flex-1">{tr('The assistant is paused by a safety lock. Verify your identity to resume.', '助手已被安全锁暂停，完成身份验证即可恢复。')}</span>
-          <button className="btn btn-cinnabar py-1.5" onClick={() => navigate('/controls#security')}>{tr('Verify', '去验证')}</button>
+          <button className="btn btn-cinnabar py-1.5" onClick={() => navigate('/controls?tab=security')}>{tr('Verify', '去验证')}</button>
         </div>
       )
     case 'receipt':

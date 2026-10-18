@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLang } from '../i18n'
-import { PageHead, Section, Segmented } from '../components/bits'
+import { PageHead, PageTabs, Section, Segmented, useTab } from '../components/bits'
 import { Icon } from '../components/Icon'
 import { Bars, Columns } from '../components/Results'
 import { SealMark } from '../components/Seal'
@@ -13,6 +13,7 @@ import { EMPTY, LIST } from './Accounts'
 export default function Bills() {
   const { tr, lang } = useLang()
   const { send, pending } = useChat()
+  const [tab, setTab] = useTab(['overview', 'alerts', 'transactions'] as const, 'overview')
   const [period, setPeriod] = useState<'month' | 'year'>('month')
   const [offset, setOffset] = useState(0)
   const [q, setQ] = useState('')
@@ -36,18 +37,35 @@ export default function Bills() {
 
   return (
     <main tabIndex={-1} className="page-content">
-      <PageHead title={tr('Spending', '账单')} right={controls} />
+      <PageHead title={tr('Spending', '账单')} right={tab === 'overview' ? controls : undefined} />
+      <PageTabs label={tr('Spending', '账单')} value={tab} onChange={setTab}
+        options={[['overview', tr('Overview', '概览')], ['alerts', flagged.length ? tr(`Worth a look (${flagged.length})`, `需要留意（${flagged.length}）`) : tr('Worth a look', '需要留意')], ['transactions', tr('Transactions', '交易明细')]] as const} />
 
-      {!r ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : <>
+      {tab === 'overview' && (!r ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : <>
         <dl className="metric-grid">
           <div className="metric-card"><dt>{tr('Spent', '支出')}{!r.complete && tr(' so far', '（截至今天）')}</dt><dd className="num">{yuan(r.spend_fen)}</dd></div>
           <div className="metric-card"><dt>{tr('Income', '收入')}</dt><dd className="num text-jade">{yuan(r.income_fen)}</dd></div>
-          <div className="metric-card"><dt>{tr('Net', '结余')}</dt><dd className="num">{yuan(r.net_fen)}</dd></div>
-          <div className="metric-card"><dt>{tr('Vs. before', '较上期')}</dt><dd className={change === null ? '' : change > 0 ? 'text-cinnabar' : 'text-jade'}>{change === null ? '—' : `${change > 0 ? '+' : ''}${change}%`}</dd></div>
+          <div className="metric-card"><dt>{tr('Left over', '结余')}</dt><dd className="num">{yuan(r.net_fen)}</dd></div>
+          <div className="metric-card"><dt>{period === 'month' ? tr('Vs. last month', '较上月') : tr('Vs. last year', '较去年')}</dt><dd className={change === null ? '' : change > 0 ? 'text-cinnabar' : 'text-jade'}>{change === null ? '—' : `${change > 0 ? '+' : ''}${change}%`}</dd></div>
         </dl>
 
-        {flagged.length > 0 && (
-          <Section title={tr('Worth a look', '需要留意')} aside={<span className="text-sm text-ink2">{flagged.length}</span>} className="mt-8">
+        <div className="mt-8 grid items-start gap-8 lg:grid-cols-2">
+          <Section title={tr('Where it went', '花在哪了')} aside={<span className="text-sm text-ink2">{tr(`${r.count} payments`, `${r.count} 笔`)}</span>}>
+            <div className="ruled bg-field p-5"><Bars rows={r.categories.slice(0, 8).map((c) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%` }))} /></div>
+          </Section>
+          <Section title={tr('Top merchants', '花得最多的商户')}>
+            <div className="ruled bg-field p-5"><Bars rows={r.top_merchants.map((m) => ({ label: m.merchant, fen: m.fen }))} /></div>
+          </Section>
+        </div>
+
+        <Section title={period === 'month' ? tr('Day by day', '每日支出') : tr('Month by month', '每月支出')} className="mt-8">
+          <div className="ruled bg-field p-5"><Columns series={r.series} /></div>
+        </Section>
+      </>)}
+
+      {tab === 'alerts' && (
+        !anomalies.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : !flagged.length ? <p className={EMPTY}>{tr('Nothing unusual in the last 30 days.', '最近 30 天没有异常。')}</p> : <>
+          <p className="mb-3 max-w-2xl text-sm text-ink2">{tr('Payments from the last 30 days that don’t look like your usual spending. If you don’t recognise one, freeze the card.', '最近 30 天里和你平时消费不太一样的交易。如果有不认识的，可以先冻结卡片。')}</p>
             <ol className={LIST}>
               {flagged.map((a) => (
                 <li key={`${a.code}-${a.txn_id ?? a.category}`} className="grid grid-cols-[auto_1fr_auto] items-start gap-x-3 px-4 py-3">
@@ -63,24 +81,10 @@ export default function Bills() {
                 </li>
               ))}
             </ol>
-          </Section>
-        )}
+        </>
+      )}
 
-        <Section title={period === 'month' ? tr('Day by day', '每日支出') : tr('Month by month', '每月支出')} className="mt-8">
-          <div className="ruled bg-field p-5"><Columns series={r.series} /></div>
-        </Section>
-
-        <div className="mt-8 grid items-start gap-8 lg:grid-cols-2">
-          <Section title={tr('By category', '按类别')} aside={<span className="text-sm text-ink2">{tr(`${r.count} payments`, `${r.count} 笔`)}</span>}>
-            <div className="ruled bg-field p-5"><Bars rows={r.categories.slice(0, 8).map((c) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%` }))} /></div>
-          </Section>
-          <Section title={tr('By merchant', '按商户')}>
-            <div className="ruled bg-field p-5"><Bars rows={r.top_merchants.map((m) => ({ label: m.merchant, fen: m.fen }))} /></div>
-          </Section>
-        </div>
-      </>}
-
-      <Section title={tr('Last 90 days', '近 90 天交易')} className="mt-8"
+      {tab === 'transactions' && <Section title={tr('Last 90 days', '近 90 天交易')}
         aside={<label className="flex w-full items-center gap-2 rounded-box border border-rule bg-field px-3 py-1.5 sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm" aria-label={tr('Search transactions', '搜索交易')} placeholder={tr('Search…', '搜索…')} value={q} onChange={(e) => setQ(e.target.value)} /></label>}>
         {!txns.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : !txns.data.items.length ? <p className={EMPTY}>{tr('Nothing found.', '没有找到。')}</p> : (
           <ul className={LIST}>
@@ -95,7 +99,7 @@ export default function Bills() {
             ))}
           </ul>
         )}
-      </Section>
+      </Section>}
     </main>
   )
 }

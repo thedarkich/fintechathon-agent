@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { ChevronDown } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { clearAdminToken, getAdminToken } from '../api/client'
 import { isOperator, useAuth } from '../lib/auth'
@@ -36,17 +37,49 @@ export function useWorkspaceLinks(): [string, string][] {
   const { tr } = useLang()
   const { user } = useAuth()
   return ([
-    ['/home', tr('Home', '首页')], ['/assistant', tr('Assistant', '助手')], ['/accounts', tr('Accounts', '账户与转账')],
-    ['/bills', tr('Spending', '账单')], ['/wealth', tr('Invest', '理财')], ['/controls', tr('Cards', '卡片与安全')],
+    ['/home', tr('Home', '首页')], ['/assistant', tr('Assistant', '助手')], ['/accounts', tr('Accounts', '账户')],
+    ['/bills', tr('Spending', '账单')], ['/wealth', tr('Invest', '理财')], ['/controls', tr('Cards', '卡片')],
     ['/ledger', tr('History', '记录')], ['/operator', tr('Staff', '客服')],
   ] as [string, string][]).filter(([to]) => to !== '/operator' || isOperator(user))
 }
 
+/** The signed-in person's name; opens what belongs to the account: the bank's time, how it stays safe, sign out. */
+function AccountMenu({ status }: { status?: string }) {
+  const { tr } = useLang()
+  const { user } = useAuth()
+  const { signOut, busy } = useSignOut()
+  const menu = useRef<HTMLDetailsElement>(null)
+  const { pathname } = useLocation()
+  useEffect(() => { if (menu.current) menu.current.open = false }, [pathname])
+  useEffect(() => {
+    const away = (e: MouseEvent) => { if (menu.current?.open && !menu.current.contains(e.target as Node)) menu.current.open = false }
+    document.addEventListener('mousedown', away)
+    return () => document.removeEventListener('mousedown', away)
+  }, [])
+  const name = user ? user.name : tr('Operator token', '工作人员令牌')
+  return (
+    <details ref={menu} className="account-menu">
+      <summary aria-label={tr(`Account: ${name}`, `账户：${name}`)}>
+        <span className="account-avatar" aria-hidden>{(user?.name ?? '?').slice(0, 1)}</span>
+        <span className="account-name">{name}</span>
+        {user?.demo && <span className="account-demo">{tr('demo', '演示')}</span>}
+        <ChevronDown size={15} aria-hidden />
+      </summary>
+      <div className="account-menu-pop">
+        {user?.email && <p className="truncate text-sm text-ink2">{user.email}</p>}
+        {status && <p className="mt-1 text-xs text-ink2">{status}</p>}
+        <Link to="/how" className="account-menu-item">{tr('How it stays safe', '安全原理')}</Link>
+        <button type="button" className="account-menu-item" disabled={busy} onClick={() => void signOut()}>{busy ? tr('Signing out…', '正在退出…') : tr('Sign out', '退出登录')}</button>
+      </div>
+    </details>
+  )
+}
+
 /**
- * The header: a white bar that stays at the top, the logo on the left across two rows,
- * small links and the account controls above, the main menu below.
+ * The header: a white bar that stays at the top. In the app it is one row (logo, the pages, then language,
+ * theme, demo tools and the account); on the public site the logo sits across two rows, small links above the menu.
  */
-export function SiteHeader({ workspace = false, status }: { workspace?: boolean; status?: string }) {
+export function SiteHeader({ workspace = false, status, extra }: { workspace?: boolean; status?: string; extra?: ReactNode }) {
   const { tr, t } = useLang()
   const { user } = useAuth()
   const { signOut, busy, error } = useSignOut()
@@ -78,6 +111,21 @@ export function SiteHeader({ workspace = false, status }: { workspace?: boolean;
     ? workspaceLinks.filter(([to]) => user || to === '/operator')
     : [['/?section=features', tr('What it does', '能做什么')], ['/?section=calc', tr('Check a payment', '算一算')], ['/?section=ask', tr('Just say it', '直接说')], ['/how', tr('How it stays safe', '安全原理')]]
   const minor: [string, string][] = [['/', tr('Personal', '个人客户')], ['/team-token', tr('Bank staff', '工作人员')], ['/how', tr('About this demo', '关于本演示')]]
+
+  if (workspace) return <header className={`site-header is-workspace ${scrolled ? 'is-scrolled' : ''}`}>
+    <div className="site-header-inner">
+      <Link to={user ? '/home' : '/'} className="site-brand" aria-label={tr('Bank Agent home', '银行代办首页')}><BrandSeal size={36} /><span>{tr(t.brand_en, t.brand)}</span></Link>
+      <nav ref={nav} className="site-mainnav" aria-label={tr('Main navigation', '主导航')}>
+        {links.map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => isActive || (to === '/home' && HOME_SERVICES.test(pathname)) ? 'is-active' : ''}>{label}</NavLink>)}
+      </nav>
+      <div className="site-actions">
+        <LangSwitch /><ThemeSwitch />
+        {extra}
+        {signedIn && <AccountMenu status={status} />}
+      </div>
+    </div>
+    {error && <p className="site-error" role="alert">{error}</p>}
+  </header>
 
   return <header className={`site-header ${workspace ? 'is-workspace' : ''} ${scrolled ? 'is-scrolled' : ''}`}>
     <div className="site-header-inner">

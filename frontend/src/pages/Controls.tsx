@@ -1,17 +1,15 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useState, type FormEvent } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { QRCodeSVG } from 'qrcode.react'
 import { Lock } from 'lucide-react'
 import { api, errorText } from '../api/client'
 import type { BankCard } from '../api/types'
 import { useLang } from '../i18n'
-import { PageHead, Section } from '../components/bits'
+import { PageHead, PageTabs, Section, useTab } from '../components/bits'
 import { usePhone } from '../components/Verify'
 import { useAuth } from '../lib/auth'
 import { useOverview } from '../lib/bank'
 import { useChat } from '../lib/chat'
-import { stamp, yuan } from '../lib/format'
+import { yuan } from '../lib/format'
 import { createPasskey, passkeysSupported } from '../lib/passkey'
 import { EMPTY, LIST } from './Accounts'
 
@@ -21,28 +19,30 @@ export default function Controls() {
   const { tr, lang } = useLang()
   const overview = useOverview()
   const { send, pending } = useChat()
-  const location = useLocation()
+  const [tab, setTab] = useTab(['cards', 'subscriptions', 'security'] as const, 'cards')
   const subs = useQuery({ queryKey: ['subscriptions', lang], queryFn: () => api.subscriptions(lang) })
   const [status, setStatus] = useState<Status>(null)
   const d = overview.data
-  // the sections render once the bank has loaded, so scroll to one only then
-  useEffect(() => { if (location.hash && d) document.getElementById(location.hash.slice(1))?.scrollIntoView() }, [location.hash, !!d])
   const ask = (text: string) => void send(text)
   const active = subs.data?.items.filter((s) => s.status === 'active') ?? []
+  const locked = (d?.locks ?? []).length > 0
 
   return (
     <main tabIndex={-1} className="page-content">
       <PageHead title={tr('Cards & security', '卡片与安全')} />
+      <PageTabs label={tr('Cards & security', '卡片与安全')} value={tab} onChange={setTab}
+        options={[['cards', tr('Cards', '银行卡')], ['subscriptions', active.length ? tr(`Subscriptions (${active.length})`, `自动续费（${active.length}）`) : tr('Subscriptions', '自动续费')], ['security', locked ? tr('Security (locked)', '安全（已锁定）') : tr('Security', '安全')]] as const} />
       {!d ? <div className="h-64 animate-pulse rounded-box bg-paper2" /> : <>
-        <Section title={tr('Cards', '银行卡')}
+        {tab === 'cards' && <Section title={tr('Your cards', '你的银行卡')}
           aside={<button type="button" className="btn btn-line py-1.5 text-sm" disabled={!!pending} onClick={() => ask(tr('Apply for a virtual card for online shopping', '申请一张网购用的虚拟卡'))}>{tr('New virtual card', '申请虚拟卡')}</button>}>
+          <p className="mb-3 max-w-2xl text-sm text-ink2">{tr('Tap a switch to turn it on or off. Making a card safer needs your OK; making it riskier also needs your PIN and a code.', '点开关即可开启或关闭。让卡更安全只需确认；让卡风险更高还需要交易密码和验证码。')}</p>
           <div className="grid gap-4 md:grid-cols-2">
             {d.cards.map((c) => <CardTile key={c.id} card={c} ask={ask} busy={!!pending} />)}
           </div>
-        </Section>
+        </Section>}
 
-        <Section id="subscriptions" title={tr('Subscriptions', '自动续费')} className="mt-10"
-          aside={subs.data && <span className="text-sm text-ink2">{tr(`${yuan(subs.data.monthly_fen)} a month`, `每月约 ${yuan(subs.data.monthly_fen)}`)}</span>}>
+        {tab === 'subscriptions' && <Section id="subscriptions" title={tr('Automatic payments', '自动扣费')}
+          aside={subs.data && <span className="text-sm text-ink2">{tr(`about ${yuan(subs.data.monthly_fen)} a month`, `每月约 ${yuan(subs.data.monthly_fen)}`)}</span>}>
           {!subs.data ? <div className="h-24 animate-pulse rounded-box bg-paper2" /> : !active.length ? <p className={EMPTY}>{tr('No active subscriptions.', '没有正在扣费的订阅。')}</p> : <>
             {subs.data.overlaps.length > 0 && <p className="mb-3 rounded-box bg-[var(--cinnabar-wash)] px-4 py-2.5 text-sm">{subs.data.overlaps.map((o) => tr(`You pay for ${o.merchants.length} ${o.group} services.`, `你同时订阅了 ${o.merchants.length} 个${o.group === 'music' ? '音乐' : '视频'}会员。`)).join(' ')}</p>}
             <ul className={LIST}>
@@ -61,13 +61,12 @@ export default function Controls() {
               ))}
             </ul>
           </>}
-        </Section>
+        </Section>}
 
-        <div className="mt-10 grid items-start gap-8 lg:grid-cols-2">
+        {tab === 'security' && <div className="grid items-start gap-8 lg:grid-cols-2">
           <LockPanel />
           <PasskeyPanel setStatus={setStatus} />
-        </div>
-        <DemoPanel setStatus={setStatus} />
+        </div>}
       </>}
 
       {status && (
@@ -221,55 +220,6 @@ function PasskeyPanel({ setStatus }: { setStatus: (s: Status) => void }) {
       {keys.data?.items.length
         ? <ul className={LIST}>{keys.data.items.map((k) => <li key={k.id} className="flex justify-between px-4 py-3 text-sm"><span>{k.label || tr('Device', '设备')}</span><span className="font-mono text-xs text-ink2">{k.created_at.slice(0, 10)}</span></li>)}</ul>
         : <p className={EMPTY}>{passkeysSupported() ? tr('Use face or fingerprint unlock instead of an SMS code.', '用面容或指纹代替短信验证码。') : tr('Needs HTTPS and a supported browser.', '需要 HTTPS 和支持的浏览器。')}</p>}
-    </Section>
-  )
-}
-
-function DemoPanel({ setStatus }: { setStatus: (s: Status) => void }) {
-  const { tr, lang } = useLang()
-  const qc = useQueryClient()
-  const { reload, newConversation } = useChat()
-  const clock = useQuery({ queryKey: ['clock'], queryFn: api.clock })
-  const [busy, setBusy] = useState(false)
-  async function run(task: () => Promise<unknown>, done: string) {
-    setBusy(true)
-    setStatus({ tone: 'wait', text: tr('Working…', '处理中…') })
-    try {
-      await task()
-      await qc.invalidateQueries()
-      await reload()
-      setStatus({ tone: 'ok', text: done })
-    } catch (err) {
-      setStatus({ tone: 'err', text: errorText(err, lang) })
-    } finally {
-      setBusy(false)
-    }
-  }
-  const days = clock.data ? Math.round((clock.data.offset_seconds / 86400) * 10) / 10 : 0
-  const here = typeof window !== 'undefined' ? window.location.origin + '/' : ''
-  return (
-    <Section title={tr('Demo tools', '演示工具')} className="mt-10">
-      <div className="ruled flex flex-wrap items-center gap-x-8 gap-y-4 bg-field p-4">
-        <div>
-          <p className="text-xs text-ink2">{tr('Bank clock', '银行时钟')}{days ? tr(` (+${days} days)`, `（快 ${days} 天）`) : ''}</p>
-          <p className="num cond text-[1.5rem] font-bold leading-tight">{clock.data ? stamp(clock.data.now) : '—'}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {([[0, 1, tr('+1 hour', '+1 小时')], [1, 0, tr('+1 day', '+1 天')], [7, 0, tr('+7 days', '+7 天')], [30, 0, tr('+30 days', '+30 天')]] as const).map(([d, h, label]) => (
-            <button key={label} type="button" className="btn btn-line py-1.5" disabled={busy} onClick={() => void run(() => api.advance(d, h, lang), tr('Time moved forward.', '时间已前进。'))}>{label}</button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2 sm:ml-auto">
-          <button type="button" className="btn btn-line py-1.5" disabled={busy} onClick={() => void newConversation()}>{tr('New chat', '新对话')}</button>
-          <button type="button" className="btn btn-line py-1.5 text-cinnabar" disabled={busy} onClick={() => window.confirm(tr('Reset your demo bank to its starting data? Your history is kept.', '把演示银行恢复到初始数据？你的记录会保留。')) && void run(api.reset, tr('Demo bank reset.', '演示银行已重置。'))}>{tr('Reset bank', '重置银行')}</button>
-        </div>
-        {here && !/localhost|127\.0\.0\.1/.test(here) && (
-          <div className="flex w-full items-center gap-4 border-t border-rule pt-4">
-            <div className="w-fit shrink-0 bg-[#fff] p-2 ruled"><QRCodeSVG value={here} size={80} bgColor="#ffffff" fgColor="#1d2836" level="M" marginSize={0} /></div>
-            <p className="text-sm text-ink2">{tr('Open it on your phone.', '用手机打开。')}<span className="mt-1 block break-all font-mono text-xs">{here.replace(/^https?:\/\//, '')}</span></p>
-          </div>
-        )}
-      </div>
     </Section>
   )
 }

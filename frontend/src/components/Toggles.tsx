@@ -18,6 +18,7 @@ export function LangSwitch({ size = 'md' }: { size?: 'md' | 'lg' }) {
           key={code}
           type="button"
           lang={code === 'zh' ? 'zh-CN' : 'en'}
+          aria-label={code === 'zh' ? '中文' : 'English'}
           aria-pressed={lang === code}
           onClick={() => setLang(code)}
           className={`${pad} rounded-[8px] ${lang === code ? 'bg-paper text-ink shadow-[0_1px_3px_var(--shadow)]' : 'text-ink2 hover:text-ink'}`}

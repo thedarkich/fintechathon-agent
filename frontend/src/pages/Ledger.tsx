@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { AuditEntry } from '../api/types'
 import { useLang } from '../i18n'
-import { PageHead, Section, Segmented } from '../components/bits'
+import { PageHead, PageTabs, Section, Segmented, useTab } from '../components/bits'
 import { Requests } from '../components/Requests'
 import { SealMark, type MarkKind } from '../components/Seal'
 import { clock, shortAddr, timeAgo } from '../lib/format'
@@ -116,8 +116,9 @@ const markInk = (mark: MarkKind) =>
 
 export default function Ledger() {
   const { t, tr, lang } = useLang()
+  const [tab, setTab] = useTab(['requests', 'audit'] as const, 'requests')
   const [kind, setKind] = useState<Kind>('all')
-  const entries = useQuery({ queryKey: ['audit', 'ledger'], queryFn: () => api.audit(1000), refetchInterval: 4000 })
+  const entries = useQuery({ queryKey: ['audit', 'ledger'], queryFn: () => api.audit(1000), refetchInterval: tab === 'audit' ? 4000 : false, enabled: tab === 'audit' })
   const chain = useQuery({ queryKey: ['audit', 'verify'], queryFn: api.auditVerify, refetchInterval: 10_000 })
   const all = entries.data?.items ?? []
   const rows = kind === 'all' ? all : all.filter((e) => info(e.kind).group === kind)
@@ -125,15 +126,24 @@ export default function Ledger() {
 
   return (
     <main tabIndex={-1} className="page-content ">
-      <PageHead title={t.ledger_title} />
-      <Requests />
+      <PageHead title={t.ledger_title} right={chain.data && (
+        <p className={`flex items-center gap-1.5 text-sm ${chain.data.ok ? 'text-jade' : 'font-semibold text-cinnabar'}`}>
+          <SealMark kind={chain.data.ok ? 'done' : 'blocked'} size={22} />
+          {chain.data.ok ? tr('Record checked: nothing changed', '记录已核验：未被改动') : tr('Record check failed', '记录核验未通过')}
+        </p>
+      )} />
+      <PageTabs label={t.ledger_title} value={tab} onChange={setTab}
+        options={[['requests', tr('Your requests', '你办过的事')], ['audit', tr('Audit log (for reviewers)', '审计日志（供审核）')]] as const} />
 
-      <Section title={tr('Every step, hash-chained', '每一步的记录')} className="mt-10"
+      {tab === 'requests' && <Requests />}
+
+      {tab === 'audit' && <Section title={tr('Every step the bank took', '银行的每一步记录')}
         aside={chain.data && (
           <p className={`text-sm ${chain.data.ok ? 'text-jade' : 'font-semibold text-cinnabar'}`} title={chain.data.head}>
             {chain.data.ok ? tr(`Chain intact · ${chain.data.entries} entries`, `哈希链完整 · ${chain.data.entries} 条`) : tr(`Chain broken at entry ${chain.data.broken_at}`, `哈希链在第 ${chain.data.broken_at} 条断开`)}
           </p>
         )}>
+      <p className="mb-3 max-w-2xl text-sm text-ink2">{tr('The technical record behind every request. Each entry includes a fingerprint (hash) of the one before, so any later change to the record would show.', '每个请求背后的技术记录。每一条都带有上一条的指纹（哈希），之后若有任何改动都会被发现。')}</p>
       <Segmented label={t.ledger_title} value={kind} onChange={setKind}
         options={[['all', tr('All', '全部')], ['requests', tr('Requests & plans', '请求与计划')], ['decisions', tr('Decisions', '判定与确认')], ['actions', tr('Actions', '执行')], ['security', tr('Security', '安全')]] as const} />
 
@@ -184,7 +194,7 @@ export default function Ledger() {
           })}
         </ol>
       </>}
-      </Section>
+      </Section>}
     </main>
   )
 }

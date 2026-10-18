@@ -1,4 +1,6 @@
 import { useId } from 'react'
+import { Ban, CalendarClock, Check, CircleSlash, Clock, Flag, Pencil, Search, TriangleAlert, Undo2, X, type LucideIcon } from 'lucide-react'
+import { useLang } from '../i18n'
 
 export type SealKind = 'done' | 'blocked' | 'refused' | 'cancelled' | 'undone' | 'scheduled' | 'error'
 
@@ -74,38 +76,29 @@ export function Seal({ kind, size = 168, animate = true, rotate = -8 }: { kind: 
   )
 }
 
-/** A small single-character mark for table rows. */
+/** A small status icon for list rows: a picture anyone can read (a tick, a clock, a flag), never a lone character. */
 export type MarkKind = 'done' | 'blocked' | 'refused' | 'pending' | 'scheduled' | 'cancelled' | 'undone' | 'query' | 'flag' | 'change' | 'error'
+const MARKS: Record<MarkKind, { icon: LucideIcon; color: string; en: string; zh: string }> = {
+  done: { icon: Check, color: 'var(--jade)', en: 'Done', zh: '已完成' },
+  query: { icon: Search, color: 'var(--jade)', en: 'Looked up', zh: '已查询' },
+  blocked: { icon: Ban, color: 'var(--cinnabar)', en: 'Blocked', zh: '已拦截' },
+  refused: { icon: X, color: 'var(--ink)', en: 'Not done', zh: '未办理' },
+  pending: { icon: Clock, color: 'var(--ink-2)', en: 'Waiting', zh: '等待中' },
+  scheduled: { icon: CalendarClock, color: 'var(--ink)', en: 'Scheduled', zh: '已预约' },
+  cancelled: { icon: CircleSlash, color: 'var(--ink-2)', en: 'Cancelled', zh: '已取消' },
+  undone: { icon: Undo2, color: 'var(--ink-2)', en: 'Undone', zh: '已撤销' },
+  flag: { icon: Flag, color: 'var(--cinnabar)', en: 'Worth a look', zh: '需留意' },
+  change: { icon: Pencil, color: 'var(--ink)', en: 'Changed', zh: '有变更' },
+  error: { icon: TriangleAlert, color: 'var(--ink-2)', en: 'Error', zh: '出错' },
+}
 export function SealMark({ kind, size = 30 }: { kind: MarkKind; size?: number }) {
-  const map = {
-    done: { ch: '办', color: 'var(--jade)', label: 'Done' },
-    query: { ch: '查', color: 'var(--jade)', label: 'Query' },
-    blocked: { ch: '拦', color: 'var(--cinnabar)', label: 'Blocked' },
-    refused: { ch: '拒', color: 'var(--ink)', label: 'Refused' },
-    pending: { ch: '待', color: 'var(--ink-2)', label: 'Waiting' },
-    scheduled: { ch: '约', color: 'var(--ink)', label: 'Scheduled' },
-    cancelled: { ch: '消', color: 'var(--ink-2)', label: 'Cancelled' },
-    undone: { ch: '撤', color: 'var(--ink-2)', label: 'Undone' },
-    flag: { ch: '疑', color: 'var(--cinnabar)', label: 'Flagged' },
-    change: { ch: '改', color: 'var(--ink)', label: 'Change' },
-    error: { ch: '错', color: 'var(--ink-2)', label: 'Error' },
-  }[kind]
+  const { tr } = useLang()
+  const { icon: Glyph, color, en, zh } = MARKS[kind]
   return (
-    <span
-      role="img"
-      aria-label={map.label}
-      className="inline-flex shrink-0 items-center justify-center rounded-full font-bold"
-      style={{
-        width: size,
-        height: size,
-        border: `2px solid ${map.color}`,
-        color: map.color,
-        fontSize: size * 0.5,
-        fontFamily: '"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif',
-        transform: 'rotate(-6deg)',
-      }}
-    >
-      {map.ch}
+    <span role="img" aria-label={tr(en, zh)} title={tr(en, zh)}
+      className="inline-flex shrink-0 items-center justify-center rounded-full"
+      style={{ width: size, height: size, color, background: `color-mix(in srgb, ${color} 12%, transparent)` }}>
+      <Glyph size={Math.round(size * 0.52)} strokeWidth={2.4} aria-hidden />
     </span>
   )
 }

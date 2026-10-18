@@ -77,7 +77,7 @@ export default function Send() {
 
   return (
     <main tabIndex={-1} className="page-content">
-      <PageHead title={tr('Transfers', '转账')} right={<Link to="/accounts#transfers" className="btn btn-line py-1.5 text-sm">{tr('Where my money is', '到账进度')}</Link>} />
+      <PageHead title={tr('Transfers', '转账')} right={<Link to="/accounts?tab=transfers" className="btn btn-line py-1.5 text-sm">{tr('Where my money is', '到账进度')}</Link>} />
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)]">
         <section aria-label={tr('New transfer', '新转账')}>
           {flow.planId ? <ScreenConfirm planId={flow.planId} again={tr('Send another', '再转一笔')} onAgain={again} /> : (

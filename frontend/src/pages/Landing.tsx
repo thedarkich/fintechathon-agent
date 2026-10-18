@@ -256,7 +256,7 @@ export default function LandingPage() {
   ]
   const services: [string, IconName, string, string][] = [
     ['/send', 'send', 'Transfers', '转账'], ['/bills', 'chart', 'Spending', '账单'], ['/wealth', 'trend', 'Invest', '理财'], ['/controls', 'card', 'Cards', '卡片'],
-    ['/controls#subscriptions', 'bell', 'Subscriptions', '自动续费'], ['/accounts', 'bank', 'My bank', '我的银行'], ['/assistant', 'chat', 'Assistant', '助手'], ['/how', 'shield', 'Safety', '安全'],
+    ['/controls?tab=subscriptions', 'bell', 'Subscriptions', '自动续费'], ['/accounts', 'bank', 'Accounts', '账户'], ['/assistant', 'chat', 'Assistant', '助手'], ['/how', 'shield', 'Safety', '安全'],
   ]
   const examples = [tr("What's my balance?", '我卡里还有多少钱'), tr('Where did my money go last month?', '上个月钱都花哪了'), tr('Freeze my virtual card', '冻结我的虚拟卡'), tr('Cancel iQIYI', '取消爱奇艺会员'), tr("It's my wife's birthday next month, help me prepare", '下个月老婆生日，帮我准备一下')]
   const features: Feature[] = [

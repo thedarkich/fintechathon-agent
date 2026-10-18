@@ -1,9 +1,8 @@
-import { useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLang } from '../i18n'
-import { AskButton, PageHead, Section } from '../components/bits'
+import { AskButton, PageHead, PageTabs, Section, useTab } from '../components/bits'
 import { SealMark } from '../components/Seal'
 import { useOverview } from '../lib/bank'
 import { useChat } from '../lib/chat'
@@ -18,21 +17,20 @@ export default function Accounts() {
   const { tr, lang } = useLang()
   const overview = useOverview()
   const { send, pending } = useChat()
-  const location = useLocation()
+  const [tab, setTab] = useTab(['accounts', 'transfers', 'payees', 'scheduled'] as const, 'accounts')
   const payees = useQuery({ queryKey: ['payees'], queryFn: api.payees })
   const scheduled = useQuery({ queryKey: ['scheduled'], queryFn: api.scheduled })
   const data = overview.data
-  useEffect(() => {
-    if (location.hash) window.setTimeout(() => document.getElementById(location.hash.slice(1))?.scrollIntoView(), 150)
-  }, [location.hash, data])
   const now = data ? new Date(data.now).getTime() : Date.now()
 
   return (
     <main tabIndex={-1} className="page-content">
-      <PageHead title={tr('Accounts & transfers', '账户与转账')}
+      <PageHead title={tr('Accounts', '账户')}
         right={<Link to="/send" className="btn btn-ink px-5 py-2">{tr('Send money', '转账')}</Link>} />
+      <PageTabs label={tr('Accounts', '账户')} value={tab} onChange={setTab}
+        options={[['accounts', tr('Balances', '余额')], ['transfers', tr('Transfers', '转账记录')], ['payees', tr('Payees', '收款人')], ['scheduled', tr('Scheduled & split', '预约与 AA')]] as const} />
       {!data ? <div className="h-64 animate-pulse rounded-box bg-paper2" aria-hidden /> : <>
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)]" aria-label={tr('Balances', '余额')}>
+        {tab === 'accounts' && <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)]" aria-label={tr('Balances', '余额')}>
           <div className="rounded-panel px-6 py-6 text-white shadow-[0_14px_34px_var(--shadow)]" style={{ background: 'var(--hero)' }}>
             <p className="text-sm">{tr('Total', '总资产')}</p>
             <p className="num mt-1 font-mono text-[2.1rem] font-bold leading-tight">{yuan(data.cash_fen + data.invest_fen)}</p>
@@ -48,12 +46,12 @@ export default function Accounts() {
               </li>
             ))}
           </ul>
-        </section>
+        </section>}
 
-        <TransfersSection className="mt-10" />
+        {tab === 'transfers' && <TransfersSection />}
 
-        <div className="mt-10 grid items-start gap-8 lg:grid-cols-2">
-          <Section title={tr('Payees', '收款人')} aside={<AskButton label={tr('Add', '添加')} hint={tr('Add payee Wang Xiaoming 13800001111', '添加收款人 王小明 13800001111')} />}>
+        {tab === 'payees' && (
+          <Section title={tr('People you pay', '常用收款人')} aside={<AskButton label={tr('Add a payee', '添加收款人')} hint={tr('Add payee Wang Xiaoming 13800001111', '添加收款人 王小明 13800001111')} />}>
             {!payees.data ? <div className="h-32 animate-pulse rounded-box bg-paper2" /> : (
               <ul className={LIST}>
                 {payees.data.items.map((p) => (
@@ -67,9 +65,11 @@ export default function Accounts() {
               </ul>
             )}
           </Section>
+        )}
 
-          <div className="space-y-8">
-            <Section title={tr('Scheduled', '预约转账')} aside={<AskButton label={tr('Schedule', '预约')} hint={tr('Send Mom 500 on the 15th of every month', '每月15号给妈妈转500')} />}>
+        {tab === 'scheduled' && (
+          <div className="grid items-start gap-8 lg:grid-cols-2">
+            <Section title={tr('Scheduled transfers', '预约转账')} aside={<AskButton label={tr('Schedule one', '预约转账')} hint={tr('Send Mom 500 on the 15th of every month', '每月15号给妈妈转500')} />}>
               {!scheduled.data?.transfers.length ? <p className={EMPTY}>{tr('Nothing scheduled.', '暂无预约。')}</p> : (
                 <ul className={LIST}>
                   {scheduled.data.transfers.map((s) => (
@@ -88,7 +88,7 @@ export default function Accounts() {
               )}
             </Section>
 
-            <Section title={tr('Split bills', 'AA 收款')} aside={<AskButton label={tr('Split', '发起')} hint={tr('Split a 300 electricity bill with my roommate', '和室友AA 300元电费')} />}>
+            <Section title={tr('Split bills', 'AA 收款')} aside={<AskButton label={tr('Split a bill', '发起 AA')} hint={tr('Split a 300 electricity bill with my roommate', '和室友AA 300元电费')} />}>
               {!scheduled.data?.collections.length ? <p className={EMPTY}>{tr('No split bills.', '暂无 AA 收款。')}</p> : (
                 <ul className={LIST}>
                   {scheduled.data.collections.map((c) => (
@@ -101,7 +101,7 @@ export default function Accounts() {
               )}
             </Section>
           </div>
-        </div>
+        )}
       </>}
     </main>
   )

@@ -184,7 +184,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
         )}
         {p.status === 'scheduled' && <button type="button" className="btn btn-line mt-3 py-1.5" disabled={busy} onClick={() => void act(() => api.cancel(p.id, true, lang))}>{tr('Stop and undo', '停止并撤销')}</button>}
         {p.status === 'done' && p.steps.some((s) => s.action === 'transfer' || s.action === 'phone_transfer') && (
-          <Link to="/accounts#transfers" className="mt-2.5 inline-block text-sm font-semibold text-[var(--action)]">{tr('See where the money is →', '查看到账进度 →')}</Link>
+          <Link to="/accounts?tab=transfers" className="mt-2.5 inline-block text-sm font-semibold text-[var(--action)]">{tr('See where the money is →', '查看到账进度 →')}</Link>
         )}
         {error && <p role="alert" className="mt-2 text-sm font-semibold text-cinnabar">{error}</p>}
 

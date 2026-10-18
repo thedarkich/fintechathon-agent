@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { HashRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { DemoDock } from './components/DemoDock'
 import { ServerBanner } from './components/ServerBanner'
 import { Header } from './components/Header'
 import { SiteFooter } from './components/SiteChrome'
@@ -62,9 +63,9 @@ function Loading() {
 function Workspace() {
   return (
     <div className="workspace">
-      <Header />
       <SignedInGate>
         <ChatProvider>
+          <Header extra={<DemoDock />} />
           <Suspense fallback={<Loading />}><Outlet /></Suspense>
           <TabBar />
         </ChatProvider>
@@ -96,7 +97,7 @@ export default function App() {
                   <Route path="/qr" element={<Navigate to="/home" replace />} />
                   <Route path="/assistant" element={<Assistant />} />
                   <Route path="/accounts" element={<Accounts />} />
-                  <Route path="/transfers" element={<Navigate to="/accounts#transfers" replace />} />
+                  <Route path="/transfers" element={<Navigate to="/accounts?tab=transfers" replace />} />
                   <Route path="/bills" element={<Bills />} />
                   <Route path="/wealth" element={<Wealth />} />
                   <Route path="/controls" element={<Controls />} />
