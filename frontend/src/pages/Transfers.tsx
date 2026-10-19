@@ -79,7 +79,7 @@ function TransferRow({ t, demo, open, onDone }: { t: Transfer; demo: boolean; op
           <p className="truncate font-semibold">{t.payee} <span className="font-mono text-[0.8rem] font-normal text-ink2">{t.bank} {t.account_tail}</span></p>
           <p className={`text-[0.85rem] ${t.status === 'returned' ? 'font-semibold text-cinnabar' : waiting ? 'text-ink' : 'text-ink2'}`}>{status}</p>
         </div>
-        <strong className="num shrink-0 font-mono">{yuan(t.fen)}</strong>
+        <strong className="num shrink-0 font-bold">{yuan(t.fen)}</strong>
       </div>
       {(t.cancellable || (demo && waiting)) && (
         <div className="mt-2 flex flex-wrap gap-2 pl-[38px]">

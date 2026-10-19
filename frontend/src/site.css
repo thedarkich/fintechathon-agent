@@ -70,6 +70,10 @@ html { scroll-padding-top: calc(var(--header-h) + 16px); }
 @media (max-width: 370px) {
   .site-brand span { display: none; }
 }
+/* on a phone the public header keeps the seal and drops the name, so the sign-in button fits */
+@media (max-width: 480px) {
+  .site-header.is-public .site-brand span { display: none; }
+}
 .mono-label { font-family: 'Geist Mono Variable', 'PingFang SC', monospace; font-size: 10px; font-weight: 600; line-height: 1.7; letter-spacing: 1.7px; color: var(--action); }
 .landing-main { width: min(1080px, calc(100% - 64px)); margin: 64px auto 88px; }
 .campaign-strip { display: flex; align-items: center; gap: 20px; padding: 14px 20px; border: 1px solid #cfdfd9; border-radius: 12px; background: var(--accent-wash); margin-bottom: 34px; box-shadow: 0 0 18px var(--shadow); }

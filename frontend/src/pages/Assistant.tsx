@@ -208,7 +208,7 @@ export default function Assistant() {
         <div className="flex-1 space-y-5 py-5" aria-live="polite">
           {messages.length === 0 && !pending && (
             <div className="pt-6">
-              <h1 className="cond text-[2rem] font-extrabold leading-tight">{name ? tr(`Hi ${name}. What can I do for you?`, `${name}，你好。今天想办点什么？`) : tr('What can I do for you?', '今天想办点什么？')}</h1>
+              <h1 className="cond keep text-[2rem] font-extrabold leading-tight">{name ? tr(`Hi ${name}. What can I do for you?`, `${name}，你好。今天想办点什么？`) : tr('What can I do for you?', '今天想办点什么？')}</h1>
               {tips.length > 0 && (
                 <div className="mt-6 space-y-2">
                   {tips.map((n) => (

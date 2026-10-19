@@ -20,7 +20,7 @@ export function Requests() {
   const shown = search ? rows.filter((p) => p.request.toLowerCase().includes(search.toLowerCase())) : rows
   return (
     <Section title={tr('What you asked for', '你办过的事')}
-      aside={<label className="flex w-full items-center gap-2 rounded-box border border-rule bg-field px-3 py-1.5 sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm" aria-label={tr('Search', '搜索')} placeholder={tr('Search…', '搜索…')} value={search} onChange={(e) => setSearch(e.target.value)} /></label>}>
+      aside={<label className="flex w-full items-center gap-2 rounded-box bg-[var(--field)] px-3 py-2 sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm" aria-label={tr('Search', '搜索')} placeholder={tr('Search…', '搜索…')} value={search} onChange={(e) => setSearch(e.target.value)} /></label>}>
       <RequestList rows={shown} loading={plans.isLoading} selected={selected} onSelect={setSelected} />
       {selected && <RequestModal planId={selected} row={rows.find((r) => r.id === selected)} onClose={() => setSelected(null)} />}
     </Section>
@@ -32,7 +32,7 @@ function RequestList({ rows, loading, selected, onSelect }: { rows: PlanRow[]; l
   if (loading) return <div className="h-48 animate-pulse rounded-box bg-paper2" aria-hidden />
   if (rows.length === 0) return <p className="py-6 text-ink2">{tr('Nothing yet. Ask the assistant something.', '还没有记录，先去问问助手吧。')}</p>
   return (
-    <ul className="ruled divide-y divide-[var(--rule)] bg-field">
+    <ul className="card divide-y divide-[var(--rule)] overflow-hidden">
       {rows.map((p) => {
         const mark = p.outcome === 'returned' || p.outcome === 'cancelled' ? 'undone' : p.outcome === 'waiting' ? 'scheduled' : markFor(p)
         const label = p.outcome === 'returned' ? tr('Returned', '已退回') : p.outcome === 'cancelled' ? tr('Cancelled', '已撤销')
@@ -50,7 +50,7 @@ function RequestList({ rows, loading, selected, onSelect }: { rows: PlanRow[]; l
                   {' · '}{stamp(p.created_at)}{p.reason ? ` · ${p.reason}` : ''}
                 </span>
               </span>
-              {p.fen ? <span className="num shrink-0 font-mono text-[0.93rem]">{yuan(p.fen)}</span> : null}
+              {p.fen ? <span className="num shrink-0 font-bold">{yuan(p.fen)}</span> : null}
             </button>
           </li>
         )
