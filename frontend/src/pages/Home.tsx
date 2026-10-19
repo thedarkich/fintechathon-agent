@@ -70,7 +70,7 @@ export default function Home() {
       </form>
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
         <div className="space-y-6">
-          <section aria-label={tr('Current account', '活期账户')} className="rounded-panel px-6 pb-6 pt-5 text-white shadow-[0_14px_34px_var(--shadow)]" style={{ background: 'var(--hero)' }}>
+          <section aria-label={tr('Current account', '活期账户')} className="rounded-panel px-6 pb-6 pt-5 text-white" style={{ background: 'var(--hero)' }}>
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm opacity-85">{checking ? `${checking.name} ·${checking.number.slice(-4)}` : tr('Current account', '活期账户')}</span>
               <button type="button" onClick={toggle} className="-mr-2 flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/15"
@@ -117,7 +117,7 @@ export default function Home() {
               <ul className="space-y-2">
                 {due.map((b) => (
                   <li key={b.id}>
-                    <Link to={`/payments?p=${b.provider.code}&a=${encodeURIComponent(b.account)}`} className="flex items-center gap-3 rounded-[18px] border border-rule bg-paper px-4 py-3 shadow-[0_4px_12px_var(--shadow)] hover:border-[var(--action)]">
+                    <Link to={`/payments?p=${b.provider.code}&a=${encodeURIComponent(b.account)}`} className="flex items-center gap-3 rounded-[18px] bg-[var(--field)] px-4 py-3 hover:bg-[var(--paper-2)]">
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-semibold">{b.provider.name}</span>
                         <span className={`block text-xs ${b.autopay ? 'text-jade' : 'text-ink2'}`}>

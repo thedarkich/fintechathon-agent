@@ -10,7 +10,7 @@ from app.agent.actions import REGISTRY
 from app.agent.core import Ctx
 from app.agent.planner import Planner, PlanOut, StepOut, validate
 from app.llm import ModelUnavailable
-from app.models import Conversation, Message, Plan, Upload, UserAccount
+from app.models import Contact, Conversation, Message, Plan, Upload, UserAccount
 
 NUMERIC_FIELDS = {"amount_yuan", "total_yuan", "daily_limit_yuan", "horizon_months"}
 
@@ -51,13 +51,16 @@ def screens_conversation(session: Session, user: UserAccount) -> Conversation:
 # what History calls a screen request that never got as far as its details
 SCREEN_LABELS = {"transfer": ("转账", "Transfer"), "phone_transfer": ("手机号转账", "Transfer by phone number"),
                  "bill_pay": ("缴费", "Pay a bill"), "bill_autopay": ("自动缴费", "Automatic bill payment"),
-                 "qr_pay": ("扫码付款", "Pay by QR code")}
+                 "qr_pay": ("扫码付款", "Pay by QR code"), "contact_add": ("添加联系人", "Add a contact")}
+# Free text a customer types on a screen; it is screened for scam and injection wording like a chat message.
+SCREEN_TEXT = ("memo", "name", "alias", "note")
 
 
 class ScreenError(Exception):
     def __init__(self, errors: list[str]):
         super().__init__(", ".join(errors))
         self.errors = errors
+
 
 
 def screen_plan(session: Session, user: UserAccount, action: str, args: dict, *, lang: str) -> Plan:
@@ -69,7 +72,7 @@ def screen_plan(session: Session, user: UserAccount, action: str, args: dict, *,
     ctx = Ctx(session=session, user=user, now=clock.now(session, user.id), lang=lang if lang in ("zh", "en") else "zh")
     conversation = screens_conversation(session, user)
     proposed = PlanOut(steps=[StepOut(id="s1", action=action, args=args)])
-    words = " ".join(str(v) for k, v in args.items() if k == "memo" and v)
+    words = " ".join(str(v) for k, v in args.items() if k in SCREEN_TEXT and v)
     clean, _ = screening.redact(words) if words else ("", False)
     audit.append(session, user.id, "request", {"text": f"[{action}] {clean}".strip(), "lang": ctx.lang, "channel": "screen",
                                                "conversation": conversation.id})
@@ -217,7 +220,9 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
                 locks.evaluate(session, user.id)
             source = "offline_fallback"
     if proposed is None:
-        proposed = offline.plan(clean, ctx.today, suspicious=bool(flags), attachment=attachment.id if attachment else None)
+        saved = [n for c in session.exec(select(Contact).where(Contact.user_id == user.id)) for n in (c.name, c.name_en, *c.aliases)]
+        proposed = offline.plan(clean, ctx.today, suspicious=bool(flags), attachment=attachment.id if attachment else None,
+                                contacts=saved)
     errors = validate(proposed, planner_text)
     audit.append(session, user.id, "plan_proposed", {"source": source, "model": versions.get("planner"),
                                                      "plan": proposed.model_dump(), "errors": errors})

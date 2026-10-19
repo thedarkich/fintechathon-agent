@@ -8,7 +8,9 @@ export default defineConfig({
   base: './',
   server: {
     port: 5173,
-    proxy: { '/api': 'http://localhost:8000' },
+    // Keep the browser's Host header: the backend's same-origin check compares it with Origin.
+    // (A bare string target makes Vite rewrite Host to :8000, and every signed-in write gets CROSS_SITE.)
+    proxy: { '/api': { target: 'http://localhost:8000', changeOrigin: false } },
   },
   build: {
     outDir: 'dist',

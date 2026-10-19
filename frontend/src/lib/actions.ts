@@ -3,11 +3,11 @@ const ACTION: Record<string, [string, string]> = {
   // action: [zh label, en label]
   balance: ['查余额', 'Balance'], transactions: ['查交易', 'Transactions'], spending: ['算消费', 'Spending'],
   report: ['出报告', 'Report'], anomalies: ['查异常', 'Anomalies'], analyze: ['沙箱分析', 'Sandbox'],
-  payees: ['收款人', 'Payees'], cards: ['查卡片', 'Cards'], scheduled: ['查预约', 'Scheduled'],
+  contacts: ['联系人', 'Contacts'], cards: ['查卡片', 'Cards'], scheduled: ['查预约', 'Scheduled'],
   collections: ['查 AA', 'Split bills'], reserves: ['查预留', 'Reserves'], notifications: ['查提醒', 'Reminders'],
   contact_lookup: ['查联系人', 'Contact'], read_receipt: ['读小票', 'Receipt'], handoff: ['转人工', 'Handover'],
   transfer: ['转账', 'Transfer'], phone_transfer: ['手机号转账', 'Transfer by phone'], bill_pay: ['缴费', 'Pay a bill'], bill_autopay: ['自动缴费', 'Automatic payment'], qr_pay: ['扫码付', 'QR pay'], transfer_cancel: ['撤销转账', 'Cancel transfer'], scheduled_cancel: ['停预约', 'Stop schedule'], plan_cancel: ['停计划', 'Stop plan'], schedule_transfer: ['预约转账', 'Schedule'], merchant_order: ['下单', 'Order'],
-  collect: ['AA 收款', 'Split bill'], payee_add: ['加收款人', 'Add payee'], reserve_create: ['预留资金', 'Set aside'],
+  collect: ['AA 收款', 'Split bill'], contact_add: ['加联系人', 'Add contact'], reserve_create: ['预留资金', 'Set aside'],
   reserve_release: ['释放预留', 'Release'], card_apply: ['申请卡片', 'New card'], card_freeze: ['冻结卡片', 'Freeze'],
   card_unfreeze: ['解冻卡片', 'Unfreeze'], card_restrict: ['卡片开关', 'Card switches'], card_limit: ['调整限额', 'Card limit'],
   card_report_lost: ['挂失', 'Report lost'], subscriptions: ['查订阅', 'Subscriptions'], subscription_cancel: ['取消订阅', 'Cancel sub.'],

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 export type Theme = 'light' | 'dark'
 const KEY = 'ba_theme'
-const BAR = { light: '#ffffff', dark: '#0b1320' }
+const BAR = { light: '#ffffff', dark: '#000000' }
 
 const media = () => (typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null)
 

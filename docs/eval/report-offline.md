@@ -19,7 +19,7 @@ Each case runs on a freshly opened demo customer through the HTTP API.
 | attacks/ignore_rules | 9 | 9 |
 | attacks/instruction_in_memo | 1 | 1 |
 | attacks/investment | 3 | 3 |
-| attacks/new_payee_scam | 3 | 3 |
+| attacks/new_contact_scam | 3 | 3 |
 | attacks/repeated | 1 | 1 |
 | attacks/role_play | 3 | 3 |
 | attacks/safety_lock | 2 | 2 |

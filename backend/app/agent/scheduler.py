@@ -18,8 +18,8 @@ from app.models import (
     BankAccount,
     Card,
     Collection,
+    Contact,
     Conversation,
-    Payee,
     Plan,
     ScheduledTransfer,
     Subscription,
@@ -54,9 +54,9 @@ def approved_tier(session: Session, row: ScheduledTransfer) -> str:
 def run_scheduled_transfer(ctx: Ctx, row: ScheduledTransfer) -> None:
     # The bank processes it at its scheduled time, even if the demo clock jumped past it.
     ctx = replace(ctx, now=min(ctx.now, clock.parse(row.run_at)))
-    payee = ctx.session.get(Payee, row.payee_id)
+    contact = ctx.session.get(Contact, row.contact_id)
     action = REGISTRY["transfer"]
-    resolved = {"payee_id": payee.id, "fen": row.amount_fen, "payee_new": False}
+    resolved = {"contact_id": contact.id, "fen": row.amount_fen, "contact_new": False}
     decision = policy.decide(ctx, action, resolved, pay_day=ctx.today, already_counted_fen=row.amount_fen)
     audit.append(ctx.session, ctx.user.id, "scheduled_check", {"scheduled_id": row.id, **decision}, row.plan_id)
     if decision["blocked_by"] or TIERS[decision["tier"]] > TIERS[approved_tier(ctx.session, row)]:
@@ -71,7 +71,7 @@ def run_scheduled_transfer(ctx: Ctx, row: ScheduledTransfer) -> None:
         plan = Plan(user_id=ctx.user.id, conversation_id=conversation.id, request=f"scheduled transfer {row.id}",
                     lang=ctx.lang, source="scheduler",
                     steps=[{"id": "s1", "action": "transfer", "after": [], "run_at": None,
-                            "args": {"payee": payee.id, "amount_yuan": row.amount_fen / 100, "memo": row.memo},
+                            "args": {"contact": contact.id, "amount_yuan": row.amount_fen / 100, "memo": row.memo},
                             "meta": {"scheduled_id": row.id}}])
         ctx.session.add(plan)
         ctx.session.flush()
@@ -81,38 +81,38 @@ def run_scheduled_transfer(ctx: Ctx, row: ScheduledTransfer) -> None:
         reply_for_plan(ctx.session, ctx, conversation, plan)
         executor.notify(ctx, f"scheduled:{row.id}:{row.run_at}", "schedule", "预约转账需要您确认",
                         "A scheduled transfer needs your approval",
-                        f"向 {payee.name} 的 {yuan(row.amount_fen)} 执行前复核：当天累计已超过 ¥1,000，需要强验证。",
-                        f"{yuan(row.amount_fen)} to {payee.name_en or payee.name}: today's total is now over ¥1,000, so it needs strong verification.")
+                        f"向 {contact.name} 的 {yuan(row.amount_fen)} 执行前复核：当天累计已超过 ¥1,000，需要强验证。",
+                        f"{yuan(row.amount_fen)} to {contact.name_en or contact.name}: today's total is now over ¥1,000, so it needs strong verification.")
         return
     try:
-        transfers.send(ctx.session, ctx.user, payee, ledger.checking(ctx.session, ctx.user.id), row.amount_fen,
+        transfers.send(ctx.session, ctx.user, contact, ledger.checking(ctx.session, ctx.user.id), row.amount_fen,
                        now=ctx.now, memo=row.memo, plan_id=row.plan_id, scheduled_id=row.id)
     except BankError as exc:
         row.status, row.detail = "failed", exc.code
         ctx.session.add(row)
         executor.notify(ctx, f"scheduled:{row.id}:{row.run_at}:failed", "schedule", "预约转账未成功",
-                        "A scheduled transfer failed", f"向 {payee.name} 转账 {yuan(row.amount_fen)} 失败：{exc.zh}",
-                        f"{yuan(row.amount_fen)} to {payee.name_en or payee.name} failed: {exc.en}")
+                        "A scheduled transfer failed", f"向 {contact.name} 转账 {yuan(row.amount_fen)} 失败：{exc.zh}",
+                        f"{yuan(row.amount_fen)} to {contact.name_en or contact.name} failed: {exc.en}")
         return
     run_at = row.run_at
     scheduled_done(ctx, row.id)
     audit.append(ctx.session, ctx.user.id, "scheduled_run", {"scheduled_id": row.id, "fen": row.amount_fen}, row.plan_id)
     executor.notify(ctx, f"scheduled:{row.id}:{run_at}:done", "schedule", "预约转账已完成", "Scheduled transfer sent",
-                    f"已向 {payee.name} 转账 {yuan(row.amount_fen)}。", f"Sent {yuan(row.amount_fen)} to {payee.name_en or payee.name}.")
+                    f"已向 {contact.name} 转账 {yuan(row.amount_fen)}。", f"Sent {yuan(row.amount_fen)} to {contact.name_en or contact.name}.")
 
 
 def settle_transfers(ctx: Ctx) -> None:
-    """Delayed transfers whose arrival time has come clear now: they arrive, or the payee's bank returns them."""
+    """Delayed transfers whose arrival time has come clear now: they arrive, or the contact's bank returns them."""
     for row in transfers.settle_due(ctx.session, ctx.user.id, ctx.now):
         amount = yuan(row.amount_fen)
         if row.status == "returned":
             zh, en = transfers.RETURN_REASONS[row.reason]
             executor.notify(ctx, f"transfer:{row.id}:returned", "info", "转账被退回", "A transfer was returned",
-                            f"向 {row.payee_name} 的 {amount} 被对方银行退回：{zh}。钱已回到您的账户。",
-                            f"The {amount} to {row.payee_name_en} was returned because {en}. The money is back in your account.")
+                            f"向 {row.contact_name} 的 {amount} 被对方银行退回：{zh}。钱已回到您的账户。",
+                            f"The {amount} to {row.contact_name_en} was returned because {en}. The money is back in your account.")
         else:
             executor.notify(ctx, f"transfer:{row.id}:arrived", "info", "转账已到账", "A transfer arrived",
-                            f"向 {row.payee_name} 的 {amount} 已到账。", f"The {amount} to {row.payee_name_en} has arrived.")
+                            f"向 {row.contact_name} 的 {amount} 已到账。", f"The {amount} to {row.contact_name_en} has arrived.")
 
 
 def renew_subscriptions(ctx: Ctx) -> None:
@@ -194,13 +194,13 @@ def collections(ctx: Ctx) -> None:
 
 
 def reminders(ctx: Ctx) -> None:
-    for payee in ctx.session.exec(select(Payee).where(Payee.user_id == ctx.user.id, Payee.birthday.is_not(None))):
-        upcoming = clock.next_birthday(payee.birthday, ctx.today)
+    for contact in ctx.session.exec(select(Contact).where(Contact.user_id == ctx.user.id, Contact.birthday.is_not(None))):
+        upcoming = clock.next_birthday(contact.birthday, ctx.today)
         days = (upcoming - ctx.today).days
-        if payee.relationship in ("spouse", "mother", "father") and days <= 40:
-            who = {"spouse": ("爱人", "your partner"), "mother": ("妈妈", "your mom"), "father": ("爸爸", "your dad")}[payee.relationship]
-            executor.notify(ctx, f"birthday:{payee.id}:{upcoming}", "birthday", f"{payee.name}的生日快到了",
-                            f"{payee.name_en or payee.name}'s birthday is coming up",
+        if contact.relationship in ("spouse", "mother", "father") and days <= 40:
+            who = {"spouse": ("爱人", "your partner"), "mother": ("妈妈", "your mom"), "father": ("爸爸", "your dad")}[contact.relationship]
+            executor.notify(ctx, f"birthday:{contact.id}:{upcoming}", "birthday", f"{contact.name}的生日快到了",
+                            f"{contact.name_en or contact.name}'s birthday is coming up",
                             f"{upcoming}（{days} 天后）。要我当月预留 ¥1,000，并提前两天订好鲜花和蛋糕吗？",
                             f"{upcoming} (in {days} days). Shall I set aside ¥1,000 that month and order flowers and a cake two days before?",
                             suggestion=f"{who[0]}生日快到了，帮我预留1000元，提前两天订花和蛋糕",

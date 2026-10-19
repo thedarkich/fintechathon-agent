@@ -8,7 +8,7 @@ from sqlmodel import Session, select
 from app import clock
 from app.bank.categories import categorize
 from app.clock import CST
-from app.models import BankAccount, Order, Payee, ScheduledTransfer, Txn
+from app.models import BankAccount, Contact, Order, ScheduledTransfer, Txn
 
 PAYMENT_KINDS = ("transfer_out", "order", "bill", "qr")  # money paid to others: counted towards the day's total
 
@@ -37,7 +37,7 @@ def account(session: Session, user_id: str, account_id: str) -> BankAccount:
 
 
 def debit(session: Session, source: BankAccount, fen: int, *, when: datetime, kind: str,
-          counterparty: str, plan_id: str | None = None, payee: Payee | None = None,
+          counterparty: str, plan_id: str | None = None, contact: Contact | None = None,
           memo: str | None = None, category: str | None = None) -> Txn:
     if fen <= 0:
         raise BankError("BAD_AMOUNT", "The amount must be positive.", "金额必须大于零。")
@@ -46,16 +46,16 @@ def debit(session: Session, source: BankAccount, fen: int, *, when: datetime, ki
     source.balance_fen -= fen
     txn = Txn(
         user_id=source.user_id, account_id=source.id, at=clock.iso(when), amount_fen=-fen, kind=kind,
-        counterparty=payee.name if payee else counterparty,
-        counterparty_account=payee.account_no[-4:] if payee else None,
-        category=category or categorize(counterparty, kind, relationship=payee.relationship if payee else None),
-        channel="mobile", memo=memo, plan_id=plan_id, payee_id=payee.id if payee else None,
+        counterparty=contact.name if contact else counterparty,
+        counterparty_account=contact.account_no[-4:] if contact else None,
+        category=category or categorize(counterparty, kind, relationship=contact.relationship if contact else None),
+        channel="mobile", memo=memo, plan_id=plan_id, contact_id=contact.id if contact else None,
     )
     session.add(source)
     session.add(txn)
-    if payee:
-        payee.last_paid_at = txn.at
-        session.add(payee)
+    if contact:
+        contact.last_paid_at = txn.at
+        session.add(contact)
     session.flush()
     return txn
 
@@ -109,16 +109,16 @@ def payments_on(session: Session, user_id: str, day: date, *, include_scheduled:
     return int(posted) + int(scheduled) + int(orders)
 
 
-def paid_to(session: Session, user_id: str, payee_id: str) -> int:
-    """Everything sent to one payee so far, plus transfers to them that are scheduled and not yet run."""
+def paid_to(session: Session, user_id: str, contact_id: str) -> int:
+    """Everything sent to one contact so far, plus transfers to them that are scheduled and not yet run."""
     posted = session.exec(
         select(func.coalesce(func.sum(-Txn.amount_fen), 0)).where(
-            Txn.user_id == user_id, Txn.payee_id == payee_id, Txn.kind.in_(PAYMENT_KINDS), Txn.status == "posted",
+            Txn.user_id == user_id, Txn.contact_id == contact_id, Txn.kind.in_(PAYMENT_KINDS), Txn.status == "posted",
         )
     ).one()
     scheduled = session.exec(
         select(func.coalesce(func.sum(ScheduledTransfer.amount_fen), 0)).where(
-            ScheduledTransfer.user_id == user_id, ScheduledTransfer.payee_id == payee_id,
+            ScheduledTransfer.user_id == user_id, ScheduledTransfer.contact_id == contact_id,
             ScheduledTransfer.status.in_(["scheduled", "waiting_approval"]),
         )
     ).one()

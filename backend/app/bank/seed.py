@@ -16,14 +16,14 @@ from app.models import (
     BankAccount,
     Card,
     Collection,
+    Contact,
+    ContactMessage,
     Conversation,
     DemoClock,
     Holding,
     Message,
     Notification,
     Order,
-    Payee,
-    PayeeMessage,
     Plan,
     RiskProfile,
     SafetyLock,
@@ -67,7 +67,7 @@ PRODUCTS = [
          description_en="Overseas markets, with currency risk. Redemption takes T+7."),
 ]
 
-PAYEES = [
+CONTACTS = [
     dict(key="mother", name="王秀英", name_en="Wang Xiuying", relationship="mother",
          aliases=["妈妈", "妈", "老妈", "母亲", "mom", "mum", "mother", "my mom"],
          phone="13971230418", bank="中国工商银行", account_no="6222021203457801",
@@ -110,9 +110,9 @@ def at(day: date, hour: int, minute: int = 0) -> str:
 
 def reset_customer(session: Session, user_id: str) -> None:
     """Remove the customer's bank and conversation data (the audit log is kept)."""
-    for table in (Txn, Payee, Card, BankAccount, Subscription, ScheduledTransfer, Collection,
+    for table in (Txn, Contact, Card, BankAccount, Subscription, ScheduledTransfer, Collection,
                   Holding, RiskProfile, Order, Plan, Message, Conversation, SmsMessage,
-                  Notification, SafetyLock, DemoClock, Transfer, PayeeMessage):
+                  Notification, SafetyLock, DemoClock, Transfer, ContactMessage):
         session.exec(delete(table).where(table.user_id == user_id))
 
 
@@ -143,29 +143,29 @@ def seed_customer(session: Session, user: UserAccount, now: datetime) -> None:
                    contactless_enabled=False, expires="04/28", created_at=at(start + timedelta(days=40), 15))
     session.add_all([checking, savings, debit, virtual])
 
-    payees = {}
-    for spec in PAYEES:
+    contacts = {}
+    for spec in CONTACTS:
         spec = dict(spec)
         key = spec.pop("key")
         if key == "spouse":
             spec["birthday"] = (today + timedelta(days=35)).strftime("%m-%d")
         created = at(today, max(0, now.hour - 3)) if key == "newseller" else at(start - timedelta(days=300), 11)
-        payee = Payee(user_id=user.id, created_at=created, **spec)
-        payees[key] = payee
-        session.add(payee)
+        contact = Contact(user_id=user.id, created_at=created, **spec)
+        contacts[key] = contact
+        session.add(contact)
 
     txns: list[Txn] = []
 
     def add(when: str, yuan: float, kind: str, counterparty: str, *, channel="mobile", card=None,
-            payee=None, memo=None, city=CITY, country="CN", status="posted"):
+            contact=None, memo=None, city=CITY, country="CN", status="posted"):
         fen = round(yuan * 100)
         txns.append(Txn(
             user_id=user.id, account_id=checking.id, at=when, amount_fen=fen, kind=kind,
-            counterparty=counterparty if payee is None else payee.name,
-            counterparty_account=None if payee is None else payee.account_no[-4:],
-            category=categorize(counterparty, kind, relationship=payee.relationship if payee else None),
+            counterparty=counterparty if contact is None else contact.name,
+            counterparty_account=None if contact is None else contact.account_no[-4:],
+            category=categorize(counterparty, kind, relationship=contact.relationship if contact else None),
             channel=channel, card_id=card.id if card else None, memo=memo, city=city,
-            country=country, status=status, payee_id=payee.id if payee else None,
+            country=country, status=status, contact_id=contact.id if contact else None,
         ))
 
     def price(low: float, high: float) -> float:
@@ -180,7 +180,7 @@ def seed_customer(session: Session, user: UserAccount, now: datetime) -> None:
         summer = day.month in (6, 7, 8)
         # fixed monthly items
         if day.day == 1:
-            add(at(day, 8, 5), -3200, "transfer_out", "", payee=payees["landlord"],
+            add(at(day, 8, 5), -3200, "transfer_out", "", contact=contacts["landlord"],
                 memo=f"{day.month}月房租")
         if day.day == 3:
             add(at(day, 6, 12), -199, "card", "乐动力健身(光谷店)", channel="auto", card=debit)
@@ -194,7 +194,7 @@ def seed_customer(session: Session, user: UserAccount, now: datetime) -> None:
             add(at(day, 0, 44), -25, "card", "爱奇艺VIP会员", channel="auto", card=virtual)
             add(at(day, 3, 0), -99, "direct_debit", "中国电信 宽带", channel="auto")
         if day.day == 15:
-            add(at(day, 20, 30), -800, "transfer_out", "", payee=payees["mother"], memo="生活费")
+            add(at(day, 20, 30), -800, "transfer_out", "", contact=contacts["mother"], memo="生活费")
         if day.day == 18:
             add(at(day, 1, 5), -15, "card", "网易云音乐 黑胶VIP", channel="auto", card=virtual)
         if day.day == 20:
@@ -215,7 +215,7 @@ def seed_customer(session: Session, user: UserAccount, now: datetime) -> None:
         if day.month == 3 and day.day == 14:
             add(at(day, 0, 5), -198, "card", "京东PLUS会员 年费", channel="auto", card=virtual)
         if day.day == 28:
-            add(at(day, 21, 10), price(80, 180), "transfer_in", "", payee=payees["roommate"],
+            add(at(day, 21, 10), price(80, 180), "transfer_in", "", contact=contacts["roommate"],
                 memo="水电网费AA")
         if day.day in (2, 17):
             add(at(day, 8, 40), -100, "card", "武汉通充值", channel="mobile", card=debit)
@@ -284,9 +284,9 @@ def seed_customer(session: Session, user: UserAccount, now: datetime) -> None:
     add(at(today - timedelta(days=2), 20, 15), -486, "card", "海底捞火锅(光谷店)", channel="pos", card=debit)
 
     session.add_all(txns)
-    for payee in payees.values():
-        paid = [t.at for t in txns if t.payee_id == payee.id and t.amount_fen < 0]
-        payee.last_paid_at = max(paid) if paid else None
+    for contact in contacts.values():
+        paid = [t.at for t in txns if t.contact_id == contact.id and t.amount_fen < 0]
+        contact.last_paid_at = max(paid) if paid else None
 
     session.add(Holding(user_id=user.id, product_code="WX0001", principal_fen=2_000_000,
                         value_fen=2_041_236, since=at(today - timedelta(days=430), 10),

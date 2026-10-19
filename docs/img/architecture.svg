@@ -155,7 +155,7 @@
   <text class="z" x="1298" y="408">多次验证失败、多次试图绕过规则、</text>
   <text class="z" x="1298" y="428">短时间多次付款给新收款人 → 自动上锁</text>
   <text class="e" x="1298" y="452">failed checks, bypass attempts or</text>
-  <text class="e" x="1298" y="468">payments to new payees lock it</text>
+  <text class="e" x="1298" y="468">payments to new contacts lock it</text>
 
   <!-- simulated bank -->
   <path class="flow" d="M655,480 L655,546" marker-end="url(#arrow)"/>

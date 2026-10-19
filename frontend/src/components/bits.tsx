@@ -35,16 +35,16 @@ export function OperatorGate({ children }: { children: ReactNode }) {
 export function TierTag({ tier }: { tier: Tier | null | undefined }) {
   const { tr } = useLang()
   if (!tier) return null
-  if (tier === 'green') return <span className="inline-flex items-center rounded-full border border-jade px-2 py-px text-[0.72rem] font-semibold leading-tight text-jade">{tr('Done right away', '直接办')}</span>
-  if (tier === 'yellow') return <span className="inline-flex items-center rounded-full bg-ink px-2 py-px text-[0.72rem] font-semibold leading-tight text-field">{tr('Needs your OK', '需确认')}</span>
-  return <span className="inline-flex items-center rounded-full bg-cinnabar px-2 py-px text-[0.72rem] font-semibold leading-tight text-white">{tr('Needs PIN + code', '需验证')}</span>
+  if (tier === 'green') return <span className="inline-flex items-center rounded-full border border-jade px-2.5 py-0.5 text-[0.8125rem] font-medium leading-tight text-jade">{tr('Done right away', '直接办')}</span>
+  if (tier === 'yellow') return <span className="inline-flex items-center rounded-full bg-ink px-2.5 py-0.5 text-[0.8125rem] font-medium leading-tight text-field">{tr('Needs your OK', '需确认')}</span>
+  return <span className="inline-flex items-center rounded-full bg-cinnabar px-2.5 py-0.5 text-[0.8125rem] font-medium leading-tight text-paper">{tr('Needs PIN + code', '需验证')}</span>
 }
 
 /** The page title, with the page's own controls on the right. No intro text: the page shows what it is. */
 export function PageHead({ title, right }: { title: string; right?: ReactNode }) {
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-      <h1 className="cond text-[2rem] font-extrabold leading-tight">{title}</h1>
+      <h1 className="cond text-[2.5rem] font-semibold leading-tight">{title}</h1>
       {right}
     </div>
   )

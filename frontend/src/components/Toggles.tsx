@@ -7,7 +7,7 @@ export function LangSwitch({ size = 'md' }: { size?: 'md' | 'lg' }) {
   const { lang, setLang } = useLang()
   const pad = size === 'lg' ? 'px-3 py-1.5' : 'px-2 py-1'
   return (
-    <div role="group" aria-label="语言 Language" className="flex shrink-0 rounded-[10px] bg-[var(--field)] p-0.5 text-sm font-semibold leading-none">
+    <div role="group" aria-label="语言 Language" className="flex shrink-0 rounded-full bg-[var(--field)] p-0.5 text-sm font-medium leading-none">
       {(
         [
           ['zh', '中文', '中'],
@@ -20,7 +20,7 @@ export function LangSwitch({ size = 'md' }: { size?: 'md' | 'lg' }) {
           lang={code === 'zh' ? 'zh-CN' : 'en'}
           aria-pressed={lang === code}
           onClick={() => setLang(code)}
-          className={`${pad} rounded-[8px] ${lang === code ? 'bg-paper text-ink shadow-[0_1px_3px_var(--shadow)]' : 'text-ink2 hover:text-ink'}`}
+          className={`${pad} rounded-full ${lang === code ? 'bg-ink text-paper' : 'text-ink2 hover:text-ink'}`}
         >
           <span className="sm:hidden">{short}</span>
           <span className="hidden sm:inline">{full}</span>
@@ -41,7 +41,7 @@ export function ThemeSwitch() {
       onClick={() => setTheme(dark ? 'light' : 'dark')}
       aria-label={label}
       title={label}
-      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-ink2 hover:bg-[var(--field)] hover:text-ink"
+      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink2 hover:bg-[var(--field)] hover:text-ink"
     >
       {dark ? <Sun size={17} /> : <Moon size={17} />}
     </button>

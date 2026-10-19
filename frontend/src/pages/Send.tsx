@@ -35,9 +35,9 @@ type Picked = { id: string; name: string; detail: string }
 export default function Send() {
   const { tr, lang } = useLang()
   const overview = useOverview()
-  const payees = useQuery({ queryKey: ['payees'], queryFn: api.payees })
+  const contacts = useQuery({ queryKey: ['contacts'], queryFn: api.contacts })
   const transfers = useQuery({ queryKey: ['transfers', lang], queryFn: () => api.transfers(lang) })
-  const [tab, setTab] = useState<'phone' | 'payees'>('phone')
+  const [tab, setTab] = useState<'phone' | 'contacts'>('phone')
   const [phone, setPhone] = useState('')
   const [picked, setPicked] = useState<Picked | null>(null)
   const [filter, setFilter] = useState('')
@@ -50,26 +50,26 @@ export default function Send() {
     enabled: valid && !picked, staleTime: 60_000, retry: false,
   })
   const found: Directory | undefined = valid && !picked ? lookup.data : undefined
-  const payeeId = picked?.id ?? (found?.kind === 'payee' ? found.payee.id : null)
+  const contactId = picked?.id ?? (found?.kind === 'contact' ? found.contact.id : null)
   const checking = overview.data?.accounts.find((a) => a.kind === 'checking')
 
   // the people paid most recently, newest first: one tap to pay them again
   const recent = useMemo(() => {
     const seen = new Map<string, Picked>()
     for (const t of transfers.data?.items ?? []) {
-      if (!seen.has(t.payee_id)) seen.set(t.payee_id, { id: t.payee_id, name: t.payee, detail: `${t.bank} ****${t.account_tail}` })
+      if (!seen.has(t.contact_id)) seen.set(t.contact_id, { id: t.contact_id, name: t.contact, detail: `${t.bank} ****${t.account_tail}` })
     }
     return [...seen.values()].slice(0, 6)
   }, [transfers.data])
-  const history = (transfers.data?.items ?? []).filter((t) => t.payee_id === payeeId).slice(0, 8)
-  const shown = (payees.data?.items ?? []).filter((p) => !filter || `${p.name}${p.name_en}${p.note ?? ''}`.toLowerCase().includes(filter.toLowerCase()))
+  const history = (transfers.data?.items ?? []).filter((t) => t.contact_id === contactId).slice(0, 8)
+  const shown = (contacts.data?.items ?? []).filter((p) => !filter || `${p.name}${p.name_en}${p.note ?? ''}`.toLowerCase().includes(filter.toLowerCase()))
 
-  const ready = AMOUNT.test(amount) && Number(amount) > 0 && (picked || found?.kind === 'payee' || found?.kind === 'directory')
+  const ready = AMOUNT.test(amount) && Number(amount) > 0 && (picked || found?.kind === 'contact' || found?.kind === 'directory')
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (!ready) return
     const extra = memo.trim() ? { memo: memo.trim() } : {}
-    if (picked) void flow.start('transfer', { payee: picked.id, amount_yuan: Number(amount), ...extra })
+    if (picked) void flow.start('transfer', { contact: picked.id, amount_yuan: Number(amount), ...extra })
     else void flow.start('phone_transfer', { phone, amount_yuan: Number(amount), ...extra })
   }
   const pick = (p: Picked) => { setPicked(p); setPhone('') }
@@ -103,7 +103,7 @@ export default function Send() {
                   <button type="button" className="text-sm font-semibold text-[var(--action)]" onClick={() => setPicked(null)}>{tr('Change', '换一个')}</button>
                 </div>
               ) : <>
-                <Segmented label={tr('Send to', '转给')} value={tab} onChange={setTab} options={[['phone', tr('Phone number', '手机号')], ['payees', tr('Payees', '收款人')]] as const} />
+                <Segmented label={tr('Send to', '转给')} value={tab} onChange={setTab} options={[['phone', tr('Phone number', '手机号')], ['contacts', tr('Contacts', '收款人')]] as const} />
 
                 {tab === 'phone' ? (
                   <div>
@@ -117,11 +117,11 @@ export default function Send() {
                       {!valid && <p className="px-1 pt-2 text-sm text-ink2">{phone.length ? tr(`${11 - phone.length} more digits`, `还差 ${11 - phone.length} 位`) : tr('Type an 11-digit mobile number: you’ll see whose account it is before you send.', '输入 11 位手机号：转账前先告诉你这是谁的账户。')}</p>}
                       {valid && lookup.isLoading && <div className="h-14 animate-pulse rounded-box bg-paper2" />}
                       {valid && lookup.isError && <p className="text-sm font-semibold text-cinnabar">{tr('Could not look the number up. Try again in a moment.', '暂时查不到这个号码，请稍后再试。')}</p>}
-                      {found?.kind === 'payee' && (
+                      {found?.kind === 'contact' && (
                         <div className="flex items-center gap-3 px-1 py-1">
-                          <Avatar name={found.payee.name} />
-                          <span className="min-w-0"><span className="block font-semibold">{found.payee.name}{found.payee.note && <span className="font-normal text-ink2">（{found.payee.note}）</span>}</span>
-                            <span className="block text-sm text-ink2">{found.payee.bank} ****{found.payee.account_tail} · {tr('saved payee', '已保存的收款人')}</span></span>
+                          <Avatar name={found.contact.name} />
+                          <span className="min-w-0"><span className="block font-semibold">{found.contact.name}{found.contact.note && <span className="font-normal text-ink2">（{found.contact.note}）</span>}</span>
+                            <span className="block text-sm text-ink2">{found.contact.bank} ****{found.contact.account_tail} · {tr('saved contact', '已保存的收款人')}</span></span>
                         </div>
                       )}
                       {found?.kind === 'directory' && (
@@ -138,7 +138,7 @@ export default function Send() {
                   </div>
                 ) : (
                   <div>
-                    <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={tr('Search payees', '搜索收款人')} aria-label={tr('Search payees', '搜索收款人')}
+                    <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={tr('Search contacts', '搜索联系人')} aria-label={tr('Search contacts', '搜索收款人')}
                       className="w-full rounded-box border border-rule2 bg-field px-4 py-2.5 outline-none focus:border-[var(--action)]" />
                     <ul className="mt-2 max-h-80 divide-y divide-[var(--rule)] overflow-y-auto rounded-box bg-paper">
                       {shown.map((p) => {
@@ -181,16 +181,16 @@ export default function Send() {
         </section>
 
         <section aria-label={tr('Transfers with this person', '与 TA 的转账')} className="rounded-panel bg-[var(--field)] p-6 max-sm:p-4">
-          <h2 className="mb-4 text-xl font-bold">{payeeId ? tr('Between you', '与 TA 的转账') : tr('Latest transfers', '最近的转账')}</h2>
+          <h2 className="mb-4 text-xl font-bold">{contactId ? tr('Between you', '与 TA 的转账') : tr('Latest transfers', '最近的转账')}</h2>
           {(() => {
-            const rows = payeeId ? history : (transfers.data?.items ?? []).slice(0, 6)
+            const rows = contactId ? history : (transfers.data?.items ?? []).slice(0, 6)
             if (!transfers.data) return <div className="h-40 animate-pulse rounded-box bg-paper2" aria-hidden />
-            if (!rows.length) return <p className="py-6 text-center text-sm text-ink2">{payeeId ? tr('No transfers to them yet.', '还没有给 TA 转过账。') : tr('No transfers yet.', '还没有转账。')}</p>
+            if (!rows.length) return <p className="py-6 text-center text-sm text-ink2">{contactId ? tr('No transfers to them yet.', '还没有给 TA 转过账。') : tr('No transfers yet.', '还没有转账。')}</p>
             return (
               <ol className="space-y-2.5">
                 {rows.map((t) => (
-                  <li key={t.id} className="ml-auto w-fit min-w-[11rem] max-w-[85%] rounded-[18px] rounded-br-md bg-paper px-4 py-2.5 shadow-[0_1px_3px_var(--shadow)]">
-                    {!payeeId && <p className="text-xs font-semibold text-ink2">{t.payee}</p>}
+                  <li key={t.id} className="ml-auto w-fit min-w-[11rem] max-w-[85%] rounded-[18px] rounded-br-md bg-paper px-4 py-2.5">
+                    {!contactId && <p className="text-xs font-semibold text-ink2">{t.contact}</p>}
                     <p className="num font-mono text-lg font-bold">{yuan(t.fen)}</p>
                     {t.memo && <p className="text-sm">{t.memo}</p>}
                     <p className={`text-xs ${t.status === 'arrived' ? 'text-jade' : t.status === 'returned' ? 'text-cinnabar' : 'text-ink2'}`}>{t.status_label} · {stamp(t.created_at)}</p>

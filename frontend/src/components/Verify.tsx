@@ -7,6 +7,7 @@ import { useLang } from '../i18n'
 import { useAuth } from '../lib/auth'
 import { useChat } from '../lib/chat'
 import { assertPasskey, passkeysSupported } from '../lib/passkey'
+import { inWeChat } from '../lib/wechat'
 
 /** The simulated phone's SMS inbox. A real bank sends these to the customer's phone. */
 export function usePhone(enabled: boolean) {
@@ -113,14 +114,14 @@ export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPas
           <fieldset>
             <legend className="text-xs font-semibold">{tr('Second check', '第二重验证')}</legend>
             <div className="auth-tabs !my-2">
-              <button type="button" aria-pressed={method === 'sms'} onClick={() => setMethod('sms')} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[5px] px-2 py-2 text-[13px] ${method === 'sms' ? 'bg-field font-semibold text-[var(--action)] shadow-[0_1px_3px_var(--shadow)]' : 'text-ink2'}`}>
+              <button type="button" aria-pressed={method === 'sms'} onClick={() => setMethod('sms')} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[5px] px-2 py-2 text-[13px] ${method === 'sms' ? 'bg-field font-semibold text-[var(--action)]' : 'text-ink2'}`}>
                 <MessageSquareText size={15} />{tr('SMS code', '短信验证码')}
               </button>
-              <button type="button" aria-pressed={method === 'passkey'} disabled={!canPasskey} onClick={() => setMethod('passkey')} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[5px] px-2 py-2 text-[13px] disabled:opacity-40 ${method === 'passkey' ? 'bg-field font-semibold text-[var(--action)] shadow-[0_1px_3px_var(--shadow)]' : 'text-ink2'}`}>
+              <button type="button" aria-pressed={method === 'passkey'} disabled={!canPasskey} onClick={() => setMethod('passkey')} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[5px] px-2 py-2 text-[13px] disabled:opacity-40 ${method === 'passkey' ? 'bg-field font-semibold text-[var(--action)]' : 'text-ink2'}`}>
                 <Fingerprint size={15} />{tr('Passkey', '通行密钥')}
               </button>
             </div>
-            {!canPasskey && <p className="text-xs text-ink2">{tr('Add a passkey (face or fingerprint unlock) on the Cards & security page to use it here.', '在“卡片与安全”页添加通行密钥（面容或指纹解锁）后可在此使用。')}</p>}
+            {!canPasskey && !inWeChat() && <p className="text-xs text-ink2">{tr('Add a passkey (face or fingerprint unlock) on the Cards & security page to use it here.', '在“卡片与安全”页添加通行密钥（面容或指纹解锁）后可在此使用。')}</p>}
           </fieldset>
 
           {method === 'sms' && (

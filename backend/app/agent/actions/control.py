@@ -8,45 +8,45 @@ from sqlmodel import select
 
 from app.agent import audit
 from app.agent.core import Action, Args, Ask, Ctx, Refuse, register
-from app.agent.resolve import find_payee
-from app.models import Payee, Plan, ScheduledTransfer
+from app.agent.resolve import find_contact
+from app.models import Contact, Plan, ScheduledTransfer
 from app.money import yuan
 
 # --- a scheduled transfer (one-off or monthly) ---
 
 
 class ScheduledCancelArgs(Args):
-    payee: str | None = Field(default=None, max_length=40)  # the payee, or the id of a scheduled transfer the bank offered
+    contact: str | None = Field(default=None, max_length=40)  # the contact, or the id of a scheduled transfer the bank offered
 
 
-def scheduled_label(row: ScheduledTransfer, payee: Payee, lang: str) -> str:
+def scheduled_label(row: ScheduledTransfer, contact: Contact, lang: str) -> str:
     when = row.run_at[:16].replace("T", " ")
     if lang == "zh":
-        return f"{when} 向 {payee.name} 转 {yuan(row.amount_fen)}" + ("，每月重复" if row.repeat == "monthly" else "")
-    return f"{yuan(row.amount_fen)} to {payee.name_en or payee.name} on {when}" + (", every month" if row.repeat == "monthly" else "")
+        return f"{when} 向 {contact.name} 转 {yuan(row.amount_fen)}" + ("，每月重复" if row.repeat == "monthly" else "")
+    return f"{yuan(row.amount_fen)} to {contact.name_en or contact.name} on {when}" + (", every month" if row.repeat == "monthly" else "")
 
 
 def scheduled_cancel_resolve(ctx: Ctx, args: ScheduledCancelArgs) -> dict:
     rows = list(ctx.session.exec(select(ScheduledTransfer).where(
         ScheduledTransfer.user_id == ctx.user.id, ScheduledTransfer.status.in_(("scheduled", "waiting_approval")))
         .order_by(ScheduledTransfer.run_at)))
-    if args.payee:
-        by_id = [r for r in rows if r.id == args.payee]
+    if args.contact:
+        by_id = [r for r in rows if r.id == args.contact]
         if by_id:
             rows = by_id
         else:
-            found = find_payee(ctx.session, ctx.user.id, args.payee)
+            found = find_contact(ctx.session, ctx.user.id, args.contact)
             matches = {found.value.id} if found.value else {p.id for p in found.options}
-            rows = [r for r in rows if r.payee_id in matches]
+            rows = [r for r in rows if r.contact_id in matches]
     if not rows:
         raise Refuse("NOTHING_SCHEDULED", "没有正在等待执行的预约转账。", "There is no scheduled transfer waiting to run.")
-    payees = {r.payee_id: ctx.session.get(Payee, r.payee_id) for r in rows}
+    contacts = {r.contact_id: ctx.session.get(Contact, r.contact_id) for r in rows}
     if len(rows) > 1:
-        raise Ask("payee", "要停止哪一笔预约转账？", "Which scheduled transfer should I stop?",
-                  [{"value": r.id, "label_zh": scheduled_label(r, payees[r.payee_id], "zh"),
-                    "label_en": scheduled_label(r, payees[r.payee_id], "en")} for r in rows[:6]])
-    row, payee = rows[0], payees[rows[0].payee_id]
-    return {"scheduled_id": row.id, "payee": payee.name, "payee_en": payee.name_en or payee.name, "fen": row.amount_fen,
+        raise Ask("contact", "要停止哪一笔预约转账？", "Which scheduled transfer should I stop?",
+                  [{"value": r.id, "label_zh": scheduled_label(r, contacts[r.contact_id], "zh"),
+                    "label_en": scheduled_label(r, contacts[r.contact_id], "en")} for r in rows[:6]])
+    row, contact = rows[0], contacts[rows[0].contact_id]
+    return {"scheduled_id": row.id, "contact": contact.name, "contact_en": contact.name_en or contact.name, "fen": row.amount_fen,
             "run_at": row.run_at, "repeat": row.repeat, "status_before": row.status}
 
 
@@ -71,16 +71,16 @@ def scheduled_cancel_compensate(ctx: Ctx, r: dict, res: dict) -> dict:
 def scheduled_cancel_describe(ctx: Ctx, r: dict) -> str:
     when = r["run_at"][:16].replace("T", " ")
     monthly = r["repeat"] == "monthly"
-    return ctx.t(f"停止预约转账：{when} 向 {r['payee']} 转 {yuan(r['fen'])}" + ("，以后每月的也不再转" if monthly else ""),
-                 f"Stop the scheduled transfer of {yuan(r['fen'])} to {r['payee_en']} on {when}" + (" and every month after" if monthly else ""))
+    return ctx.t(f"停止预约转账：{when} 向 {r['contact']} 转 {yuan(r['fen'])}" + ("，以后每月的也不再转" if monthly else ""),
+                 f"Stop the scheduled transfer of {yuan(r['fen'])} to {r['contact_en']} on {when}" + (" and every month after" if monthly else ""))
 
 
 register(Action(
     name="scheduled_cancel", args=ScheduledCancelArgs,
-    help="Stop a scheduled or monthly transfer before it runs. payee = who it goes to (optional; the bank asks which if several).",
+    help="Stop a scheduled or monthly transfer before it runs. contact = who it goes to (optional; the bank asks which if several).",
     resolve=scheduled_cancel_resolve, run=scheduled_cancel_run, describe=scheduled_cancel_describe,
-    reply=lambda ctx, r, res: ctx.t(f"已停止，向 {r['payee']} 的预约转账不会再执行。",
-                                    f"Stopped. The scheduled transfer to {r['payee_en']} will not run."),
+    reply=lambda ctx, r, res: ctx.t(f"已停止，向 {r['contact']} 的预约转账不会再执行。",
+                                    f"Stopped. The scheduled transfer to {r['contact_en']} will not run."),
     rule="Y_SCHEDULE_CANCEL", compensate=scheduled_cancel_compensate,
     examples=["取消每月给妈妈的转账", "stop the monthly transfer to Mom"],
 ))

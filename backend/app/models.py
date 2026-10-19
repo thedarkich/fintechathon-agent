@@ -107,10 +107,10 @@ class Txn(SQLModel, table=True):
     country: str = "CN"
     status: str = "posted"  # posted | reversed
     plan_id: str | None = None
-    payee_id: str | None = None
+    contact_id: str | None = None
 
 
-class Payee(SQLModel, table=True):
+class Contact(SQLModel, table=True):
     id: str = Field(default_factory=new_id, primary_key=True)
     user_id: str = Field(index=True)
     name: str
@@ -168,7 +168,7 @@ class Subscription(SQLModel, table=True):
 class ScheduledTransfer(SQLModel, table=True):
     id: str = Field(default_factory=new_id, primary_key=True)
     user_id: str = Field(index=True)
-    payee_id: str
+    contact_id: str
     amount_fen: int
     memo: str | None = None
     run_at: str = Field(index=True)
@@ -183,13 +183,13 @@ class ScheduledTransfer(SQLModel, table=True):
 
 class Transfer(SQLModel, table=True):
     """A transfer as the bank processes it (bank/transfers.py): accepted, then clearing, then arrived,
-    returned by the payee's bank, or cancelled by the customer while a delayed transfer waits."""
+    returned by the contact's bank, or cancelled by the customer while a delayed transfer waits."""
 
     id: str = Field(default_factory=new_id, primary_key=True)
     user_id: str = Field(index=True)
-    payee_id: str
-    payee_name: str
-    payee_name_en: str
+    contact_id: str
+    contact_name: str
+    contact_name_en: str
     bank: str
     account_tail: str
     source_id: str
@@ -199,7 +199,7 @@ class Transfer(SQLModel, table=True):
     arrival: str = "instant"  # instant | standard (2 hours) | next_day
     arrival_reason: str | None = None  # the risk signal that made the rules choose a later arrival
     status: str = "accepted"  # accepted | clearing | arrived | returned | cancelled
-    reason: str | None = None  # why the payee's bank returned it
+    reason: str | None = None  # why the contact's bank returned it
     debit_txn_id: str | None = None
     created_at: str = Field(index=True)
     arrive_at: str
@@ -209,12 +209,12 @@ class Transfer(SQLModel, table=True):
     scheduled_id: str | None = None
 
 
-class PayeeMessage(SQLModel, table=True):
-    """What the payee's phone receives from their bank: the other half of the two-phone demo."""
+class ContactMessage(SQLModel, table=True):
+    """What the contact's phone receives from their bank: the other half of the two-phone demo."""
 
     id: str = Field(default_factory=new_id, primary_key=True)
     user_id: str = Field(index=True)  # the sender, who owns this simulation
-    payee_id: str
+    contact_id: str
     at: str
     text: str
     text_en: str
@@ -252,13 +252,13 @@ class BillPayment(SQLModel, table=True):
 
 
 class Collection(SQLModel, table=True):
-    """A split-bill (AA) collection request sent to payees. No money leaves the account."""
+    """A split-bill (AA) collection request sent to contacts. No money leaves the account."""
 
     id: str = Field(default_factory=new_id, primary_key=True)
     user_id: str = Field(index=True)
     title: str
     total_fen: int
-    participants: list = json_list()  # [{payee_id, name, share_fen, status}]
+    participants: list = json_list()  # [{contact_id, name, share_fen, status}]
     status: str = "open"  # open | closed | cancelled
     created_at: str
     plan_id: str | None = None

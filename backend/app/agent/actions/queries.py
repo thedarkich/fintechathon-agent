@@ -8,10 +8,10 @@ from sqlmodel import select
 
 from app import clock
 from app.agent.core import Action, Args, Ask, Ctx, Refuse, register
-from app.agent.resolve import find_payee, payee_label
+from app.agent.resolve import contact_label, find_contact
 from app.bank import analysis, transfers
 from app.bank.categories import LABELS, label
-from app.models import BankAccount, Card, Collection, Notification, Payee, ScheduledTransfer, Txn
+from app.models import BankAccount, Card, Collection, Contact, Notification, ScheduledTransfer, Txn
 from app.money import to_fen, yuan
 
 
@@ -70,7 +70,7 @@ class TransactionsArgs(Args):
     end: date | None = None
     category: str | None = Field(default=None, max_length=30)
     merchant: str | None = Field(default=None, max_length=40)
-    payee: str | None = Field(default=None, max_length=40)
+    contact: str | None = Field(default=None, max_length=40)
     direction: Literal["in", "out", "any"] = "any"
     min_yuan: float | None = Field(default=None, ge=0)
     max_yuan: float | None = Field(default=None, ge=0)
@@ -87,26 +87,26 @@ def transactions_resolve(ctx: Ctx, args: TransactionsArgs) -> dict:
     start = args.start or (end - timedelta(days=(args.days or 30) - 1))
     if start > end:
         raise Refuse("BAD_RANGE", "开始日期晚于结束日期。", "The start date is after the end date.")
-    payee_id = None
-    if args.payee:
-        found = find_payee(ctx.session, ctx.user.id, args.payee)
+    contact_id = None
+    if args.contact:
+        found = find_contact(ctx.session, ctx.user.id, args.contact)
         if found.ambiguous:
-            raise Ask("payee", f"“{args.payee}”对应多位收款人，您指的是哪一位？",
-                      f"“{args.payee}” matches more than one payee. Which one?",
-                      [{"value": p.id, "label_zh": payee_label(p, "zh"), "label_en": payee_label(p, "en")}
+            raise Ask("contact", f"“{args.contact}”对应多位联系人，您指的是哪一位？",
+                      f"“{args.contact}” matches more than one contact. Which one?",
+                      [{"value": p.id, "label_zh": contact_label(p, "zh"), "label_en": contact_label(p, "en")}
                        for p in found.options])
         if found.value is None:
-            raise Refuse("PAYEE_NOT_FOUND", f"没有找到收款人“{args.payee}”。", f"No payee called “{args.payee}”.")
-        payee_id = found.value.id
+            raise Refuse("CONTACT_NOT_FOUND", f"没有找到联系人“{args.contact}”。", f"No contact called “{args.contact}”.")
+        contact_id = found.value.id
     category = args.category if args.category in LABELS else None
     if args.category and category is None:
         category = next((c for c, (zh, en) in LABELS.items()
                          if args.category in (zh, en.lower(), en) or args.category.lower() in en.lower()), None)
-    payee = ctx.session.get(Payee, payee_id) if payee_id else None
+    contact = ctx.session.get(Contact, contact_id) if contact_id else None
     merchant = MERCHANT_ALIASES.get((args.merchant or "").casefold().replace(" ", ""), args.merchant)
     return {"start": start.isoformat(), "end": end.isoformat(), "category": category,
-            "merchant": merchant, "payee_id": payee_id, "direction": args.direction,
-            "payee_name": payee.name if payee else None, "payee_name_en": (payee.name_en or payee.name) if payee else None,
+            "merchant": merchant, "contact_id": contact_id, "direction": args.direction,
+            "contact_name": contact.name if contact else None, "contact_name_en": (contact.name_en or contact.name) if contact else None,
             "min_fen": to_fen(args.min_yuan) if args.min_yuan is not None else None,
             "max_fen": to_fen(args.max_yuan) if args.max_yuan is not None else None, "limit": args.limit}
 
@@ -119,8 +119,8 @@ def transactions_run(ctx: Ctx, r: dict) -> dict:
         rows = [t for t in rows if t.category == r["category"]]
     if r["merchant"]:
         rows = [t for t in rows if r["merchant"].casefold() in t.counterparty.casefold()]
-    if r["payee_id"]:
-        rows = [t for t in rows if t.payee_id == r["payee_id"]]
+    if r["contact_id"]:
+        rows = [t for t in rows if t.contact_id == r["contact_id"]]
     if r["direction"] == "in":
         rows = [t for t in rows if t.amount_fen > 0]
     elif r["direction"] == "out":
@@ -147,9 +147,9 @@ def txn_scope(ctx: Ctx, r: dict) -> str:
     if r.get("merchant"):
         zh.append(f"商户“{r['merchant']}”")
         en.append(f"merchant “{r['merchant']}”")
-    if r.get("payee_name"):
-        zh.append(f"收款人 {r['payee_name']}")
-        en.append(f"payee {r['payee_name_en']}")
+    if r.get("contact_name"):
+        zh.append(f"联系人 {r['contact_name']}")
+        en.append(f"contact {r['contact_name_en']}")
     if r.get("category"):
         zh.append(f"类别 {LABELS[r['category']][0]}")
         en.append(f"category {LABELS[r['category']][1]}")
@@ -176,7 +176,7 @@ def transactions_reply(ctx: Ctx, r: dict, result: dict) -> str:
 
 register(Action(
     name="transactions", args=TransactionsArgs,
-    help="Transaction history. days or start/end (YYYY-MM-DD), category, merchant, payee, direction in|out, min_yuan, max_yuan, limit.",
+    help="Transaction history. days or start/end (YYYY-MM-DD), category, merchant, contact, direction in|out, min_yuan, max_yuan, limit.",
     resolve=transactions_resolve, run=transactions_run,
     describe=lambda ctx, r: ctx.t("查询交易记录", "List transactions") + txn_scope(ctx, r), reply=transactions_reply,
     card=lambda ctx, r, result: {"type": "transactions", **result},
@@ -310,17 +310,17 @@ register(Action(
 ))
 
 
-# --- payees, cards, scheduled, collections, notifications ---
+# --- contacts, cards, scheduled, collections, notifications ---
 
 
-class PayeesArgs(Args):
+class ContactsArgs(Args):
     query: str | None = Field(default=None, max_length=40)
 
 
-def payees_run(ctx: Ctx, r: dict) -> dict:
-    rows = list(ctx.session.exec(select(Payee).where(Payee.user_id == ctx.user.id).order_by(Payee.created_at)))
+def contacts_run(ctx: Ctx, r: dict) -> dict:
+    rows = list(ctx.session.exec(select(Contact).where(Contact.user_id == ctx.user.id).order_by(Contact.created_at)))
     if r["query"]:
-        found = find_payee(ctx.session, ctx.user.id, r["query"])
+        found = find_contact(ctx.session, ctx.user.id, r["query"])
         rows = [found.value] if found.value else found.options
     return {"items": [{"id": p.id, "name": p.name, "name_en": p.name_en, "note": p.note, "note_en": transfers.note_en(p.note),
                        "bank": p.bank, "bank_en": transfers.bank_en(p.bank),
@@ -328,9 +328,9 @@ def payees_run(ctx: Ctx, r: dict) -> dict:
                        "relationship": p.relationship, "created_at": p.created_at} for p in rows]}
 
 
-def payees_reply(ctx: Ctx, r: dict, res: dict) -> str:
+def contacts_reply(ctx: Ctx, r: dict, res: dict) -> str:
     if not res["items"]:
-        return ctx.t("没有找到收款人。", "No payees found.")
+        return ctx.t("没有找到联系人。", "No contacts found.")
     if ctx.lang == "zh":
         return "\n".join(f"· {p['name']}{'（' + p['note'] + '）' if p['note'] else ''} {p['bank']} ****{p['account_tail']}"
                          for p in res["items"])
@@ -339,10 +339,10 @@ def payees_reply(ctx: Ctx, r: dict, res: dict) -> str:
 
 
 register(Action(
-    name="payees", args=PayeesArgs, help="List saved payees, optionally matching query.",
-    resolve=lambda ctx, a: {"query": a.query}, run=payees_run,
-    describe=lambda ctx, r: ctx.t("查看收款人", "List payees"), reply=payees_reply,
-    card=lambda ctx, r, res: {"type": "payees", **res},
+    name="contacts", args=ContactsArgs, help="List saved contacts, optionally matching query.",
+    resolve=lambda ctx, a: {"query": a.query}, run=contacts_run,
+    describe=lambda ctx, r: ctx.t("查看联系人", "List contacts"), reply=contacts_reply,
+    card=lambda ctx, r, res: {"type": "contacts", **res},
 ))
 
 
@@ -389,8 +389,8 @@ def scheduled_run(ctx: Ctx, r: dict) -> dict:
     ).order_by(ScheduledTransfer.run_at))
     items = []
     for s in rows:
-        payee = ctx.session.get(Payee, s.payee_id)
-        items.append({"id": s.id, "payee": payee.name if payee else "?", "fen": s.amount_fen, "run_at": s.run_at,
+        contact = ctx.session.get(Contact, s.contact_id)
+        items.append({"id": s.id, "contact": contact.name if contact else "?", "fen": s.amount_fen, "run_at": s.run_at,
                       "repeat": s.repeat, "status": s.status})
     return {"items": items}
 
@@ -398,8 +398,8 @@ def scheduled_run(ctx: Ctx, r: dict) -> dict:
 def scheduled_reply(ctx: Ctx, r: dict, res: dict) -> str:
     if not res["items"]:
         return ctx.t("目前没有预约转账。", "You have no scheduled transfers.")
-    return "\n".join(ctx.t(f"· {s['run_at'][:16].replace('T', ' ')} 向 {s['payee']} 转 {yuan(s['fen'])}{'（每月）' if s['repeat'] == 'monthly' else ''}",
-                           f"· {s['run_at'][:16].replace('T', ' ')} {yuan(s['fen'])} to {s['payee']}{' (monthly)' if s['repeat'] == 'monthly' else ''}")
+    return "\n".join(ctx.t(f"· {s['run_at'][:16].replace('T', ' ')} 向 {s['contact']} 转 {yuan(s['fen'])}{'（每月）' if s['repeat'] == 'monthly' else ''}",
+                           f"· {s['run_at'][:16].replace('T', ' ')} {yuan(s['fen'])} to {s['contact']}{' (monthly)' if s['repeat'] == 'monthly' else ''}")
                      for s in res["items"])
 
 
@@ -456,19 +456,19 @@ class ContactArgs(Args):
 
 
 def contact_resolve(ctx: Ctx, args: ContactArgs) -> dict:
-    found = find_payee(ctx.session, ctx.user.id, args.who)
+    found = find_contact(ctx.session, ctx.user.id, args.who)
     if found.ambiguous:
         raise Ask("who", f"“{args.who}”对应多位联系人，是哪一位？", f"“{args.who}” matches several contacts. Which one?",
-                  [{"value": p.id, "label_zh": payee_label(p, "zh"), "label_en": payee_label(p, "en")} for p in found.options])
+                  [{"value": p.id, "label_zh": contact_label(p, "zh"), "label_en": contact_label(p, "en")} for p in found.options])
     if found.value is None:
         raise Refuse("CONTACT_NOT_FOUND", f"通讯录里没有“{args.who}”。", f"“{args.who}” is not in your contacts.")
-    return {"payee_id": found.value.id, "name": found.value.name, "name_en": found.value.name_en or found.value.name}
+    return {"contact_id": found.value.id, "name": found.value.name, "name_en": found.value.name_en or found.value.name}
 
 
 def contact_run(ctx: Ctx, r: dict) -> dict:
-    p = ctx.session.get(Payee, r["payee_id"])
+    p = ctx.session.get(Contact, r["contact_id"])
     birthday = clock.next_birthday(p.birthday, ctx.today).isoformat() if p.birthday else None
-    return {"payee_id": p.id, "name": p.name, "name_en": p.name_en, "relationship": p.relationship,
+    return {"contact_id": p.id, "name": p.name, "name_en": p.name_en, "relationship": p.relationship,
             "birthday": birthday, "phone": p.phone[:3] + "****" + p.phone[-4:]}
 
 
@@ -480,7 +480,7 @@ def contact_reply(ctx: Ctx, r: dict, res: dict) -> str:
 
 register(Action(
     name="contact_lookup", args=ContactArgs,
-    help="Look up a contact (name, alias or relationship such as wife/妈妈); returns payee_id, name and next birthday (YYYY-MM-DD).",
+    help="Look up a contact (name, alias or relationship such as wife/妈妈); returns contact_id, name and next birthday (YYYY-MM-DD).",
     resolve=contact_resolve, run=contact_run,
     describe=lambda ctx, r: ctx.t(f"查找联系人 {r['name']}", f"Look up {r.get('name_en') or r['name']}"), reply=contact_reply,
 ))

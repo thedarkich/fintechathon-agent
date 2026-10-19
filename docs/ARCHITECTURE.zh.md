@@ -80,10 +80,10 @@ flowchart LR
 示例：“给周凯转800”（向客户今天刚添加的二手相机卖家周凯转 ¥800）。
 
 1. **筛查。** 没有可疑内容，没有需要隐藏的密码。记录请求（`request`）。
-2. **规划。** 规划器提出 `transfer {payee: "周凯", amount_yuan: 800}`。模型只看到客户的原话、由代码写的前几轮简短摘要、今天的日期和操作目录。
+2. **规划。** 规划器提出 `transfer {contact: "周凯", amount_yuan: 800}`。模型只看到客户的原话、由代码写的前几轮简短摘要、今天的日期和操作目录。
 3. **校验。** 步骤使用已知操作、参数有效，计划是有效的图（`plan_proposed`）。
 4. **匹配。** “周凯”精确匹配到一位收款人。代码读取账户，检查余额和单笔 ¥50,000 上限，并确定路径：对方是他行，走跨行系统（`resolution`）。
-5. **规则判定。** 当日付款加上这一笔共 ¥800，不超过 ¥1,000，规则为 `Y_SMALL_PAYMENT`（黄色）。但向 24 小时内新加的收款人付款 ¥800 超过 ¥500，风险信号 `S_NEW_PAYEE_LARGE` 把等级提高为红色。由于这个信号，规则同时把到账方式设为 2 小时后到账（`policy`）。
+5. **规则判定。** 当日付款加上这一笔共 ¥800，不超过 ¥1,000，规则为 `Y_SMALL_PAYMENT`（黄色）。但向 24 小时内新加的收款人付款 ¥800 超过 ¥500，风险信号 `S_NEW_CONTACT_LARGE` 把等级提高为红色。由于这个信号，规则同时把到账方式设为 2 小时后到账（`policy`）。
 6. **确认。** 确认卡展示收款人、银行、账号尾号、金额和延时到账，并用一句话说明原因；每一项是怎么判定的，点开即可查看。哈希覆盖全部内容。红色等级：交易密码加短信验证码，短信写明它用于哪项操作（`approval_requested`、`challenge_sent`、`verified`）。
 7. **执行。** 银行受理转账：¥800 从账户扣出，转账进入等待（`step_done`、`transfer: accepted`）。到账前客户可以撤销。
 8. **清算。** 两小时后（或在演示中手动推进），对方银行核对户名：该账户属于另一个人，资金被退回，客户手机收到短信（`transfer: clearing`、`transfer: returned`）。
@@ -103,7 +103,7 @@ flowchart LR
 
 ### 3.2 匹配：把客户的话与本人记录核对
 
-收款人按查询打分（`agent/resolve.py::find_payee`）：姓名、英文名或别名完全一致 100；手机号或账号尾号一致 98 / 90；关系词（妈妈、房东）95；备注（大学同学、房租）80；否则模糊相似度不低于 85 时得分为相似度减 10。与最高分相差 5 分以内的都是候选。只有一个候选即匹配成功；有多个则由代码生成带选项的追问，例如拼音同为 “Zhang Wei” 的张伟和张薇。绝不编造：找不到的姓名、卡片、基金或订阅直接拒绝，并说明查找了什么。
+收款人按查询打分（`agent/resolve.py::find_contact`）：姓名、英文名或别名完全一致 100；手机号或账号尾号一致 98 / 90；关系词（妈妈、房东）95；备注（大学同学、房租）80；否则模糊相似度不低于 85 时得分为相似度减 10。与最高分相差 5 分以内的都是候选。只有一个候选即匹配成功；有多个则由代码生成带选项的追问，例如拼音同为 “Zhang Wei” 的张伟和张薇。绝不编造：找不到的姓名、卡片、基金或订阅直接拒绝，并说明查找了什么。
 
 ### 3.3 权限分级
 
@@ -156,7 +156,7 @@ flowchart LR
 
 ## 四、数据模型
 
-`UserAccount`、`BankAccount`（活期、储蓄、预留）、`Txn`、`Payee`、`Card`、`Subscription`、`ScheduledTransfer`、`Transfer`、`PayeeMessage`、`Collection`、`WealthProduct`、`Holding`、`RiskProfile`、`Order`、`Plan`、`Conversation`、`Message`、`Challenge`、`Passkey`、`SmsMessage`、`Notification`、`SafetyLock`、`AuditEntry`、`DemoClock`、`Upload`、`SavedBill`、`BillPayment`。金额以整数“分”存储，时间为北京时间。每位新客户都会得到一个预置的银行：约 22 个月的真实感交易、家人和朋友收款人（包括两位拼音同名的人，以及一位今天新加、账户却登记在别人名下的卖家）、两张卡、包含重复和遗忘试用的订阅、预置的异常交易、理财持仓和风险测评结果。
+`UserAccount`、`BankAccount`（活期、储蓄、预留）、`Txn`、`Contact`、`Card`、`Subscription`、`ScheduledTransfer`、`Transfer`、`ContactMessage`、`Collection`、`WealthProduct`、`Holding`、`RiskProfile`、`Order`、`Plan`、`Conversation`、`Message`、`Challenge`、`Passkey`、`SmsMessage`、`Notification`、`SafetyLock`、`AuditEntry`、`DemoClock`、`Upload`、`SavedBill`、`BillPayment`。金额以整数“分”存储，时间为北京时间。每位新客户都会得到一个预置的银行：约 22 个月的真实感交易、家人和朋友收款人（包括两位拼音同名的人，以及一位今天新加、账户却登记在别人名下的卖家）、两张卡、包含重复和遗忘试用的订阅、预置的异常交易、理财持仓和风险测评结果。
 
 ## 五、接口
 

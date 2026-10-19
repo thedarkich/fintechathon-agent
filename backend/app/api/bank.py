@@ -22,10 +22,10 @@ from app.models import (
     BankAccount,
     Card,
     Collection,
+    Contact,
+    ContactMessage,
     Notification,
     Passkey,
-    Payee,
-    PayeeMessage,
     Plan,
     RiskProfile,
     ScheduledTransfer,
@@ -116,10 +116,10 @@ async def cards(request: Request, lang: Lang = "zh", user_id: str = Depends(requ
                                                                   .order_by(Card.created_at))]}
 
 
-@router.get("/bank/payees")
-async def payees(request: Request, user_id: str = Depends(require_user)):
+@router.get("/bank/contacts")
+async def contacts(request: Request, user_id: str = Depends(require_user)):
     with Session(request.app.state.runtime.engine) as session:
-        rows = session.exec(select(Payee).where(Payee.user_id == user_id).order_by(Payee.created_at)).all()
+        rows = session.exec(select(Contact).where(Contact.user_id == user_id).order_by(Contact.created_at)).all()
         return {"items": [{"id": p.id, "name": p.name, "name_en": p.name_en, "note": p.note, "note_en": transfers.note_en(p.note), "bank": p.bank,
                            "bank_en": transfers.bank_en(p.bank),
                            "account_tail": p.account_no[-4:], "phone": p.phone[:3] + "****" + p.phone[-4:],
@@ -141,10 +141,10 @@ async def scheduled(request: Request, user_id: str = Depends(require_user)):
     with Session(request.app.state.runtime.engine) as session:
         rows = session.exec(select(ScheduledTransfer).where(ScheduledTransfer.user_id == user_id)
                             .order_by(ScheduledTransfer.run_at)).all()
-        names = {p.id: (p.name, p.name_en or p.name) for p in session.exec(select(Payee).where(Payee.user_id == user_id))}
+        names = {p.id: (p.name, p.name_en or p.name) for p in session.exec(select(Contact).where(Contact.user_id == user_id))}
         collections = session.exec(select(Collection).where(Collection.user_id == user_id)
                                    .order_by(Collection.created_at.desc())).all()
-        return {"transfers": [{"id": s.id, "payee": names.get(s.payee_id, ("?", "?"))[0], "payee_en": names.get(s.payee_id, ("?", "?"))[1],
+        return {"transfers": [{"id": s.id, "contact": names.get(s.contact_id, ("?", "?"))[0], "contact_en": names.get(s.contact_id, ("?", "?"))[1],
                                "fen": s.amount_fen, "run_at": s.run_at,
                                "repeat": s.repeat, "status": s.status} for s in rows],
                 "collections": [{"id": c.id, "title": c.title, "total_fen": c.total_fen, "status": c.status,
@@ -161,15 +161,15 @@ async def transfer_list(request: Request, lang: Lang = "zh", user_id: str = Depe
         return {"items": [transfers.view(row, lang, now) for row in rows]}
 
 
-@router.get("/payee-phone")
-async def payee_phone(request: Request, user_id: str = Depends(require_user)):
-    """What the payees' phones received from their banks (the other half of the two-phone demo)."""
+@router.get("/contact-phone")
+async def contact_phone(request: Request, user_id: str = Depends(require_user)):
+    """What the contacts' phones received from their banks (the other half of the two-phone demo)."""
     with Session(request.app.state.runtime.engine) as session:
-        names = {p.id: (p.name, p.name_en or p.name) for p in session.exec(select(Payee).where(Payee.user_id == user_id))}
-        rows = session.exec(select(PayeeMessage).where(PayeeMessage.user_id == user_id)
-                            .order_by(PayeeMessage.at.desc()).limit(20)).all()
-        return {"items": [{"id": m.id, "at": m.at, "payee": names.get(m.payee_id, ("?", "?"))[0],
-                           "payee_en": names.get(m.payee_id, ("?", "?"))[1], "text": m.text, "text_en": m.text_en}
+        names = {p.id: (p.name, p.name_en or p.name) for p in session.exec(select(Contact).where(Contact.user_id == user_id))}
+        rows = session.exec(select(ContactMessage).where(ContactMessage.user_id == user_id)
+                            .order_by(ContactMessage.at.desc()).limit(20)).all()
+        return {"items": [{"id": m.id, "at": m.at, "contact": names.get(m.contact_id, ("?", "?"))[0],
+                           "contact_en": names.get(m.contact_id, ("?", "?"))[1], "text": m.text, "text_en": m.text_en}
                           for m in rows]}
 
 
@@ -226,7 +226,7 @@ PAYMENT_ACTIONS = {"transfer", "schedule_transfer", "merchant_order", "wealth_su
 
 
 def bank_outcome(session: Session, plan: Plan, lang: str) -> tuple[str | None, str | None]:
-    """A finished plan's transfer can still be returned by the payee's bank or cancelled before it arrives;
+    """A finished plan's transfer can still be returned by the contact's bank or cancelled before it arrives;
     the customer's history says what happened to the money, not only that the step ran."""
     for step in plan.steps:
         transfer_id = (step.get("result") or {}).get("transfer_id")
@@ -236,7 +236,7 @@ def bank_outcome(session: Session, plan: Plan, lang: str) -> tuple[str | None, s
         zh = lang == "zh"
         if row.status == "returned":
             why = transfers.RETURN_REASONS[row.reason][0 if zh else 1] if row.reason else ""
-            return "returned", (f"对方银行退回：{why}" if zh else f"Returned by the payee's bank: {why}")
+            return "returned", (f"对方银行退回：{why}" if zh else f"Returned by the contact's bank: {why}")
         if row.status == "cancelled":
             return "cancelled", ("到账前已撤销，钱已退回" if zh else "Cancelled before it arrived; the money is back")
         if row.status in ("accepted", "clearing"):

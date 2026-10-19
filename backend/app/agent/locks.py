@@ -12,7 +12,7 @@ RULES = [
     ({"verification_failed"}, 3, 15, "red", 30, "VERIFICATION_FAILURES"),
     ({"screening"}, 3, 10, "agent", None, "FLAGGED_REQUESTS"),
     ({"plan_rejected"}, 5, 10, "agent", None, "REJECTED_PLANS"),
-    ({"payment_new_payee"}, 3, 60, "payments", None, "NEW_PAYEE_VELOCITY"),
+    ({"payment_new_contact"}, 3, 60, "payments", None, "NEW_CONTACT_VELOCITY"),
 ]
 
 MESSAGES = {
@@ -22,8 +22,8 @@ MESSAGES = {
                          "Several requests tried to get around the safety rules, so the assistant is paused. Verify your identity to resume."),
     "REJECTED_PLANS": ("助手连续生成了无效计划，已暂停以保安全。完成一次身份验证即可恢复。",
                        "The assistant produced several invalid plans and paused itself. Verify your identity to resume."),
-    "NEW_PAYEE_VELOCITY": ("短时间内多次向新收款人付款，转账和付款已锁定。完成一次身份验证即可解除。",
-                           "Several payments to new payees in a short time: payments are locked. Verify your identity to unlock."),
+    "NEW_CONTACT_VELOCITY": ("短时间内多次向新联系人付款，转账和付款已锁定。完成一次身份验证即可解除。",
+                           "Several payments to new contacts in a short time: payments are locked. Verify your identity to unlock."),
 }
 
 

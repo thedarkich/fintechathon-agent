@@ -13,6 +13,7 @@ import { useOverview } from '../lib/bank'
 import { useChat } from '../lib/chat'
 import { stamp, yuan } from '../lib/format'
 import { createPasskey, passkeysSupported } from '../lib/passkey'
+import { inWeChat } from '../lib/wechat'
 import { EMPTY, LIST } from './Accounts'
 
 type Status = { tone: 'ok' | 'err' | 'wait'; text: string } | null
@@ -71,7 +72,7 @@ export default function Controls() {
 
       {status && (
         <div role="status" className="fixed inset-x-0 bottom-0 z-40 px-4 pb-4">
-          <div className={`mx-auto flex max-w-xl items-center gap-3 rounded-box border bg-field px-4 py-3 shadow-[0_2px_0_var(--shadow)] ${status.tone === 'err' ? 'border-cinnabar' : status.tone === 'ok' ? 'border-jade' : 'border-ink'}`}>
+          <div className={`mx-auto flex max-w-xl items-center gap-3 rounded-box border bg-field px-4 py-3 ${status.tone === 'err' ? 'border-cinnabar' : status.tone === 'ok' ? 'border-jade' : 'border-ink'}`}>
             <span className={`min-w-0 flex-1 text-[0.95rem] ${status.tone === 'err' ? 'text-cinnabar' : ''}`}>{status.text}</span>
             {status.tone !== 'wait' && <button type="button" className="text-ink2" onClick={() => setStatus(null)} aria-label={lang === 'zh' ? '关闭' : 'Dismiss'}>✕</button>}
           </div>
@@ -86,9 +87,9 @@ export default function Controls() {
 function CardFace({ card: c }: { card: BankCard }) {
   const { tr } = useLang()
   const off = c.status === 'frozen' || c.status === 'lost'
-  const face = off ? 'linear-gradient(135deg, #8a929c, #6b737d)' : c.kind === 'virtual' ? 'linear-gradient(135deg, #0d1b2e, #23364f)' : 'var(--hero)'
+  const face = off ? '#8e8e93' : c.kind === 'virtual' ? '#1d1d1f' : 'var(--hero)'
   return (
-    <div className="relative flex h-[76px] w-[120px] shrink-0 flex-col justify-between overflow-hidden rounded-[12px] p-2.5 text-white shadow-[0_6px_16px_var(--shadow)]" style={{ background: face }} aria-hidden>
+    <div className="relative flex h-[76px] w-[120px] shrink-0 flex-col justify-between overflow-hidden rounded-[12px] p-2.5 text-white" style={{ background: face }} aria-hidden>
       <span className="flex items-center justify-between text-[0.62rem] font-bold opacity-90">{tr('Bank Agent', '银行代办')}<span>{c.kind === 'virtual' ? tr('Virtual', '虚拟') : tr('Debit', '借记')}</span></span>
       {c.kind === 'debit' && <span className="h-3.5 w-5 rounded-[3px] bg-[#e9d18c]" />}
       <span className="font-mono text-[0.72rem] tracking-wider">•••• {c.last4}</span>
@@ -219,7 +220,7 @@ function PasskeyPanel({ setStatus }: { setStatus: (s: Status) => void }) {
       aside={<button type="button" className="btn btn-line py-1.5 text-sm" disabled={!passkeysSupported()} onClick={() => void add()}>{tr('Add', '添加')}</button>}>
       {keys.data?.items.length
         ? <ul className={LIST}>{keys.data.items.map((k) => <li key={k.id} className="flex justify-between px-4 py-3 text-sm"><span>{k.label || tr('Device', '设备')}</span><span className="font-mono text-xs text-ink2">{k.created_at.slice(0, 10)}</span></li>)}</ul>
-        : <p className={EMPTY}>{passkeysSupported() ? tr('Use face or fingerprint unlock instead of an SMS code.', '用面容或指纹代替短信验证码。') : tr('Needs HTTPS and a supported browser.', '需要 HTTPS 和支持的浏览器。')}</p>}
+        : <p className={EMPTY}>{passkeysSupported() ? tr('Use face or fingerprint unlock instead of an SMS code.', '用面容或指纹代替短信验证码。') : inWeChat() ? tr('Not available inside WeChat. Your SMS code works here.', '微信内暂不支持，请使用短信验证码。') : tr('Needs HTTPS and a supported browser.', '需要 HTTPS 和支持的浏览器。')}</p>}
     </Section>
   )
 }

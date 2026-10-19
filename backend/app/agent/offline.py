@@ -135,7 +135,7 @@ def has(text: str, *words: str) -> bool:
     return any(found(w, lowered) for w in words)
 
 
-def payee_from(text: str) -> str | None:
+def contact_from(text: str) -> str | None:
     phone = re.search(r"1\d{10}", text)
     if phone:
         return phone.group(0)
@@ -151,7 +151,7 @@ def payee_from(text: str) -> str | None:
         r"(?:给|向|转给|打给|汇给|付给)\s*([一-龥]{2,4}?)(?:转|汇|打|付|发|的|\d|[零一二两三四五六七八九十百千万]|，|。|$)",
         r"(?:转|汇|打)(?:账)?\s*[\d零一二两三四五六七八九十百千万.]+\s*(?:元|块)?\s*给\s*([一-龥]{2,4})",
         r"([一-龥]{2,3}?)(?:借我|借给我)",  # '孙磊借我的钱还他600'
-        r"\bto\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
+        r"\bto\s+(?:(?i:my|the)\s+)?(?:(?i:contact|payee)\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
         r"\b(?i:send|pay|transfer|wire)\s+(?:(?i:back)\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+\d",  # 'Pay back Sun Lei 600'
     ]
     for pattern in patterns:
@@ -160,6 +160,18 @@ def payee_from(text: str) -> str | None:
             if name not in ("我", "我的", "他", "她"):
                 return name
     return None
+
+
+def saved_name_in(text: str, names: list[str]) -> tuple[str | None, str]:
+    """A saved contact's name (or alias) written in the message, any case: 'send 100 to zhou kai', 'send 300 to 67'.
+    Returns the name as saved and the message without it, so a name made of digits is not read as the amount."""
+    for name in sorted({n.strip() for n in names if n and len(n.strip()) >= 2}, key=len, reverse=True):
+        pattern = re.escape(name)
+        if re.search(r"[A-Za-z0-9]", name):
+            pattern = r"(?<![A-Za-z0-9])" + pattern + r"(?![A-Za-z0-9])"
+        if m := re.search(pattern, text, flags=re.IGNORECASE):
+            return name, text[:m.start()] + " " + text[m.end():]
+    return None, text
 
 
 def names_in(text: str) -> list[str]:
@@ -222,23 +234,23 @@ BANK_FULL = {"工商银行": "中国工商银行", "工行": "中国工商银行
              "Demo Bank": "演示银行"}
 
 
-def new_payee(text: str) -> PlanOut:
-    """'添加收款人 王小明 13800001111 招商银行', 'add payee Wang Xiaoming, phone 13800001111'."""
+def new_contact(text: str) -> PlanOut:
+    """'添加联系人 王小明 13800001111 招商银行', 'add contact Wang Xiaoming, phone 13800001111'."""
     phone = re.search(r"(?<!\d)1\d{10}(?!\d)", text)
     account = re.search(r"(?<!\d)\d{12,19}(?!\d)", text)
     bank = next((b for b in BANKS if b.lower() in text.lower()), None)
     stripped = text
     for b in BANKS:
         stripped = re.sub(re.escape(b), " ", stripped, flags=re.IGNORECASE)
-    name = re.search(r"收款人[:：\s]*(?:叫|是)?\s*([一-龥]{2,4})", stripped) \
+    name = re.search(r"(?:收款人|联系人)[:：\s]*(?:叫|是)?\s*([一-龥]{2,4})", stripped) \
         or re.search(r"(?:把|将)\s*([一-龥]{2,4})\s*(?:加|添加|存)", stripped) \
-        or re.search(r"(?i:payee)[:\s]+(?:called\s+|named\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", stripped) \
+        or re.search(r"(?i:contact)[:\s]+(?:called\s+|named\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", stripped) \
         or re.search(r"(?i:add)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?i:as)", stripped)
     if not name:
-        return ask("新收款人叫什么名字？请一起告诉我手机号或银行卡号。", "What is the new payee's name? Please include their phone or account number.")
+        return ask("新联系人叫什么名字？请一起告诉我手机号或银行卡号。", "What is the new contact's name? Please include their phone or account number.")
     args = {"name": name.group(1), "phone": phone.group(0) if phone else None,
             "account_no": account.group(0) if account else None, "bank": BANK_FULL.get(bank, bank) if bank else None}
-    return one("payee_add", args)
+    return one("contact_add", args)
 
 
 def step(n: int, action: str, args: dict | None = None, **extra) -> StepOut:
@@ -263,19 +275,19 @@ def transactions(text: str, category: str | None, *, incoming: bool = False) -> 
         days = 1
     elif has(text, "上个月", "上月", "last month"):
         days = 62
-    payee = None
+    contact = None
     if m := re.search(r"(?:和|跟|与)\s*([一-龥]{2,4}?)(?:之间|的)", text) or re.search(r"\bwith\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", text):
-        payee = m.group(1)  # '我和张伟之间的转账记录', 'transfer history with Zhang Wei'
+        contact = m.group(1)  # '我和张伟之间的转账记录', 'transfer history with Zhang Wei'
     elif has(text, "给", "to "):
-        payee = payee_from(text)
+        contact = contact_from(text)
     args = {"limit": 10}
     # '最近五笔交易', 'last 5 transactions'
     if m := re.search(r"(\d{1,2}|[一二两三四五六七八九十]{1,3})\s*笔", text) or re.search(r"\blast (\d{1,2}) (?:transactions|payments)", text.lower()):
         args["limit"] = min(max(int(cn_number(m.group(1)) or 10), 1), 50)
     if category:
         args["category"] = category
-    if payee:
-        args["payee"] = payee
+    if contact:
+        args["contact"] = contact
     # '我在星巴克的消费记录', 'payments at Starbucks'
     if m := re.search(r"在\s*([一-龥A-Za-z0-9]{2,12}?)\s*的?(?:消费|花|买|支付|付款)", text) \
             or re.search(r"\bat\s+([A-Z][A-Za-z']+(?:\s+[A-Z][A-Za-z']+)?)", text):
@@ -286,7 +298,7 @@ def transactions(text: str, category: str | None, *, incoming: bool = False) -> 
     return one("transactions", args)
 
 
-def payees_each(text: str) -> list[str]:
+def contacts_each(text: str) -> list[str]:
     """People who each get the same amount: '给爸爸妈妈各转500', '给张伟和王芳各转200'."""
     m = re.search(r"给\s*([一-龥、，, 和]{2,20}?)\s*各", text)
     if not m:
@@ -307,9 +319,10 @@ HELP = ("我可以帮您：查余额和账单、分析消费、找出异常交�
 
 
 def plan(text: str, today: date, *, pending_field: str | None = None, suspicious: bool = False,
-         attachment: str | None = None) -> PlanOut:
+         attachment: str | None = None, contacts: list[str] | None = None) -> PlanOut:
+    """contacts: the customer's saved names and aliases, so a name is found however it is written."""
     result = _with_receipt(text.strip(), attachment) if attachment else None
-    result = result or _plan(text.strip(), today, pending_field)
+    result = result or _plan(text.strip(), today, pending_field, contacts or [])
     result.suspicious = suspicious
     return result
 
@@ -319,15 +332,19 @@ def _with_receipt(text: str, receipt: str) -> PlanOut | None:
         people = names_in(text)
         if not people:
             return ask("和谁一起平摊这张小票？", "Who are you splitting this receipt with?")
-        return one("collect", {"payees": people, "receipt": receipt})
+        return one("collect", {"contacts": people, "receipt": receipt})
     if not text or has(text, "小票", "收据", "账单", "看看", "多少", "receipt", "bill", "what", "read"):
         return one("read_receipt", {"receipt": receipt})
     return None
 
 
-def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
+def _plan(text: str, today: date, pending_field: str | None, contacts: list[str]) -> PlanOut:
     lowered = text.lower()
-    money = amounts(text)
+    saved, rest = saved_name_in(text, contacts)
+    money = amounts(rest)
+
+    def who(t: str) -> str | None:
+        return saved or contact_from(t)
 
     # asking for a person; '客服已经批准了' only mentions one
     if has(text, "转人工", "人工客服", "人工服务", "找客服", "联系客服", "要客服", "接客服", "真人", "human", "real person",
@@ -340,7 +357,7 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     if stop and has(text, "转账", "汇款", "转", "transfer", "payment") \
             and has(text, "预约", "定时", "每月", "每个月", "按月", "自动", "安排的", "scheduled", "recurring", "monthly",
                     "every month", "standing order"):
-        return one("scheduled_cancel", {"payee": payee_from(text)})
+        return one("scheduled_cancel", {"contact": who(text)})
     if stop and (has(text, "计划", "安排", "plan") or (has(text, "生日", "birthday") and not money)):
         topic = next((w for w in ("生日", "birthday", "蛋糕", "cake", "花", "flower", "房租", "rent") if found(w, lowered)), None)
         return one("plan_cancel", {"plan": topic, "undo": has(text, "撤销", "退回", "还给我", "undo", "refund", "money back", "reverse")})
@@ -409,14 +426,14 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     if (switches := switches_in(text)) and not has(text, "转", "transfer", "send"):
         return one("card_restrict", {"card": card_hint(text), **switches})
 
-    # payees: adding one, or the list ('Who can I pay?')
-    if has(text, "添加收款人", "新增收款人", "加个收款人", "加一个收款人", "新收款人", "保存收款人", "存为收款人", "加为收款人",
-           "add a payee", "add payee", "new payee", "save a payee", "as a payee") \
+    # contacts: adding one, or the list ('Who can I pay?')
+    if has(text, "添加联系人", "新增联系人", "加个联系人", "加一个联系人", "新联系人", "保存联系人", "添加收款人", "新增收款人", "加个收款人", "加一个收款人", "新收款人", "保存收款人", "存为收款人", "加为收款人", "存为联系人", "加为联系人",
+           "add a contact", "add contact", "new contact", "save a contact", "as a contact", "as contact", "as my contact") \
             and not has(text, "转", "汇", "付", "transfer", "send", "pay "):
-        return new_payee(text)
-    if has(text, "收款人", "联系人", "payees", "contacts", "who can i pay", "who can i send", "people i can pay",
+        return new_contact(text)
+    if has(text, "收款人", "联系人", "contacts", "contact list", "contact book", "address book", "phone book", "通讯录", "my contact", "saved contact", "payees", "who can i pay", "who can i send", "people i can pay",
            "people i pay") and not money:
-        return one("payees")
+        return one("contacts")
 
     if has(text, "密码", "password", "pin"):
         if has(text, "交易密码", "支付密码", "pin"):
@@ -452,7 +469,7 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         people = names_in(text)
         if not people:
             return ask("和谁一起平摊？", "Who are you splitting it with?")
-        args = {"payees": people}
+        args = {"contacts": people}
         if purpose := re.search(r"(电费|水费|水电费|网费|燃气费|房租|饭钱|餐费|车费|打车费|话费|酒店|门票|机票|火车票|火锅|聚餐|晚饭|午饭|外卖|蛋糕)", text) \
                 or re.search(r"\b(electricity|water|internet|gas|rent|dinner|lunch|taxi|hotel|tickets|groceries|takeaway)\b", lowered):
             args["title"] = purpose.group(1)
@@ -529,7 +546,7 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
             and has(text, "转账", "汇款", "transfer") \
             and not has(text, "预约", "定时", "每月", "scheduled", "recurring"):
         ref = re.search(r"#([0-9a-f]{6,})", lowered)
-        return one("transfer_cancel", {"transfer": ref.group(1) if ref else payee_from(text)})
+        return one("transfer_cancel", {"transfer": ref.group(1) if ref else who(text)})
 
     # history, before transfers and spending: '转账记录' and '消费明细' are lists to look at
     category = next((c for c, words in CATEGORY_WORDS if has(text, *words)), None)
@@ -542,16 +559,16 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     # transfers
     if has(text, "预约转账", "定时转账", "scheduled transfer") and has(text, "查看", "看看", "看一下", "有哪些", "哪些", "我的", "list", "show", "what", "my", "upcoming"):
         return one("scheduled")
-    if "各" in text and money and (people := payees_each(text)):
-        return PlanOut(steps=[step(i + 1, "transfer", {"payee": p, "amount_yuan": money[0]}) for i, p in enumerate(people)])
+    if "各" in text and money and (people := contacts_each(text)):
+        return PlanOut(steps=[step(i + 1, "transfer", {"contact": p, "amount_yuan": money[0]}) for i, p in enumerate(people)])
     colloquial = re.search(r"给\s*[一-龥]{1,4}?\s*打\s*[\d零一二两三四五六七八九十百千万]"  # '给王芳打300块'
                            r"|还(?:给)?\s*(?:他|她|[一-龥]{2,3}?)\s*[\d零一二两三四五六七八九十百千万]", text)  # '还他600'
     if (colloquial or has(text, "转", "汇", "打钱", "打款", "付给", "还钱", "交房租", "付房租", "交租", "缴房租",
                           "transfer", "send", "pay ", "wire")) \
             and not has(text, "转人工"):
-        payee = payee_from(text) or ("房东" if has(text, "房租", "交租", "rent") else None)
+        contact = who(text) or ("房东" if has(text, "房租", "交租", "rent") else None)
         amount = money[0] if money else None
-        if payee is None:
+        if contact is None:
             return ask("请问要转给谁？", "Who should I send it to?")
         memo = None
         by_note = re.search(r"(?:备注|标签)(?:是|为|叫)?\s*\S{2,10}?的(?:人|那位|那个人|收款人)", text)
@@ -569,8 +586,8 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         when, repeat = when_from(re.sub(re.escape(m.group(0)), " ", text, flags=re.IGNORECASE) if arrival != "instant" else text,
                                  today)
         if when:
-            return one("schedule_transfer", {"payee": payee, "amount_yuan": amount, "when": when, "repeat": repeat, "memo": memo})
-        args = {"payee": payee, "amount_yuan": amount, "memo": memo}
+            return one("schedule_transfer", {"contact": contact, "amount_yuan": amount, "when": when, "repeat": repeat, "memo": memo})
+        args = {"contact": contact, "amount_yuan": amount, "memo": memo}
         if arrival != "instant":
             args["arrival"] = arrival
         return one("transfer", args)
@@ -595,8 +612,8 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         return transactions(text, category)
     if has(text, "余额", "多少钱", "还有多少", "存款", "balance", "how much money", "how much do i have", "account"):
         return one("balance")
-    if has(text, "收款人", "联系人", "payees", "contacts"):
-        return one("payees")
+    if has(text, "收款人", "联系人", "contacts", "contact list", "contact book", "address book", "phone book", "通讯录", "my contact", "saved contact", "payees"):
+        return one("contacts")
     if has(text, "提醒", "通知", "notifications", "reminders", "alerts"):
         return one("notifications")
 

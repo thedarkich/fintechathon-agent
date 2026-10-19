@@ -8,11 +8,11 @@ A bilingual (中文 / English) React app with light and dark themes that works a
 | How it stays safe | `/how` | The AI proposes, the rules decide, you approve: the three levels, an example request with the rule checks, the protections, the numbers |
 | Sign in / Create account | `/login`, `/signup` | Email sign-in, the 6-digit transaction PIN, or a demo account; signing in opens Home |
 | Home | `/home` | The first screen after signing in: current account (amounts can be hidden), a grid of services, a box to ask the assistant, bills to pay, recent transactions |
-| Transfers | `/send` | Type a phone number and see who it is (a saved payee, or a masked name such as “*小明” and their bank); recent people one tap away; the transfers with that person beside it |
+| Transfers | `/send` | Type a phone number and see who it is (a saved contact, or a masked name such as “*小明” and their bank); recent people one tap away; the transfers with that person beside it |
 | Payments | `/payments` | Mobile top-up, electricity, water, gas, internet & TV, property fees, traffic fines: check the bill, pay it, save it, or let it pay itself up to a monthly limit |
 | QR pay | `/qr` | Scan a shop's code (the camera where the browser can read codes, or tap a demo code), check the shop and amount, pay; a demo till makes a code for one sale. Other codes are reported, never opened |
 | Assistant | `/assistant` | Chat first: suggestions, the conversation, a confirm card per request, voice and receipt upload. Past chats in a side list that opens and closes (a drawer on phones); removing one only hides it, History keeps the record. `?ask=` sends a request on arrival |
-| Accounts & transfers | `/accounts` | Total and accounts; each transfer on one line with its stages folded underneath, beside one SMS panel (your phone, the payee's phone); payees, scheduled transfers (with Stop), split bills |
+| Accounts & transfers | `/accounts` | Total and accounts; each transfer on one line with its stages folded underneath, beside one SMS panel (your phone, the contact's phone); contacts, scheduled transfers (with Stop), split bills |
 | Spending | `/bills` | Spending by period, category and merchant; transactions worth a second look; search |
 | Invest | `/wealth` | Holdings, risk level, products with R1–R5 |
 | Cards & security | `/controls` | One tile per card (switches, freeze, limit, report lost), subscriptions, safety lock, passkeys, demo clock and reset |

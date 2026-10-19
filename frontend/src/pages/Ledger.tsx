@@ -82,7 +82,7 @@ function detail(e: AuditEntry, lang: 'zh' | 'en'): string {
     }
     case 'cancelled': return `${lang === 'zh' ? '停止' : 'stopped'} ${s(d.stopped)} · ${lang === 'zh' ? '撤销' : 'undone'} ${s(d.compensated)}`
     case 'notification': return s(d.key)
-    case 'demo_transfer': return d.outcome === 'return' ? (lang === 'zh' ? '对方银行退回' : 'the payee bank returns it') : (lang === 'zh' ? '立即清算' : 'cleared now')
+    case 'demo_transfer': return d.outcome === 'return' ? (lang === 'zh' ? '对方银行退回' : 'the contact bank returns it') : (lang === 'zh' ? '立即清算' : 'cleared now')
     case 'demo_clock': {
       const hours = Math.round(Number(d.advanced_seconds) / 3600)
       return hours % 24 === 0 ? (lang === 'zh' ? `前进 ${hours / 24} 天` : `${hours / 24} day(s) forward`) : (lang === 'zh' ? `前进 ${hours} 小时` : `${hours} hour(s) forward`)

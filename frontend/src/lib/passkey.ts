@@ -1,4 +1,5 @@
 /** WebAuthn glue: the server sends JSON options with base64url fields; the browser wants ArrayBuffers. */
+import { inWeChat } from './wechat'
 
 const toBuffer = (value: string) => {
   const padded = value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=')
@@ -7,7 +8,9 @@ const toBuffer = (value: string) => {
 const toBase64url = (buffer: ArrayBuffer) =>
   btoa(String.fromCharCode(...new Uint8Array(buffer))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 
-export const passkeysSupported = () => typeof window !== 'undefined' && !!window.PublicKeyCredential && window.isSecureContext
+// WeChat's webview exposes WebAuthn in places but cannot complete it, so the SMS code is the method there.
+export const passkeysSupported = () =>
+  typeof window !== 'undefined' && !!window.PublicKeyCredential && window.isSecureContext && !inWeChat()
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function createPasskey(options: any) {

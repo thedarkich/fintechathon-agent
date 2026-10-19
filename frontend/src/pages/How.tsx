@@ -5,6 +5,8 @@ import { SiteFooter, SiteHeader } from '../components/SiteChrome'
 import { Icon, type IconName } from '../components/Icon'
 import { TierTag } from '../components/bits'
 import { useAuth, useStartDemo } from '../lib/auth'
+import { useRise } from '../lib/motion'
+import { Seal } from '../components/Seal'
 import '../landing.css'
 
 /** How it stays safe: the one page with the inside view, for judges and the curious. */
@@ -18,8 +20,9 @@ export default function How() {
     if (outcome !== 'error') navigate(outcome === 'ok' ? '/assistant' : '/signup')
   }
   const [view, setView] = useState<'request' | 'rules' | 'result'>('request')
+  useRise()
   useEffect(() => { document.title = tr(`${t.brand_en} · How it stays safe`, `${t.brand} · 安全原理`); window.scrollTo(0, 0) }, [tr, t])
-  const plan = JSON.stringify({ steps: [{ id: 's1', action: 'transfer', args: { payee: '房东', amount_yuan: 3200, memo: '房租' } }] }, null, 2)
+  const plan = JSON.stringify({ steps: [{ id: 's1', action: 'transfer', args: { contact: '房东', amount_yuan: 3200, memo: '房租' } }] }, null, 2)
   const roles: [IconName, string, string][] = [
     ['chat', tr('You say what you need', '你说出需求'), tr('In Chinese or English, typed, spoken or with a receipt photo. A PIN or code typed by mistake is hidden at once.', '中文英文都行，打字、语音或拍小票。误打的密码和验证码会立刻被隐藏。')],
     ['agents', tr('The AI turns it into steps', 'AI 把它拆成步骤'), tr('It may only choose from a fixed list of 43 bank actions. It never sees your account, can’t move money and can’t approve anything.', '只能从固定的 43 个银行操作里选。它看不到你的账户，不能动钱，也不能批准任何事。')],
@@ -46,26 +49,28 @@ export default function How() {
     <main className="lp" id="main-content" tabIndex={-1}>
       <section className="lp-banner">
         <div className="lp-banner-copy">
-          <p className="lp-eyebrow">{tr('How it stays safe', '安全原理')}</p>
-          <h1>{tr('The AI proposes.', 'AI 只提议，')}<br />{tr('Rules decide. You say yes.', '规则做决定，你来点头。')}</h1>
-          <p>{tr('Letting an AI act on a bank account is only safe if it can’t act alone. Here is how that works.', '让 AI 操作银行账户，前提是它不能自作主张。下面是具体做法。')}</p>
+          <h1>{tr('The AI proposes.', 'AI 只提议，')}<br />{tr('You say yes.', '你来点头。')}</h1>
+          <p>{tr('Letting an AI act on a bank account is only safe if it can’t act alone. The bank’s own rules decide what each step needs, and nothing moves until you confirm.', '让 AI 操作银行账户，前提是它不能自作主张。每一步需要什么由银行自己的规则决定，你确认之前，钱一分不动。')}</p>
         </div>
-        <ol className="lp-flow" aria-label={tr('Who does what', '分工')}>
+        <ol className="lp-flow" data-ui aria-label={tr('Who does what', '分工')}>
           <li><span className="lp-flow-icon"><Icon name="agents" size={20} /></span><span><b>{tr('The AI proposes', 'AI 提议')}</b><small>{tr('From a fixed list of 43 actions', '只能从固定的 43 个操作里选')}</small></span></li>
           <li><span className="lp-flow-icon"><Icon name="shield" size={20} /></span><span><b>{tr('The rules decide', '规则决定')}</b><small>{tr('Right away, your OK, or PIN + code', '直接办、需确认，还是需验证')}</small></span></li>
           <li><span className="lp-flow-icon"><Icon name="check" size={20} /></span><span><b>{tr('You say yes', '你来点头')}</b><small>{tr('Nothing moves before you confirm', '你确认之前，钱一分不动')}</small></span></li>
         </ol>
       </section>
 
-      <div className="lp-grid lp-grid-4">
-        {roles.map(([icon, title, text], i) => (
-          <article key={title} className="lp-point"><span className="lp-icon"><Icon name={icon} size={20} /></span><h3>{i + 1}. {title}</h3><p>{text}</p></article>
-        ))}
-      </div>
+      <section className="lp-section" aria-labelledby="roles-h">
+        <h2 id="roles-h" data-rise>{tr('Who does what', '谁来做什么')}</h2>
+        <div className="lp-list">
+          {roles.map(([, title, text]) => (
+            <article key={title} className="lp-item" data-rise><h3>{title}</h3><p>{text}</p></article>
+          ))}
+        </div>
+      </section>
 
       <section className="lp-section">
-        <h2>{tr('Three levels, decided by fixed rules', '三个等级，由固定规则决定')}</h2>
-        <div className="mt-8 divide-y divide-[var(--rule)] overflow-hidden rounded-panel bg-[var(--field)]">
+        <h2 data-rise>{tr('Three levels, decided by fixed rules', '三个等级，由固定规则决定')}</h2>
+        <div className="lp-levels mt-8 divide-y divide-[var(--rule)] overflow-hidden rounded-panel bg-[var(--field)]" data-ui data-rise>
           {levels.map(([tier, what, how]) => (
             <div key={tier} className="grid gap-2 px-6 py-5 sm:grid-cols-[9rem_1fr_16rem] sm:items-center">
               <span><TierTag tier={tier} /></span>
@@ -74,53 +79,62 @@ export default function How() {
             </div>
           ))}
         </div>
-        <p className="mt-3 text-center text-sm text-ink2">{tr('A warning sign only ever makes a level stricter, never looser.', '风险信号只会让等级更严，不会更松。')}</p>
+        <p className="lp-note">{tr('A warning sign only ever makes a level stricter, never looser.', '风险信号只会让等级更严，不会更松。')}</p>
       </section>
 
       <section className="lp-section">
-        <h2>{tr('One request, step by step', '一个请求的完整过程')}</h2>
+        <h2 data-rise>{tr('One request, step by step', '一个请求的完整过程')}</h2>
         <p className="lp-section-lead">{tr('“Pay my landlord 3200 for rent”: what the AI produced, what the rules checked, and what happened.', '“给房东转3200房租”：AI 给出了什么、规则检查了什么、最后发生了什么。')}</p>
         <div className="lp-pills lp-calc-tabs" role="group" aria-label={tr('Stage', '阶段')}>
-          {(['request', 'rules', 'result'] as const).map((v, i) => <button key={v} aria-pressed={view === v} onClick={() => setView(v)}>{i + 1}. {v === 'request' ? tr('What the AI proposed', 'AI 提出的计划') : v === 'rules' ? tr('What the rules checked', '规则检查') : tr('What happened', '结果')}</button>)}
+          {(['request', 'rules', 'result'] as const).map((v) => <button key={v} aria-pressed={view === v} onClick={() => setView(v)}>{v === 'request' ? tr('What the AI proposed', 'AI 提出的计划') : v === 'rules' ? tr('What the rules checked', '规则检查') : tr('What happened', '结果')}</button>)}
         </div>
-        <div className="terminal-card mx-auto mt-6 max-w-3xl"><div className="terminal-bar"><div className="terminal-lights"><i /><i /><i /></div><span>{view}</span><span className="terminal-badge">{tr('EXAMPLE', '示例')}</span></div>
+        <div className="lp-request">
+        <div className="terminal-card" data-ui><div className="terminal-bar"><div className="terminal-lights"><i /><i /><i /></div><span>{view === 'request' ? tr('The plan', '计划') : view === 'rules' ? tr('The checks', '检查') : tr('The outcome', '结果')}</span><span className="terminal-badge">{tr('Example', '示例')}</span></div>
           <div className="terminal-body" aria-live="polite">
             {view === 'request' ? <>
               <p className="terminal-comment">{tr('The AI may only return this shape. Any extra field, unknown action or bad value is rejected.', 'AI 只能返回这种格式，多出的字段、未知操作或错误的值都会被拒绝。')}</p>
               <pre><span className="terminal-prompt">{'>'} 给房东转3200房租{'\n'}</span>{plan}</pre>
             </> : view === 'rules' ? <div className="terminal-checks">
-              <p>✓ {tr('“房东” matched to your payee: Zhao Jianhua (landlord), ABC ****7722', '“房东”匹配到你的收款人：赵建华（房东）中国农业银行 ****7722')}</p>
-              <p>✓ {tr('Balance and the ¥50,000 single-transfer limit checked', '已核对余额和单笔 ¥50,000 上限')}</p>
-              <p>✓ {tr('Nothing in the request tries to get around the rules', '请求中没有绕过规则的内容')}</p>
-              <p>● {tr('Today’s payments would be ¥3,200, over ¥1,000: needs your PIN and an SMS code', '当天累计将达 ¥3,200，超过 ¥1,000：需要交易密码和短信验证码')}</p>
+              <p>{tr('“房东” matched to your contact: Zhao Jianhua (landlord), ABC ****7722', '“房东”匹配到你的联系人：赵建华（房东）中国农业银行 ****7722')}</p>
+              <p>{tr('Balance and the ¥50,000 single-transfer limit checked', '已核对余额和单笔 ¥50,000 上限')}</p>
+              <p>{tr('Nothing in the request tries to get around the rules', '请求中没有绕过规则的内容')}</p>
+              <p className="text-[#34c78f]">{tr('Today’s payments would be ¥3,200, over ¥1,000: needs your PIN and an SMS code', '当天累计将达 ¥3,200，超过 ¥1,000：需要交易密码和短信验证码')}</p>
             </div> : <div className="terminal-checks">
-              <p>✓ {tr('You checked the card and entered your PIN and the code', '你核对了确认卡，并输入了交易密码和验证码')}</p>
-              <p>✓ {tr('¥3,200.00 sent to Zhao Jianhua through the interbank system; arrived', '¥3,200.00 经超级网银转给赵建华，已到账')}</p>
-              <p>↳ {tr('Every stage written to your history, chained by hashes', '每个阶段都写入记录，并用哈希串联')}</p>
-              <p>↳ {tr('The AI never saw the PIN or the code', 'AI 自始至终没有看到交易密码和验证码')}</p>
+              <p>{tr('You checked the card and entered your PIN and the code', '你核对了确认卡，并输入了交易密码和验证码')}</p>
+              <p>{tr('¥3,200.00 sent to Zhao Jianhua through the interbank system; arrived', '¥3,200.00 经超级网银转给赵建华，已到账')}</p>
+              <p>{tr('Every stage written to your history, chained by hashes', '每个阶段都写入记录，并用哈希串联')}</p>
+              <p>{tr('The AI never saw the PIN or the code', 'AI 自始至终没有看到交易密码和验证码')}</p>
             </div>}
           </div>
         </div>
-      </section>
-
-      <section className="lp-section">
-        <h2>{tr('What else protects you', '还有哪些保护')}</h2>
-        <div className="lp-grid">
-          {guards.map(([title, text]) => <article key={title} className="lp-point"><h3 className="!mt-0">{title}</h3><p>{text}</p></article>)}
+        <div className="lx-confirm lp-confirm" data-ui>
+          <div className="lx-confirm-head"><b>{view === 'result' ? tr('Done', '已办好') : tr('Please confirm', '请确认')}</b>{view === 'result' ? <Seal kind="done" size={44} /> : <TierTag tier="red" />}</div>
+          <dl>
+            {[[tr('To', '收款人'), tr('Zhao Jianhua (landlord)', '赵建华（房东）')], [tr('Account', '收款账户'), tr('ABC ****7722', '中国农业银行 ****7722')], [tr('Amount', '金额'), '¥3,200.00'], [tr('Memo', '附言'), tr('Rent', '房租')], [tr('Arrives', '到账'), tr('Now', '实时到账')]].map(([k, v], i) => <div key={k}><dt>{k}</dt><dd className={i === 2 ? 'lx-amount' : ''}>{v}</dd></div>)}
+          </dl>
+          {view !== 'result' && <div className="lx-confirm-actions"><span className="lx-ui-btn">{tr('Enter PIN and code', '输入密码和验证码')}</span><span className="lx-ui-btn lx-ui-line">{tr('Cancel', '取消')}</span></div>}
+        </div>
         </div>
       </section>
 
       <section className="lp-section">
-        <h2>{tr('Tested, not just promised', '经过测试，不只是承诺')}</h2>
-        <div className="lp-grid">
+        <h2 data-rise>{tr('What else protects you', '还有哪些保护')}</h2>
+        <div className="lp-list">
+          {guards.map(([title, text]) => <article key={title} className="lp-item" data-rise><h3>{title}</h3><p>{text}</p></article>)}
+        </div>
+      </section>
+
+      <section className="lp-section">
+        <h2 data-rise>{tr('Tested, not just promised', '经过测试，不只是承诺')}</h2>
+        <div className="lp-figures">
           {[['220', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['69', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['96', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
-            <article key={n} className="lp-point"><p className="text-[2.8rem] font-extrabold leading-none text-[var(--action)]">{n}</p><p className="mt-2">{text}</p></article>
+            <article key={n} className="lp-figure" data-rise><p className="lp-figure-n">{n}</p><p>{text}</p></article>
           ))}
         </div>
-        <p className="mt-3 text-center text-sm text-ink2">{tr('Measured with the built-in rule-based planner. The AI model planner will be measured before we publish numbers for it.', '以上数字来自内置的规则规划器；接入 AI 模型后会先测量，再公布它的数字。')}</p>
+        <p className="lp-note">{tr('Measured with the built-in rule-based planner. The AI model planner will be measured before we publish numbers for it.', '以上数字来自内置的规则规划器；接入 AI 模型后会先测量，再公布它的数字。')}</p>
       </section>
 
-      <section className="lp-cta">
+      <section className="lp-cta" data-rise>
         <h2>{tr('See it for yourself.', '亲自试一试。')}</h2>
         <p>{tr('Try a large transfer to the seller added today, or tell it to ignore the rules, and watch what happens.', '试试给今天新加的卖家转一大笔钱，或者让它“忽略规则”，看看会发生什么。')}</p>
         <button type="button" className="site-button cta" disabled={demo.busy} onClick={() => void tryIt()}>{user ? tr('Open the assistant', '打开助手') : tr('Try it now, no sign-up', '马上试试，不用注册')}</button>

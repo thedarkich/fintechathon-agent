@@ -1,9 +1,9 @@
-"""How the simulated bank processes a transfer: route, arrival options, cancel, returns and the payee's phone."""
+"""How the simulated bank processes a transfer: route, arrival options, cancel, returns and the contact's phone."""
 
 from sqlmodel import Session, select
 
 from app.bank import ledger
-from app.models import BankAccount, PayeeMessage, SmsMessage
+from app.models import BankAccount, ContactMessage, SmsMessage
 
 
 def plan_of(body):
@@ -27,7 +27,7 @@ def test_same_bank_transfer_arrives_at_once(bank):
     transfer = latest(bank)
     assert transfer["route"] == "internal" and transfer["status"] == "arrived"
     assert [e["status"] for e in transfer["events"]] == ["accepted", "clearing", "arrived"]
-    phone = bank.get("/api/payee-phone").json()["items"]
+    phone = bank.get("/api/contact-phone").json()["items"]
     assert phone and "收到" in phone[0]["text"] and "200.00" in phone[0]["text"]
 
 
@@ -40,13 +40,13 @@ def test_other_bank_goes_through_the_interbank_system(bank):
 
 
 def test_risky_transfer_waits_two_hours_and_can_be_cancelled(bank):
-    plan = plan_of(bank.chat("给周凯转800"))  # a payee added today, over ¥500
+    plan = plan_of(bank.chat("给周凯转800"))  # a contact added today, over ¥500
     assert plan["tier"] == "red" and "2 小时后到账" in plan["steps"][0]["text"]
     before = balance(bank)
     assert bank.verify(plan).status_code == 200
     transfer = latest(bank)
     assert transfer["status"] == "accepted" and transfer["cancellable"]
-    assert transfer["arrival"] == "standard" and transfer["arrival_reason"] == "S_NEW_PAYEE_LARGE"
+    assert transfer["arrival"] == "standard" and transfer["arrival_reason"] == "S_NEW_CONTACT_LARGE"
     assert balance(bank) == before - 80_000  # the money has left
     cancel = plan_of(bank.chat("撤销给周凯的转账"))
     assert cancel["steps"][0]["action"] == "transfer_cancel" and cancel["tier"] == "yellow"
@@ -57,7 +57,7 @@ def test_risky_transfer_waits_two_hours_and_can_be_cancelled(bank):
         assert "已撤销" in session.exec(select(SmsMessage).order_by(SmsMessage.at.desc())).first().text
 
 
-def test_payee_bank_returns_a_name_mismatch(bank):
+def test_contact_bank_returns_a_name_mismatch(bank):
     plan = plan_of(bank.chat("给周凯转800"))
     bank.verify(plan)
     before_return = balance(bank)
@@ -66,7 +66,7 @@ def test_payee_bank_returns_a_name_mismatch(bank):
     assert transfer["status"] == "returned" and "户名" in transfer["reason"]
     assert balance(bank) == before_return + 80_000
     with Session(bank.runtime.engine) as session:
-        assert session.exec(select(PayeeMessage)).first() is None  # nothing reached the payee
+        assert session.exec(select(ContactMessage)).first() is None  # nothing reached the contact
     notes = bank.get("/api/notifications").json()["items"]
     assert any("退回" in n["title"] for n in notes)
     # History says what happened to the money, not only that the step ran
@@ -85,7 +85,7 @@ def test_customer_can_choose_next_day_arrival(bank):
     assert moved["status"] == "arrived"
 
 
-def test_demo_tools_can_make_the_payee_bank_return_it(bank):
+def test_demo_tools_can_make_the_contact_bank_return_it(bank):
     plan = plan_of(bank.chat("给爸爸转300，2小时后到账"))
     assert plan["steps"][0]["text"].count("2 小时后到账") == 1
     bank.approve(plan)

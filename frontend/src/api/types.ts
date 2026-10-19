@@ -31,7 +31,7 @@ export interface Message {
 /** Who a phone number belongs to, before a transfer by phone number. */
 export type Directory =
   | { kind: 'self' | 'none' }
-  | { kind: 'payee'; payee: { id: string; name: string; note: string | null; bank: string; account_tail: string } }
+  | { kind: 'contact'; contact: { id: string; name: string; note: string | null; bank: string; account_tail: string } }
   | { kind: 'directory'; name: string; bank: string; same_bank: boolean }
 
 export interface Provider { code: string; category: string; name: string; account_label: string; billed: boolean; top_ups: number[] | null }
@@ -63,7 +63,7 @@ export interface BillLookup {
 }
 export interface QrMerchant { code: string; name: string; city: string; category: string; payload: string }
 export type QrRead = { valid: false } | { valid: true; merchant: Omit<QrMerchant, 'payload'>; fen: number | null; order: string | null }
-export type ScreenAction = 'transfer' | 'phone_transfer' | 'bill_pay' | 'bill_autopay' | 'qr_pay'
+export type ScreenAction = 'transfer' | 'phone_transfer' | 'bill_pay' | 'bill_autopay' | 'qr_pay' | 'contact_add'
 
 /** One past chat in the assistant's history list. */
 export interface ConversationItem {
@@ -83,7 +83,7 @@ export interface PlanStep {
   rule_text: string | null
   signals: string[]
   text: string
-  /** the facts to check before saying yes (payee, account, amount, arrival…); empty for actions shown by text */
+  /** the facts to check before saying yes (contact, account, amount, arrival…); empty for actions shown by text */
   details: { label: string; value: string }[]
   signal_codes: string[]
   after: string[]
@@ -215,7 +215,7 @@ export interface Subscriptions {
   monthly_fen: number
 }
 
-export interface Payee {
+export interface Contact {
   id: string
   name: string
   name_en: string
@@ -235,8 +235,8 @@ export type TransferStatus = 'accepted' | 'clearing' | 'arrived' | 'returned' | 
 /** A transfer as the simulated bank processes it (backend bank/transfers.py). */
 export interface Transfer {
   id: string
-  payee_id: string
-  payee: string
+  contact_id: string
+  contact: string
   bank: string
   account_tail: string
   fen: number
@@ -257,18 +257,18 @@ export interface Transfer {
   events: { at: string; status: TransferStatus; text: string }[]
 }
 
-/** A text the payee's phone received from their bank (the other half of the two-phone demo). */
-export interface PayeeSms {
+/** A text the contact's phone received from their bank (the other half of the two-phone demo). */
+export interface ContactSms {
   id: string
   at: string
-  payee: string
-  payee_en: string
+  contact: string
+  contact_en: string
   text: string
   text_en: string
 }
 
 export interface Scheduled {
-  transfers: { id: string; payee: string; payee_en: string; fen: number; run_at: string; repeat: string; status: string }[]
+  transfers: { id: string; contact: string; contact_en: string; fen: number; run_at: string; repeat: string; status: string }[]
   collections: { id: string; title: string; total_fen: number; status: string; participants: { name: string; name_en: string; share_fen: number; status: string }[] }[]
 }
 

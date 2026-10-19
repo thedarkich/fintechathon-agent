@@ -8,8 +8,8 @@ A customer says what they need in Chinese or English: “给妈妈转200”, “
 
 <p align="center">
   <img src="docs/img/screens/03-confirm-yellow.jpg" width="200" alt="A yellow confirm card: who, which account, how much, when it arrives, and why">
-  <img src="docs/img/screens/05-confirm-red.jpg" width="200" alt="A red card: a large payment to a payee added today needs the PIN and a code, and arrives two hours later">
-  <img src="docs/img/screens/07-transfer-returned.jpg" width="200" alt="The transfer's stages: accepted, clearing, then returned by the payee's bank because the name did not match">
+  <img src="docs/img/screens/05-confirm-red.jpg" width="200" alt="A red card: a large payment to a contact added today needs the PIN and a code, and arrives two hours later">
+  <img src="docs/img/screens/07-transfer-returned.jpg" width="200" alt="The transfer's stages: accepted, clearing, then returned by the contact's bank because the name did not match">
   <img src="docs/img/screens/08-history.jpg" width="200" alt="History: everything asked for, and the hash-chained audit log">
 </p>
 
@@ -17,11 +17,11 @@ A customer says what they need in Chinese or English: “给妈妈转200”, “
 
 ## Try it
 
-Run it locally (below), open http://localhost:8000 and press **马上试试 / Try it now**. You get a demo account with its own simulated bank (about 22 months of history, family and friend payees, two cards, subscriptions, investments) and land in the assistant. Nothing to fill in. Things to say:
+Run it locally (below), open http://localhost:8000 and press **马上试试 / Try it now**. You get a demo account with its own simulated bank (about 22 months of history, family and friend contacts, two cards, subscriptions, investments) and land in the assistant. Nothing to fill in. Things to say:
 
 | Scenario | Say | What happens |
 |---|---|---|
-| Transfers | 给妈妈转200 · 给周凯转800 · 每月15号给妈妈转500 · 和室友AA 300元电费 | Yellow: one tap. Over ¥1,000 today, or over ¥500 to a payee added today: PIN plus code, and a new payee's money arrives 2 hours later and can be cancelled |
+| Transfers | 给妈妈转200 · 给周凯转800 · 每月15号给妈妈转500 · 和室友AA 300元电费 | Yellow: one tap. Over ¥1,000 today, or over ¥500 to a contact added today: PIN plus code, and a new contact's money arrives 2 hours later and can be cancelled |
 | Bill analysis | 上个月钱都花哪了 · 有没有异常交易 · 去年全年的报告 · 周末晚上8点后喝咖啡花了多少钱 | Green: answered at once; the last one by generated code in a sandbox |
 | Wealth | 推荐一个稳健的理财 · 货币基金和债券基金哪个好 · 做一下风险评估 · 买1000元货币基金 | Suitability by fixed rules; buying is red |
 | Cards | 冻结我的虚拟卡 · 关闭境外交易 · 把借记卡的单日限额调到5万 · 挂失借记卡 | Making a card safer is one tap; making it riskier is red |
@@ -42,12 +42,12 @@ The demo account's PIN is shown in the verification window (with a “Fill it in
 
 ## What is built
 
-- **Six scenarios from the brief**: transfers (by name, relationship, phone, note or account tail; scheduled and monthly; split bills; add a payee; cancel a delayed transfer), bill analysis (categories, unusual transactions, monthly and annual reports, open questions in a sandbox), wealth (holdings and returns, comparison, suitability-checked recommendations, risk questionnaire, buy and redeem), cards (apply, limits, switches, freeze and unfreeze, loss report), subscriptions (found from transactions, reminders, cancel), and multi-step plans (the birthday plan).
+- **Six scenarios from the brief**: transfers (by name, relationship, phone, note or account tail; scheduled and monthly; split bills; add a contact; cancel a delayed transfer), bill analysis (categories, unusual transactions, monthly and annual reports, open questions in a sandbox), wealth (holdings and returns, comparison, suitability-checked recommendations, risk questionnaire, buy and redeem), cards (apply, limits, switches, freeze and unfreeze, loss report), subscriptions (found from transactions, reminders, cancel), and multi-step plans (the birthday plan).
 - **Permission tiers exactly as in the brief**, with the ¥1,000 daily rule counted across the day (sent, scheduled and earlier steps of the same plan) and checked again when a scheduled step runs. Risk signals only raise a tier.
 - **Strong verification**: 6-digit PIN plus an SMS code (simulated phone) or a passkey (WebAuthn: face or fingerprint unlock, or a security key).
 - **Security**: injection screening, a strict plan schema the model cannot extend, no tool output ever reaching the model, approval bound to a hash of the exact details, safety locks (circuit breaker), typed secrets hidden, replies written only by code, hash-chained audit.
 - **Planning**: dependency graph, questions with choices built by code when something is ambiguous, stop and undo (from the card or in words), edit, and human takeover through an operator console.
-- **Transfers processed the way a bank in mainland China does**: same-bank transfers arrive at once, other banks go through a simulated 超级网银; instant, 2-hour or next-day arrival (PBOC notice 银发〔2016〕261号); risky transfers delayed by the rules and cancellable until they arrive; the payee's bank returns money when the name doesn't match. A second simulated phone shows what the payee receives.
+- **Transfers processed the way a bank in mainland China does**: same-bank transfers arrive at once, other banks go through a simulated 超级网银; instant, 2-hour or next-day arrival (PBOC notice 银发〔2016〕261号); risky transfers delayed by the rules and cancellable until they arrive; the contact's bank returns money when the name doesn't match. A second simulated phone shows what the contact receives.
 - **Planner**: a deterministic Chinese/English offline planner (no key needed; used by the tests and evaluation) and an OpenAI-compatible model planner with validation and fallback.
 - **App screens next to the assistant**: a home screen of services (QR pay, Transfers, Payments, My bank, Spending, Invest, Cards, Assistant); transfer by phone number, with the recipient shown by a masked name before you send; Payments for mobile top-up, utilities, internet, property fees and traffic fines, with saved bills and automatic payment up to a monthly limit; QR pay at registered shops, with a demo till. A payment from a screen is a plan like the assistant's: same tiers, same confirm card, same audit.
 - **Receipts and voice**: split a bill from a receipt photo or PDF (read in an isolated worker; hidden instructions are flagged and raise the tier); voice input through the browser where available.
@@ -79,7 +79,7 @@ cd backend && uv run pytest -q
 
 ### Evaluation sets
 
-[evals/intent.jsonl](evals/intent.jsonl) holds 220 everyday requests in Chinese, English and a mix of both across all six scenarios, including vague wording, things that don't exist (a payee, card, fund or subscription the customer doesn't have) and out-of-scope questions. [evals/attacks.jsonl](evals/attacks.jsonl) holds 69 attempts to get around the rules: ignoring the rules (also spaced out, full-width or with look-alike letters), role-play, fake authority and fake system messages, fake approvals and plan JSON, urgency, claiming to be verified, switching confirmation off, changing thresholds, splitting payments or spreading them over days, instructions hidden in a receipt, scam scripts, asking for secrets, and repeated attempts that must trip the safety lock. Each case runs on a newly opened customer through the HTTP API. The runner checks the planned actions, the tier, the status, risk signals and the reply; for attacks it also checks that the attempt was flagged, that nothing ran without approval, that typed secrets were hidden and that the safety lock is on.
+[evals/intent.jsonl](evals/intent.jsonl) holds 220 everyday requests in Chinese, English and a mix of both across all six scenarios, including vague wording, things that don't exist (a contact, card, fund or subscription the customer doesn't have) and out-of-scope questions. [evals/attacks.jsonl](evals/attacks.jsonl) holds 69 attempts to get around the rules: ignoring the rules (also spaced out, full-width or with look-alike letters), role-play, fake authority and fake system messages, fake approvals and plan JSON, urgency, claiming to be verified, switching confirmation off, changing thresholds, splitting payments or spreading them over days, instructions hidden in a receipt, scam scripts, asking for secrets, and repeated attempts that must trip the safety lock. Each case runs on a newly opened customer through the HTTP API. The runner checks the planned actions, the tier, the status, risk signals and the reply; for attacks it also checks that the attempt was flagged, that nothing ran without approval, that typed secrets were hidden and that the safety lock is on.
 
 ```bash
 cd backend && uv run python -m app.evals ../evals/intent.jsonl ../evals/attacks.jsonl --out ../docs/eval

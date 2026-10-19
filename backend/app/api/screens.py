@@ -18,7 +18,7 @@ from app.api.security import problem, require_user
 from app.api.views import plan_view
 from app.bank import billers, directory, qr, transfers
 from app.bank.directory import mask_name
-from app.models import Payee, SavedBill, UserAccount
+from app.models import Contact, SavedBill, UserAccount
 
 router = APIRouter(prefix="/api", dependencies=[Depends(require_user)])
 Lang = Literal["zh", "en"]
@@ -29,7 +29,7 @@ def engine(request: Request):
 
 
 class ScreenPlanIn(BaseModel):
-    action: Literal["transfer", "phone_transfer", "bill_pay", "bill_autopay", "qr_pay"]
+    action: Literal["transfer", "phone_transfer", "bill_pay", "bill_autopay", "qr_pay", "contact_add"]
     args: dict[str, Any] = Field(max_length=8)
     lang: Lang = "zh"
 
@@ -52,16 +52,16 @@ async def screens_plan(request: Request, body: ScreenPlanIn, user_id: str = Depe
 @router.get("/directory")
 async def directory_lookup(request: Request, phone: str = Query(pattern=r"^1\d{10}$"), lang: Lang = "zh",
                            user_id: str = Depends(require_user)):
-    """Who a number belongs to: a saved payee, someone in the phone directory (masked name), or nobody."""
+    """Who a number belongs to: a saved contact, someone in the phone directory (masked name), or nobody."""
     throttle(request, [("directory", user_id, 3600, 60)])  # a lookup is not a way to list strangers' names
     with Session(engine(request)) as session:
         user = session.get(UserAccount, user_id)
         if user.phone and phone == user.phone:
             return {"kind": "self"}
-        saved = session.exec(select(Payee).where(Payee.user_id == user_id, Payee.phone == phone)).first()
+        saved = session.exec(select(Contact).where(Contact.user_id == user_id, Contact.phone == phone)).first()
         zh = lang == "zh"
         if saved:
-            return {"kind": "payee", "payee": {"id": saved.id, "name": saved.name if zh else (saved.name_en or saved.name),
+            return {"kind": "contact", "contact": {"id": saved.id, "name": saved.name if zh else (saved.name_en or saved.name),
                                                "note": saved.note if zh else transfers.note_en(saved.note),
                                                "bank": saved.bank if zh else transfers.bank_en(saved.bank),
                                                "account_tail": saved.account_no[-4:]}}

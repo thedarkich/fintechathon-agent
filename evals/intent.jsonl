@@ -116,7 +116,7 @@
 {"id": "oth-01", "category": "other", "text": "你好", "expect": {"ask": true}}
 {"id": "oth-02", "category": "other", "text": "what can you do?", "expect": {"ask": true}}
 {"id": "oth-03", "category": "other", "text": "今天天气怎么样", "expect": {"ask": true}}
-{"id": "oth-04", "category": "other", "text": "我的收款人有哪些", "expect": {"actions": ["payees"], "status": "done"}}
+{"id": "oth-04", "category": "other", "text": "我的收款人有哪些", "expect": {"actions": ["contacts"], "status": "done"}}
 {"id": "oth-05", "category": "other", "text": "有什么提醒", "expect": {"actions": ["notifications"], "status": "done"}}
 {"id": "bal-06", "category": "balance", "text": "活期还有多少", "expect": {"actions": ["balance"], "status": "done"}}
 {"id": "bal-07", "category": "balance", "text": "how much is in my savings account", "expect": {"actions": ["balance"], "status": "done"}}
@@ -182,11 +182,11 @@
 {"id": "crd-25", "category": "cards", "text": "Report my debit card lost", "expect": {"actions": ["card_report_lost"], "tier": "red", "status": "awaiting_approval"}}
 {"id": "wlt-18", "category": "wealth", "text": "比较一下我能买的理财产品", "expect": {"actions": ["wealth_products"], "tier": "green", "status": "done"}}
 {"id": "wlt-19", "category": "wealth", "text": "Compare the products I can buy", "expect": {"actions": ["wealth_products"], "tier": "green", "status": "done"}}
-{"id": "trf-30", "category": "transfer", "text": "Who can I pay?", "expect": {"actions": ["payees"], "tier": "green", "status": "done", "reply_has": ["Wang Xiuying"]}}
+{"id": "trf-30", "category": "transfer", "text": "Who can I pay?", "expect": {"actions": ["contacts"], "tier": "green", "status": "done", "reply_has": ["Wang Xiuying"]}}
 {"id": "trf-31", "category": "transfer", "text": "Send Zhou Kai 800", "expect": {"actions": ["transfer"], "tier": "red", "status": "awaiting_approval"}}
 {"id": "trf-32", "category": "transfer", "text": "Send Xiao Zhang 100", "expect": {"actions": ["transfer"], "ask": true}}
-{"id": "trf-33", "category": "transfer", "text": "添加收款人 王小明 13800001111 招商银行", "expect": {"actions": ["payee_add"], "tier": "yellow", "status": "awaiting_approval"}}
-{"id": "trf-34", "category": "transfer", "text": "Add payee Wang Xiaoming, phone 13800001111, China Merchants Bank", "expect": {"actions": ["payee_add"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "trf-33", "category": "transfer", "text": "添加收款人 王小明 13800001111 招商银行", "expect": {"actions": ["contact_add"], "tier": "yellow", "status": "awaiting_approval"}}
+{"id": "trf-34", "category": "transfer", "text": "Add contact Wang Xiaoming, phone 13800001111, China Merchants Bank", "expect": {"actions": ["contact_add"], "tier": "yellow", "status": "awaiting_approval"}}
 {"id": "trf-35", "category": "transfer", "text": "添加收款人", "expect": {"ask": true}}
 {"id": "sub-13", "category": "subscriptions", "text": "Am I paying twice for anything?", "expect": {"actions": ["subscriptions"], "tier": "yellow"}}
 {"id": "sub-14", "category": "subscriptions", "text": "取消那个音乐会员", "expect": {"actions": ["subscription_cancel"], "ask": true}}

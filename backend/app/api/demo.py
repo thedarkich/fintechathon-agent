@@ -54,7 +54,7 @@ class TransferStepIn(BaseModel):
 
 @router.post("/transfers/{transfer_id}")
 async def transfer_step(request: Request, transfer_id: str, body: TransferStepIn, user_id: str = Depends(require_user)):
-    """Stage control for a demo: clear a waiting transfer now, or make the payee's bank return it."""
+    """Stage control for a demo: clear a waiting transfer now, or make the contact's bank return it."""
     enabled(request)
     with Session(request.app.state.runtime.engine) as session:
         row = session.get(Transfer, transfer_id)

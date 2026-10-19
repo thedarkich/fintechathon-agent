@@ -1,10 +1,10 @@
 """Process-wide services, created once at startup."""
 
 import asyncio
-import fcntl
 import logging
 import os
 import secrets
+import sys
 import time
 
 from sqlmodel import Session, select
@@ -17,6 +17,21 @@ from app.model_budget import ModelCallBudget
 from app.models import UserAccount, UserSession
 
 log = logging.getLogger(__name__)
+
+
+def lock_exclusive(file) -> None:
+    """Take a non-blocking exclusive lock on an open file; raise BlockingIOError if another process holds it."""
+    if sys.platform == "win32":
+        import msvcrt
+
+        try:
+            msvcrt.locking(file.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
+            raise BlockingIOError from None
+    else:
+        import fcntl
+
+        fcntl.flock(file, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
 
 class Runtime:
@@ -42,7 +57,7 @@ class Runtime:
         descriptor = os.open(self.settings.data_dir / ".runtime.lock", os.O_CREAT | os.O_RDWR, 0o600)
         self.lease = os.fdopen(descriptor, "w")
         try:
-            fcntl.flock(self.lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lock_exclusive(self.lease)
         except BlockingIOError:
             self.lease.close()
             self.lease = None

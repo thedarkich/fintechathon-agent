@@ -68,14 +68,14 @@ function TransferRow({ t, demo, open, onDone }: { t: Transfer; demo: boolean; op
   const status = t.status === 'arrived' ? tr(`Arrived ${arrived ? stamp(arrived.at) : ''}`, `已到账 ${arrived ? stamp(arrived.at) : ''}`)
     : t.status === 'returned' ? tr(`Returned: ${t.reason}. The money is back.`, `已退回：${t.reason}，钱已退回`)
       : t.status === 'cancelled' ? tr('Cancelled before it arrived. The money is back.', '到账前已撤销，钱已退回')
-        : tr(`On its way, due ${stamp(t.arrive_at)}`, `等待到账，预计 ${stamp(t.arrive_at)}`) + (t.arrival_reason ? tr(' (delayed: new payee)', '（新收款人，规则延时）') : '')
+        : tr(`On its way, due ${stamp(t.arrive_at)}`, `等待到账，预计 ${stamp(t.arrive_at)}`) + (t.arrival_reason ? tr(' (delayed: new contact)', '（新联系人，规则延时）') : '')
   const waiting = t.status === 'accepted'
   return (
     <li className="px-4 py-3">
       <div className="flex items-center gap-3">
         <SealMark kind={MARK[t.status]} size={26} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{t.payee} <span className="font-mono text-[0.8rem] font-normal text-ink2">{t.bank} {t.account_tail}</span></p>
+          <p className="truncate font-semibold">{t.contact} <span className="font-mono text-[0.8rem] font-normal text-ink2">{t.bank} {t.account_tail}</span></p>
           <p className={`text-[0.85rem] ${t.status === 'returned' ? 'font-semibold text-cinnabar' : waiting ? 'text-ink' : 'text-ink2'}`}>{status}</p>
         </div>
         <strong className="num shrink-0 font-mono">{yuan(t.fen)}</strong>
@@ -85,7 +85,7 @@ function TransferRow({ t, demo, open, onDone }: { t: Transfer; demo: boolean; op
           {t.cancellable && <button type="button" className="btn btn-line py-1 text-[0.85rem]" disabled={!!pending} onClick={() => void send(tr(`Cancel transfer #${t.id.slice(0, 8)}`, `撤销转账 #${t.id.slice(0, 8)}`))}>{tr('Cancel', '撤销')}</button>}
           {demo && waiting && <>
             <button type="button" className="btn btn-line py-1 text-[0.85rem]" disabled={busy} onClick={() => void step('next')}>{tr('Demo: clear it now', '演示：立即清算')}</button>
-            <button type="button" className="btn btn-line py-1 text-[0.85rem]" disabled={busy} onClick={() => void step('return')}>{tr('Demo: payee bank returns it', '演示：对方银行退回')}</button>
+            <button type="button" className="btn btn-line py-1 text-[0.85rem]" disabled={busy} onClick={() => void step('return')}>{tr('Demo: contact’s bank returns it', '演示：对方银行退回')}</button>
           </>}
         </div>
       )}
@@ -98,20 +98,20 @@ function TransferRow({ t, demo, open, onDone }: { t: Transfer; demo: boolean; op
   )
 }
 
-/** Both simulated phones in one panel: yours (codes, returns) and the payee's (what their bank sends). */
+/** Both simulated phones in one panel: yours (codes, returns) and the contact's (what their bank sends). */
 function SmsPanel() {
   const { tr, lang } = useLang()
   const [tab, setTab] = useState<'mine' | 'theirs'>('mine')
   const mine = usePhone(true)
-  const theirs = useQuery({ queryKey: ['payee-phone'], queryFn: api.payeePhone, refetchInterval: 2500 })
+  const theirs = useQuery({ queryKey: ['contact-phone'], queryFn: api.contactPhone, refetchInterval: 2500 })
   const items = tab === 'mine'
     ? (mine.data?.items ?? []).map((m) => ({ id: m.id, who: null as string | null, text: lang === 'zh' ? m.text : m.text_en, at: m.at }))
-    : (theirs.data?.items ?? []).map((m) => ({ id: m.id, who: lang === 'zh' ? m.payee : m.payee_en, text: lang === 'zh' ? m.text : m.text_en, at: m.at }))
+    : (theirs.data?.items ?? []).map((m) => ({ id: m.id, who: lang === 'zh' ? m.contact : m.contact_en, text: lang === 'zh' ? m.text : m.text_en, at: m.at }))
   return (
     <div className="ruled bg-field">
       <div className="p-3 pb-0">
         <Segmented stretch className="flex w-full" label={tr('Text messages', '短信')} value={tab} onChange={setTab}
-          options={[['mine', tr('Your phone', '我的手机')], ['theirs', tr('Payee’s phone', '收款方手机')]] as const} />
+          options={[['mine', tr('Your phone', '我的手机')], ['theirs', tr('Contact’s phone', '联系人手机')]] as const} />
       </div>
       {!items.length ? <p className="px-4 py-4 text-sm text-ink2">{tr('No messages.', '暂无短信。')}</p> : (
         <ol className="max-h-80 space-y-2 overflow-y-auto p-3">

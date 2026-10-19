@@ -17,11 +17,13 @@ export default {
         cta: 'var(--cta)',
         'cta-ink': 'var(--cta-ink)',
       },
+      // one face everywhere, the system one (San Francisco on Apple devices); `font-mono` is kept as a name
+      // for figures but set in the same face with aligned digits, so nothing on screen is monospace
       fontFamily: {
-        sans: ['Manrope', '"PingFang SC"', '"Noto Sans SC"', '"Microsoft YaHei"', 'sans-serif'],
-        mono: ['"Geist Mono Variable"', 'ui-monospace', 'SF Mono', 'monospace'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI Variable Text"', '"Segoe UI"', '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', 'sans-serif'],
+        mono: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI Variable Text"', '"Segoe UI"', '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', 'sans-serif'],
       },
-      borderRadius: { box: '12px', panel: '24px' },
+      borderRadius: { box: '12px', panel: '18px' },
     },
   },
   plugins: [],

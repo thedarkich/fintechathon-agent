@@ -69,7 +69,7 @@ def test_changed_plan_cannot_be_approved_with_old_hash(bank):
     assert result.json()["code"] == "PLAN_CHANGED"
 
 
-def test_ambiguous_payee_asks_with_choices(bank):
+def test_ambiguous_contact_asks_with_choices(bank):
     body = bank.chat("转100给小张")
     plan = plan_of(body)
     assert plan["status"] == "clarifying"
@@ -220,17 +220,17 @@ def test_scheduled_transfer_rechecked_at_run_time(bank):
 
     from app import clock
     from app.bank import ledger
-    from app.models import Payee, ScheduledTransfer
+    from app.models import Contact, ScheduledTransfer
 
     plan = plan_of(bank.chat("明天给妈妈转600"))
     bank.approve(plan)
     with Session(bank.runtime.engine) as session:
         row = session.exec(select(ScheduledTransfer)).one()
         # earlier that same day another ¥600 leaves, so at run time the day's total is ¥1,200
-        payee = session.exec(select(Payee).where(Payee.name == "李建国")).one()
+        contact = session.exec(select(Contact).where(Contact.name == "李建国")).one()
         account = ledger.checking(session, row.user_id)
         ledger.debit(session, account, 60_000, when=clock.parse(row.run_at) - timedelta(hours=1),
-                     kind="transfer_out", counterparty=payee.name, payee=payee)
+                     kind="transfer_out", counterparty=contact.name, contact=contact)
         session.commit()
     bank.post("/api/demo/advance", {"days": 2})
     assert bank.get("/api/bank/scheduled").json()["transfers"][0]["status"] == "waiting_approval"
@@ -239,15 +239,15 @@ def test_scheduled_transfer_rechecked_at_run_time(bank):
     assert card["type"] == "approval" and card["tier"] == "red"
 
 
-def test_new_payee_limit_counts_payments_together(bank):
+def test_new_contact_limit_counts_payments_together(bank):
     first = plan_of(bank.chat("给周凯转400"))
-    assert first["tier"] == "yellow"  # ¥400 to a payee added today is under the ¥500 signal
+    assert first["tier"] == "yellow"  # ¥400 to a contact added today is under the ¥500 signal
     bank.approve(first)
     second = plan_of(bank.chat("再给周凯转400"))  # ¥800 in total
-    assert second["tier"] == "red" and "S_NEW_PAYEE_LARGE" in second["steps"][0]["signal_codes"]
+    assert second["tier"] == "red" and "S_NEW_CONTACT_LARGE" in second["steps"][0]["signal_codes"]
 
 
-def test_new_payee_large_payment_is_red(bank):
+def test_new_contact_large_payment_is_red(bank):
     plan = plan_of(bank.chat("给周凯转800"))
     assert plan["tier"] == "red"
     assert plan["steps"][0]["signals"]

@@ -24,8 +24,8 @@ def details(ctx: Ctx, action: str, r: dict | None) -> list[dict]:
         return {"label": label_zh if zh else label_en, "value": value}
 
     if action in ("transfer", "schedule_transfer", "phone_transfer"):
-        who = r["payee"] if zh else r["payee_en"]
-        note = r.get("payee_note") if zh else r.get("payee_note_en")
+        who = r["contact"] if zh else r["contact_en"]
+        note = r.get("contact_note") if zh else r.get("contact_note_en")
         if note:
             who += f"（{note}）" if zh else f" ({note})"
         bank = r["bank"] if zh else transfers.bank_en(r["bank"])
@@ -77,7 +77,7 @@ def details(ctx: Ctx, action: str, r: dict | None) -> list[dict]:
         return [row("取消", "Cancel", r["merchant"]), row("每期", "Each charge", yuan(r["fen"]))]
     if action == "scheduled_cancel":
         when = r["run_at"][:16].replace("T", " ")
-        rows = [row("收款人", "To", r["payee"] if zh else r["payee_en"]), row("金额", "Amount", yuan(r["fen"])),
+        rows = [row("收款人", "To", r["contact"] if zh else r["contact_en"]), row("金额", "Amount", yuan(r["fen"])),
                 row("原定时间", "Was due", when)]
         if r.get("repeat") == "monthly":
             rows.append(row("以后", "After that", "每月的也不再转" if zh else "no more monthly transfers"))
@@ -114,7 +114,7 @@ def details(ctx: Ctx, action: str, r: dict | None) -> list[dict]:
         rows.append(row("付款账户", "From", r["source"] if zh else r["source_en"]))
         return rows
     if action == "transfer_cancel":
-        return [row("撤销给", "Transfer to", r["payee"] if zh else r["payee_en"]), row("金额", "Amount", yuan(r["fen"]))]
+        return [row("撤销给", "Transfer to", r["contact"] if zh else r["contact_en"]), row("金额", "Amount", yuan(r["fen"]))]
     return []
 
 

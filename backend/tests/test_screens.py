@@ -4,13 +4,13 @@ from sqlmodel import Session, select
 
 from app.agent.planner import PlanOut, StepOut, catalogue, validate
 from app.bank import directory, qr
-from app.models import BillPayment, Notification, Payee, Txn
+from app.models import BillPayment, Contact, Notification, Txn
 
-MOM = "13971230418"  # a saved payee in the demo data
+MOM = "13971230418"  # a saved contact in the demo data
 
 
 def numbers(found: bool):
-    """Phone numbers the made-up directory does (or does not) know, none of them a saved payee."""
+    """Phone numbers the made-up directory does (or does not) know, none of them a saved contact."""
     for n in range(13600000000, 13600009999):
         phone = str(n)
         if (directory.lookup(phone) is not None) == found:
@@ -24,13 +24,13 @@ def screen(bank, action, **args):
 
 
 def test_phone_lookup_tells_saved_known_and_unknown_numbers_apart(bank):
-    assert bank.get("/api/directory", phone=MOM).json()["kind"] == "payee"
+    assert bank.get("/api/directory", phone=MOM).json()["kind"] == "contact"
     known = bank.get("/api/directory", phone=next(numbers(True))).json()
     assert known["kind"] == "directory" and known["name"].startswith("*")
     assert bank.get("/api/directory", phone=next(numbers(False))).json()["kind"] == "none"
 
 
-def test_first_transfer_to_a_number_is_a_new_payee(bank):
+def test_first_transfer_to_a_number_is_a_new_contact(bank):
     phone = next(numbers(True))
     plan = screen(bank, "phone_transfer", phone=phone, amount_yuan=200)
     assert plan["source"] == "screen" and plan["tier"] == "yellow"
@@ -39,11 +39,11 @@ def test_first_transfer_to_a_number_is_a_new_payee(bank):
     done = bank.approve(plan).json()["plan"]
     assert done["status"] == "done"
     with Session(bank.runtime.engine) as session:
-        payee = session.exec(select(Payee).where(Payee.phone == phone)).one()
-        assert payee.name.startswith("*")  # saved under the masked name the customer saw
-    # ¥200 + ¥400 to a payee added today is over ¥500: red, and the money waits 2 hours
+        contact = session.exec(select(Contact).where(Contact.phone == phone)).one()
+        assert contact.name.startswith("*")  # saved under the masked name the customer saw
+    # ¥200 + ¥400 to a contact added today is over ¥500: red, and the money waits 2 hours
     second = screen(bank, "phone_transfer", phone=phone, amount_yuan=400)
-    assert second["tier"] == "red" and "S_NEW_PAYEE_LARGE" in second["steps"][0]["signal_codes"]
+    assert second["tier"] == "red" and "S_NEW_CONTACT_LARGE" in second["steps"][0]["signal_codes"]
     assert any(d["value"].startswith("2 小时后") for d in second["steps"][0]["details"])
 
 

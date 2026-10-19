@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from rapidfuzz import fuzz
 from sqlmodel import Session, select
 
-from app.models import BankAccount, Card, Holding, Payee, Subscription, WealthProduct
+from app.models import BankAccount, Card, Contact, Holding, Subscription, WealthProduct
 
 RELATIONSHIP_WORDS = {
     "mother": ["妈妈", "妈", "老妈", "母亲", "mom", "mum", "mother", "mama"],
@@ -40,7 +40,7 @@ def mask_phone(phone: str) -> str:
     return phone[:3] + "****" + phone[-4:] if len(phone) >= 7 else phone
 
 
-def payee_label(p: Payee, lang: str) -> str:
+def contact_label(p: Contact, lang: str) -> str:
     name = p.name if lang == "zh" or not p.name_en else f"{p.name_en} ({p.name})"
     parts = [name]
     if p.note:
@@ -49,17 +49,17 @@ def payee_label(p: Payee, lang: str) -> str:
     return " · ".join(parts)
 
 
-def find_payee(session: Session, user_id: str, text: str) -> Found:
-    direct = session.get(Payee, text) if len(text or "") == 36 else None
+def find_contact(session: Session, user_id: str, text: str) -> Found:
+    direct = session.get(Contact, text) if len(text or "") == 36 else None
     if direct is not None and direct.user_id == user_id:
         return Found(value=direct)  # a choice the customer picked from offered options
-    payees = list(session.exec(select(Payee).where(Payee.user_id == user_id)))
+    contacts = list(session.exec(select(Contact).where(Contact.user_id == user_id)))
     query = norm(text)
     if not query:
         return Found()
     digits = re.sub(r"\D", "", text)
-    scored: list[tuple[int, Payee]] = []
-    for p in payees:
+    scored: list[tuple[int, Contact]] = []
+    for p in contacts:
         score = 0
         names = [norm(p.name), norm(p.name_en)] + [norm(a) for a in p.aliases]
         if query in names:

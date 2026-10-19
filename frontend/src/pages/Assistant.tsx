@@ -14,6 +14,7 @@ import { useAuth } from '../lib/auth'
 import { useChat } from '../lib/chat'
 import { stamp, yuan } from '../lib/format'
 import { prepareUpload } from '../lib/upload'
+import { inWeChat } from '../lib/wechat'
 
 /** Things to try, one per kind of task, in the words a customer would use. */
 const SUGGESTIONS: [IconName, string, string][] = [
@@ -49,7 +50,8 @@ function sidebarStored(): boolean {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Recognition: any = typeof window !== 'undefined' ? (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition : undefined
+// WeChat's webview has no browser speech recognition; the keyboard's own microphone works there.
+const Recognition: any = typeof window !== 'undefined' && !inWeChat() ? (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition : undefined
 
 export default function Assistant() {
   const { tr, lang } = useLang()

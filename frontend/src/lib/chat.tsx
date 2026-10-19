@@ -21,7 +21,7 @@ type Chat = {
 }
 const ChatContext = createContext<Chat | null>(null)
 
-const BANK_QUERIES = ['conversations', 'bills', 'transfers', 'overview', 'transactions', 'report', 'cards', 'subscriptions', 'wealth', 'scheduled', 'notifications', 'audit', 'phone', 'locks', 'plans', 'payees', 'anomalies', 'clock']
+const BANK_QUERIES = ['conversations', 'bills', 'transfers', 'overview', 'transactions', 'report', 'cards', 'subscriptions', 'wealth', 'scheduled', 'notifications', 'audit', 'phone', 'locks', 'plans', 'contacts', 'anomalies', 'clock']
 
 /** One conversation shared by every workspace page, so a button on Controls can ask the assistant and land here. */
 export function ChatProvider({ children }: { children: ReactNode }) {

@@ -76,29 +76,22 @@ export function SiteHeader({ workspace = false, status }: { workspace?: boolean;
   const home = user ? '/home' : getAdminToken() ? '/operator' : '/login'
   const links: [string, string][] = workspace
     ? workspaceLinks.filter(([to]) => user || to === '/operator')
-    : [['/?section=features', tr('What it does', '能做什么')], ['/?section=calc', tr('Check a payment', '算一算')], ['/?section=ask', tr('Just say it', '直接说')], ['/how', tr('How it stays safe', '安全原理')]]
-  const minor: [string, string][] = [['/', tr('Personal', '个人客户')], ['/team-token', tr('Bank staff', '工作人员')], ['/how', tr('About this demo', '关于本演示')]]
+    : [['/?section=features', tr('What it does', '能做什么')], ['/?section=steps', tr('How it works', '怎么办')], ['/?section=check', tr('Check a payment', '算一算')], ['/how', tr('How it stays safe', '安全原理')]]
 
   return <header className={`site-header ${workspace ? 'is-workspace' : ''} ${scrolled ? 'is-scrolled' : ''}`}>
     <div className="site-header-inner">
-      <Link to={workspace && user ? '/home' : '/'} className="site-brand" aria-label={tr('Bank Agent home', '银行代办首页')}><BrandSeal size={40} /><span>{tr(t.brand_en, t.brand)}</span></Link>
-      <div className="site-rows">
-        <div className="site-toprow">
-          {workspace
-            ? <p className="site-network">{status && <><span className="status-dot" />{status}</>}<Link to="/how" className="site-minor-link">{tr('How it stays safe', '安全原理')}</Link></p>
-            : <nav className="site-minor" aria-label={tr('Sections', '栏目')}>{minor.map(([to, label], i) => <Link key={label} to={to} className={i === 0 ? 'is-current' : ''}>{label}</Link>)}</nav>}
-          <div className="site-actions">
-            <LangSwitch /><ThemeSwitch />
-            {signedIn ? <>
-              <span className="account-pill" title={user?.email}>{user ? (user.demo ? tr(`${user.name} · demo`, `${user.name} · 演示`) : user.name) : tr('Operator token', '工作人员令牌')}</span>
-              {workspace ? <button type="button" className="site-signout" disabled={busy} onClick={() => void signOut()}>{busy ? tr('Signing out…', '正在退出…') : tr('Sign out', '退出')}</button>
-                : <Link className="site-pill" to={home}><span className="pill-long">{tr('Open the app', '进入银行')}</span><span className="pill-short">{tr('Open', '进入')}</span></Link>}
-            </> : <Link className="site-pill" to="/login">{tr('Sign in', '登录')}</Link>}
-          </div>
-        </div>
-        <nav ref={nav} className="site-mainnav" aria-label={tr('Main navigation', '主导航')}>
-          {links.map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => (workspace || to === '/how') && (isActive || (to === '/home' && HOME_SERVICES.test(pathname))) ? 'is-active' : ''}>{label}</NavLink>)}
-        </nav>
+      <Link to={workspace && user ? '/home' : '/'} className="site-brand" aria-label={tr('Bank Agent home', '银行代办首页')}><BrandSeal size={28} /><span>{tr(t.brand_en, t.brand)}</span></Link>
+      <nav ref={nav} className="site-mainnav" aria-label={tr('Main navigation', '主导航')}>
+        {links.map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => (workspace || to === '/how') && (isActive || (to === '/home' && HOME_SERVICES.test(pathname))) ? 'is-active' : ''}>{label}</NavLink>)}
+      </nav>
+      <div className="site-actions">
+        {workspace && status && <span className="site-network">{status}</span>}
+        <LangSwitch /><ThemeSwitch />
+        {signedIn ? <>
+          <span className="account-pill" title={user?.email}>{user ? (user.demo ? tr(`${user.name} · demo`, `${user.name} · 演示`) : user.name) : tr('Operator token', '工作人员令牌')}</span>
+          {workspace ? <button type="button" className="site-signout" disabled={busy} onClick={() => void signOut()}>{busy ? tr('Signing out…', '正在退出…') : tr('Sign out', '退出')}</button>
+            : <Link className="site-pill" to={home}><span className="pill-long">{tr('Open the app', '进入银行')}</span><span className="pill-short">{tr('Open', '进入')}</span></Link>}
+        </> : <Link className="site-pill" to="/login">{tr('Sign in', '登录')}</Link>}
       </div>
     </div>
     {error && <p className="site-error" role="alert">{error}</p>}
@@ -120,7 +113,7 @@ export function SiteFooter() {
         <p>{tr('Answers are written by the bank’s own code from your records; the AI only reads what you asked. Check the confirm card before any money moves.', '回答由银行程序根据你的记录生成，AI 只负责理解你的话。动钱之前，请核对确认卡片。')}</p>
       </div>
       <div className="site-footer-side">
-        <Link className="site-brand" to="/"><BrandSeal size={32} /><span>{tr(t.brand_en, t.brand)}</span></Link>
+        <Link className="site-brand" to="/"><BrandSeal size={40} /><span>{tr(t.brand_en, t.brand)}</span></Link>
         <p>{tr('Works in any phone browser, WeChat’s included.', '手机浏览器即可使用，微信里也能打开。')}</p>
         <p>© 2026 {tr(t.brand_en, t.brand)} · {t.tagline}</p>
       </div>

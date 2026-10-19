@@ -7,7 +7,7 @@ from app.agent.core import Action, Ctx, higher, tier_of
 from app.bank import ledger
 
 DAILY_LIMIT_FEN = 100_000  # ¥1,000: at or under is yellow, over is red
-NEW_PAYEE_FEN = 50_000  # over ¥500 in total to a payee added in the last 24 hours raises to red
+NEW_CONTACT_FEN = 50_000  # over ¥500 in total to a contact added in the last 24 hours raises to red
 
 # The reason each rule gives, in plain words; the card itself says what is needed (nothing, a tap, PIN and code).
 RULE_TEXT = {
@@ -23,7 +23,7 @@ RULE_TEXT = {
     "Y_INTERNAL_MOVE": ("在你自己的账户之间转钱", "It moves money between your own accounts"),
     "Y_WEALTH_REDEEM": ("会赎回你的理财", "It sells an investment"),
     "Y_PROFILE_CHANGE": ("会更新你的风险测评", "It updates your risk profile"),
-    "Y_PAYEE_ADD": ("会添加一位新收款人", "It adds a new payee"),
+    "Y_CONTACT_ADD": ("会添加一位新联系人", "It adds a new contact"),
     "R_INVESTMENT": ("买理财必须确认是你本人", "Buying an investment must be you"),
     "R_CREDENTIAL": ("改密码必须确认是你本人", "Changing a password must be you"),
     "Y_TRANSFER_CANCEL": ("会撤销一笔还没到账的转账", "It cancels a transfer that hasn't arrived"),
@@ -31,14 +31,14 @@ RULE_TEXT = {
     "Y_STOP_PLAN": ("会停止一个还在等待执行的计划", "It stops a plan that is still waiting to run"),
 }
 SIGNAL_TEXT = {
-    "S_NEW_PAYEE_LARGE": ("向 24 小时内新加的收款人累计付款超过 ¥500", "Over ¥500 in total to a payee added in the last 24 hours"),
+    "S_NEW_CONTACT_LARGE": ("向 24 小时内新加的联系人累计付款超过 ¥500", "Over ¥500 in total to a contact added in the last 24 hours"),
     "S_FLAGGED_REQUEST": ("请求中有试图绕过安全规则的内容", "The request tried to get around the safety rules"),
     "S_FLAGGED_CONTENT": ("上传的小票里有隐藏文字或给机器的指令", "The uploaded receipt contains hidden text or instructions aimed at a machine"),
 }
 
 
 def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_same_day_fen: int = 0,
-           earlier_to_payee_fen: int = 0, flagged: bool = False, already_counted_fen: int = 0) -> dict:
+           earlier_to_contact_fen: int = 0, flagged: bool = False, already_counted_fen: int = 0) -> dict:
     rule = action.rule_for(ctx, resolved)
     payment = action.payment(resolved) if action.payment else 0
     signals: list[str] = []
@@ -48,12 +48,12 @@ def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_s
                      + earlier_same_day_fen + payment)
         rule = "Y_SMALL_PAYMENT" if day_total <= DAILY_LIMIT_FEN else "R_LARGE_PAYMENT"
     tier = tier_of(rule)
-    if payment and resolved.get("payee_new"):
-        # in total, so two ¥400 payments to a payee added today count as ¥800; a phone number never paid has nothing yet
-        paid = ledger.paid_to(ctx.session, ctx.user.id, resolved["payee_id"]) if resolved.get("payee_id") else 0
-        to_payee = paid + earlier_to_payee_fen + payment
-        if to_payee > NEW_PAYEE_FEN:
-            signals.append("S_NEW_PAYEE_LARGE")
+    if payment and resolved.get("contact_new"):
+        # in total, so two ¥400 payments to a contact added today count as ¥800; a phone number never paid has nothing yet
+        paid = ledger.paid_to(ctx.session, ctx.user.id, resolved["contact_id"]) if resolved.get("contact_id") else 0
+        to_contact = paid + earlier_to_contact_fen + payment
+        if to_contact > NEW_CONTACT_FEN:
+            signals.append("S_NEW_CONTACT_LARGE")
             tier = higher(tier, "red")
     if flagged and tier == "yellow":
         signals.append("S_FLAGGED_REQUEST")
@@ -67,7 +67,7 @@ def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_s
             "payment_fen": payment, "blocked_by": lock.reason if lock else None}
 
 
-SAFER_ARRIVAL_SIGNALS = ("S_NEW_PAYEE_LARGE", "S_FLAGGED_REQUEST", "S_FLAGGED_CONTENT")
+SAFER_ARRIVAL_SIGNALS = ("S_NEW_CONTACT_LARGE", "S_FLAGGED_REQUEST", "S_FLAGGED_CONTENT")
 
 
 def safer_arrival(action: Action, resolved: dict, decision: dict) -> str | None:

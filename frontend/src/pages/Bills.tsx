@@ -10,15 +10,22 @@ import { useChat } from '../lib/chat'
 import { category, stamp, yuan } from '../lib/format'
 import { EMPTY, LIST } from './Accounts'
 
+const PAGE_SIZE = 20
+
 export default function Bills() {
   const { tr, lang } = useLang()
   const { send, pending } = useChat()
   const [period, setPeriod] = useState<'month' | 'year'>('month')
   const [offset, setOffset] = useState(0)
   const [q, setQ] = useState('')
+  const [page, setPage] = useState(0)
   const report = useQuery({ queryKey: ['report', period, offset], queryFn: () => api.report(period, offset) })
   const anomalies = useQuery({ queryKey: ['anomalies'], queryFn: api.anomalies })
-  const txns = useQuery({ queryKey: ['transactions', 'bills', q], queryFn: () => api.transactions(90, q, 120) })
+  const txns = useQuery({ queryKey: ['transactions', 'bills', q], queryFn: () => api.transactions(90, q, 500) })
+  const all = txns.data?.items ?? []
+  const pages = Math.max(1, Math.ceil(all.length / PAGE_SIZE))
+  const current = Math.min(page, pages - 1)
+  const shown = all.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE)
   const r = report.data
   const change = r && r.previous_spend_fen ? Math.round(((r.spend_fen - r.previous_spend_fen) / r.previous_spend_fen) * 100) : null
   const name = r ? (period === 'month' ? r.start.slice(0, 7) : r.start.slice(0, 4)) : ''
@@ -81,10 +88,10 @@ export default function Bills() {
       </>}
 
       <Section title={tr('Last 90 days', '近 90 天交易')} className="mt-8"
-        aside={<label className="flex w-full items-center gap-2 rounded-box border border-rule bg-field px-3 py-1.5 sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm" aria-label={tr('Search transactions', '搜索交易')} placeholder={tr('Search…', '搜索…')} value={q} onChange={(e) => setQ(e.target.value)} /></label>}>
-        {!txns.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : !txns.data.items.length ? <p className={EMPTY}>{tr('Nothing found.', '没有找到。')}</p> : (
+        aside={<label className="flex w-full items-center gap-2 rounded-box border border-rule bg-field px-3 py-1.5 sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm" aria-label={tr('Search transactions', '搜索交易')} placeholder={tr('Search…', '搜索…')} value={q} onChange={(e) => { setQ(e.target.value); setPage(0) }} /></label>}>
+        {!txns.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : !all.length ? <p className={EMPTY}>{tr('Nothing found.', '没有找到。')}</p> : <>
           <ul className={LIST}>
-            {txns.data.items.map((x) => (
+            {shown.map((x) => (
               <li key={x.id} className={`flex items-center gap-3 px-4 py-2.5 ${x.status === 'declined' ? 'text-ink2' : ''}`}>
                 <div className="min-w-0 flex-1">
                   <p className="truncate">{x.merchant}{x.status === 'declined' && <span className="ml-1.5 text-xs font-semibold text-cinnabar">{tr('declined', '已拒绝')}</span>}</p>
@@ -94,7 +101,17 @@ export default function Bills() {
               </li>
             ))}
           </ul>
-        )}
+          {pages > 1 && (
+            <nav className="mt-3 flex items-center justify-between gap-2" aria-label={tr('Transaction pages', '交易分页')}>
+              <span className="num text-sm text-ink2">{tr(`${current * PAGE_SIZE + 1}–${current * PAGE_SIZE + shown.length} of ${all.length}`, `第 ${current * PAGE_SIZE + 1}–${current * PAGE_SIZE + shown.length} 笔，共 ${all.length} 笔`)}</span>
+              <div className="flex items-center gap-2">
+                <button type="button" className="btn btn-line px-3 py-1 text-sm" disabled={current === 0} onClick={() => setPage(current - 1)}>‹ {tr('Newer', '较新')}</button>
+                <span className="num min-w-[3.5rem] text-center font-mono text-sm font-semibold">{current + 1} / {pages}</span>
+                <button type="button" className="btn btn-line px-3 py-1 text-sm" disabled={current >= pages - 1} onClick={() => setPage(current + 1)}>{tr('Older', '较早')} ›</button>
+              </div>
+            </nav>
+          )}
+        </>}
       </Section>
     </main>
   )

@@ -9,15 +9,15 @@ from sqlmodel import select
 
 from app import clock
 from app.agent.core import Action, Args, Ask, Ctx, Refuse, register
-from app.agent.resolve import find_payee, find_reserve, payee_label
+from app.agent.resolve import contact_label, find_contact, find_reserve
 from app.bank import directory, ledger, transfers
 from app.bank.analysis import txns_between
 from app.clock import CST
 from app.models import (
     BankAccount,
     Collection,
+    Contact,
     Order,
-    Payee,
     ScheduledTransfer,
     Transfer,
     Txn,
@@ -28,24 +28,24 @@ from app.money import to_fen, yuan
 SINGLE_TRANSFER_CAP = 5_000_000  # ¥50,000 per transfer in the demo bank
 
 
-def resolve_payee(ctx: Ctx, text: str, field_name: str = "payee") -> Payee:
-    found = find_payee(ctx.session, ctx.user.id, text)
+def resolve_contact(ctx: Ctx, text: str, field_name: str = "contact") -> Contact:
+    found = find_contact(ctx.session, ctx.user.id, text)
     if found.ambiguous:
-        raise Ask(field_name, f"“{text}”对应多位收款人，请选择：", f"“{text}” matches more than one payee. Please choose:",
-                  [{"value": p.id, "label_zh": payee_label(p, "zh"), "label_en": payee_label(p, "en")}
+        raise Ask(field_name, f"“{text}”对应多位联系人，请选择：", f"“{text}” matches more than one contact. Please choose:",
+                  [{"value": p.id, "label_zh": contact_label(p, "zh"), "label_en": contact_label(p, "en")}
                    for p in found.options])
     if found.value is None:
-        raise Refuse("PAYEE_NOT_FOUND", f"收款人列表里没有“{text}”。可以先添加收款人（需要姓名和手机号或卡号）。",
-                     f"There is no payee called “{text}”. You can add one first (name plus phone or account number).")
+        raise Refuse("CONTACT_NOT_FOUND", f"联系人列表里没有“{text}”。可以先添加联系人（需要姓名和手机号或卡号）。",
+                     f"There is no contact called “{text}”. You can add one first (name plus phone or account number).")
     return found.value
 
 
-def payee_fields(ctx: Ctx, p: Payee) -> dict:
+def contact_fields(ctx: Ctx, p: Contact) -> dict:
     created = clock.parse(p.created_at)
-    return {"payee_id": p.id, "payee": p.name, "payee_en": p.name_en or p.name, "payee_note": p.note,
-            "payee_note_en": transfers.note_en(p.note),
+    return {"contact_id": p.id, "contact": p.name, "contact_en": p.name_en or p.name, "contact_note": p.note,
+            "contact_note_en": transfers.note_en(p.note),
             "bank": p.bank, "account_tail": p.account_no[-4:],
-            "payee_new": (ctx.now - created) < timedelta(hours=24)}
+            "contact_new": (ctx.now - created) < timedelta(hours=24)}
 
 
 def amount_fen(value: float | None, ctx: Ctx, *, field_name="amount_yuan") -> int:
@@ -69,17 +69,17 @@ def parse_when(ctx: Ctx, value: str) -> datetime:
         raise Refuse("BAD_DATE", f"无法识别日期“{value}”。", f"“{value}” is not a date I can use.") from None
 
 
-def describe_payee(ctx: Ctx, r: dict) -> str:
-    note = f"（{r['payee_note']}）" if r.get("payee_note") else ""
-    return ctx.t(f"{r['payee']}{note} {r['bank']} ****{r['account_tail']}",
-                 f"{r['payee_en']}{' (' + r['payee_note_en'] + ')' if r.get('payee_note_en') else ''}, {transfers.bank_en(r['bank'])} ****{r['account_tail']}")
+def describe_contact(ctx: Ctx, r: dict) -> str:
+    note = f"（{r['contact_note']}）" if r.get("contact_note") else ""
+    return ctx.t(f"{r['contact']}{note} {r['bank']} ****{r['account_tail']}",
+                 f"{r['contact_en']}{' (' + r['contact_note_en'] + ')' if r.get('contact_note_en') else ''}, {transfers.bank_en(r['bank'])} ****{r['account_tail']}")
 
 
 # --- transfer ---
 
 
 class TransferArgs(Args):
-    payee: str = Field(min_length=1, max_length=40)
+    contact: str = Field(min_length=1, max_length=40)
     amount_yuan: float | None = Field(default=None, gt=0)
     memo: str | None = Field(default=None, max_length=40)
     from_account: Literal["checking", "savings"] = "checking"
@@ -95,7 +95,7 @@ def source_account(ctx: Ctx, kind: str) -> BankAccount:
 
 
 def transfer_resolve(ctx: Ctx, args: TransferArgs) -> dict:
-    payee = resolve_payee(ctx, args.payee)
+    contact = resolve_contact(ctx, args.contact)
     fen = amount_fen(args.amount_yuan, ctx)
     if fen > SINGLE_TRANSFER_CAP:
         raise Refuse("OVER_SINGLE_CAP", f"单笔转账上限为 {yuan(SINGLE_TRANSFER_CAP)}。",
@@ -104,18 +104,18 @@ def transfer_resolve(ctx: Ctx, args: TransferArgs) -> dict:
     if source.balance_fen < fen:
         raise Refuse("INSUFFICIENT_FUNDS", f"{source.name}余额 {yuan(source.balance_fen)}，不足以转账 {yuan(fen)}。",
                      f"{source.name_en} has {yuan(source.balance_fen)}, not enough for {yuan(fen)}.")
-    return {**payee_fields(ctx, payee), "fen": fen, "memo": args.memo, "source_id": source.id,
-            "source": source.name, "source_en": source.name_en, "route": transfers.route_for(payee.bank),
+    return {**contact_fields(ctx, contact), "fen": fen, "memo": args.memo, "source_id": source.id,
+            "source": source.name, "source_en": source.name_en, "route": transfers.route_for(contact.bank),
             "arrival": args.arrival}
 
 
 def transfer_run(ctx: Ctx, r: dict) -> dict:
-    payee = ctx.session.get(Payee, r["payee_id"])
+    contact = ctx.session.get(Contact, r["contact_id"])
     source = ledger.account(ctx.session, ctx.user.id, r["source_id"])
-    row = transfers.send(ctx.session, ctx.user, payee, source, r["fen"], now=ctx.now, memo=r["memo"],
+    row = transfers.send(ctx.session, ctx.user, contact, source, r["fen"], now=ctx.now, memo=r["memo"],
                          arrival=r.get("arrival", "instant"), arrival_reason=r.get("arrival_reason"),
                          plan_id=ctx.plan.id if ctx.plan else None)
-    return {"transfer_id": row.id, "status": row.status, "reason": row.reason, "fen": r["fen"], "payee": payee.name,
+    return {"transfer_id": row.id, "status": row.status, "reason": row.reason, "fen": r["fen"], "contact": contact.name,
             "balance_fen": source.balance_fen, "at": row.created_at, "arrive_at": row.arrive_at, "route": row.route}
 
 
@@ -123,16 +123,16 @@ def arrival_text(ctx: Ctx, r: dict) -> str:
     """How and when the money arrives, as the slip shows it."""
     route = transfers.ROUTES[r.get("route") or transfers.route_for(r["bank"])]
     arrival = transfers.ARRIVALS[r.get("arrival", "instant")]
-    why = ctx.t("，新收款人等风险提示由规则设为延时到账，到账前可撤销", "; the rules delay it because of a risk signal, and you can cancel before it arrives") \
+    why = ctx.t("，新联系人等风险提示由规则设为延时到账，到账前可撤销", "; the rules delay it because of a risk signal, and you can cancel before it arrives") \
         if r.get("arrival_reason") else (ctx.t("，到账前可撤销", "; you can cancel before it arrives") if r.get("arrival", "instant") != "instant" else "")
     return ctx.t(f"（{route[0]}，{arrival[0]}{why}）", f" ({route[1]}, {arrival[1]}{why})")
 
 
 def transfer_describe(ctx: Ctx, r: dict) -> str:
     memo = ctx.t(f"，备注“{r['memo']}”", f", note “{r['memo']}”") if r.get("memo") else ""
-    new = ctx.t("（今天新添加的收款人）", " (payee added today)") if r.get("payee_new") else ""
-    return ctx.t(f"从{r['source']}向 {describe_payee(ctx, r)}{new} 转账 {yuan(r['fen'])}{memo}{arrival_text(ctx, r)}",
-                 f"Transfer {yuan(r['fen'])} from {r['source_en']} to {describe_payee(ctx, r)}{new}{memo}{arrival_text(ctx, r)}")
+    new = ctx.t("（今天新添加的联系人）", " (contact added today)") if r.get("contact_new") else ""
+    return ctx.t(f"从{r['source']}向 {describe_contact(ctx, r)}{new} 转账 {yuan(r['fen'])}{memo}{arrival_text(ctx, r)}",
+                 f"Transfer {yuan(r['fen'])} from {r['source_en']} to {describe_contact(ctx, r)}{new}{memo}{arrival_text(ctx, r)}")
 
 
 def transfer_reply(ctx: Ctx, r: dict, res: dict) -> str:
@@ -140,21 +140,21 @@ def transfer_reply(ctx: Ctx, r: dict, res: dict) -> str:
     status = res.get("status", "arrived")
     if status == "returned":
         zh, en = transfers.RETURN_REASONS[res["reason"]]
-        return ctx.t(f"向 {res['payee']} 的 {yuan(res['fen'])} 被对方银行退回：{zh}。钱已回到您的账户，请核对收款人信息。{balance}",
-                     f"The {yuan(res['fen'])} to {r['payee_en']} was returned by their bank because {en}. "
-                     f"The money is back in your account; please check the payee's details. {balance}")
+        return ctx.t(f"向 {res['contact']} 的 {yuan(res['fen'])} 被对方银行退回：{zh}。钱已回到您的账户，请核对联系人信息。{balance}",
+                     f"The {yuan(res['fen'])} to {r['contact_en']} was returned by their bank because {en}. "
+                     f"The money is back in your account; please check the contact's details. {balance}")
     if status == "accepted":
         when = res["arrive_at"][5:16].replace("T", " ")
-        return ctx.t(f"已受理：向 {res['payee']} 转账 {yuan(res['fen'])}，预计 {when} 到账。到账前可以说“撤销转账”。{balance}",
-                     f"Accepted: {yuan(res['fen'])} to {r['payee_en']}, arriving around {when}. Say “cancel the transfer” "
+        return ctx.t(f"已受理：向 {res['contact']} 转账 {yuan(res['fen'])}，预计 {when} 到账。到账前可以说“撤销转账”。{balance}",
+                     f"Accepted: {yuan(res['fen'])} to {r['contact_en']}, arriving around {when}. Say “cancel the transfer” "
                      f"before then to stop it. {balance}")
-    return ctx.t(f"已向 {res['payee']} 转账 {yuan(res['fen'])}，已到账。{balance}",
-                 f"Sent {yuan(res['fen'])} to {r['payee_en']}; it has arrived. {balance}")
+    return ctx.t(f"已向 {res['contact']} 转账 {yuan(res['fen'])}，已到账。{balance}",
+                 f"Sent {yuan(res['fen'])} to {r['contact_en']}; it has arrived. {balance}")
 
 
 register(Action(
     name="transfer", args=TransferArgs,
-    help="Send money now. payee = name, alias, relationship (妈妈/landlord), phone number or note; amount_yuan; optional memo; "
+    help="Send money now. contact = name, alias, relationship (妈妈/landlord), phone number or note; amount_yuan; optional memo; "
          "from_account checking|savings; arrival instant|standard (2 hours later, can be cancelled until then)|next_day.",
     resolve=transfer_resolve, run=transfer_run, describe=transfer_describe, reply=transfer_reply,
     rule="PAYMENT", payment=lambda r: r["fen"], schedulable=True,
@@ -185,38 +185,38 @@ def phone_transfer_resolve(ctx: Ctx, args: PhoneTransferArgs) -> dict:
                      f"{source.name_en} has {yuan(source.balance_fen)}, not enough for {yuan(fen)}.")
     common = {"fen": fen, "memo": args.memo, "source_id": source.id, "source": source.name, "source_en": source.name_en,
               "arrival": "instant", "phone": args.phone, "phone_masked": directory.mask_phone(args.phone)}
-    saved = ctx.session.exec(select(Payee).where(Payee.user_id == ctx.user.id, Payee.phone == args.phone)).first()
+    saved = ctx.session.exec(select(Contact).where(Contact.user_id == ctx.user.id, Contact.phone == args.phone)).first()
     if saved is not None:
-        return {**payee_fields(ctx, saved), **common, "route": transfers.route_for(saved.bank)}
+        return {**contact_fields(ctx, saved), **common, "route": transfers.route_for(saved.bank)}
     found = directory.lookup(args.phone)
     if found is None:
         raise Refuse("PHONE_NOT_FOUND", "这个手机号没有绑定银行账户，不能用手机号转账。请核对号码。",
                      "That number isn't linked to a bank account, so it can't receive a transfer. Check the number.")
-    # someone the customer has never paid: shown by masked name, and treated as a payee added just now
-    return {"payee_id": None, "payee": found["masked"], "payee_en": found["masked"], "payee_note": None,
-            "payee_note_en": None, "bank": found["bank"], "account_tail": found["account_no"][-4:],
-            "payee_new": True, "first_time": True, "directory_account": found["account_no"], **common,
+    # someone the customer has never paid: shown by masked name, and treated as a contact added just now
+    return {"contact_id": None, "contact": found["masked"], "contact_en": found["masked"], "contact_note": None,
+            "contact_note_en": None, "bank": found["bank"], "account_tail": found["account_no"][-4:],
+            "contact_new": True, "first_time": True, "directory_account": found["account_no"], **common,
             "route": transfers.route_for(found["bank"])}
 
 
 def phone_transfer_run(ctx: Ctx, r: dict) -> dict:
-    payee = ctx.session.get(Payee, r["payee_id"]) if r.get("payee_id") else None
-    if payee is None:
-        payee = ctx.session.exec(select(Payee).where(Payee.user_id == ctx.user.id, Payee.phone == r["phone"])).first()
-    if payee is None:  # saved now, so the next transfer to them is one tap from Recent
-        payee = Payee(user_id=ctx.user.id, name=r["payee"], name_en=r["payee_en"], phone=r["phone"], bank=r["bank"],
+    contact = ctx.session.get(Contact, r["contact_id"]) if r.get("contact_id") else None
+    if contact is None:
+        contact = ctx.session.exec(select(Contact).where(Contact.user_id == ctx.user.id, Contact.phone == r["phone"])).first()
+    if contact is None:  # saved now, so the next transfer to them is one tap from Recent
+        contact = Contact(user_id=ctx.user.id, name=r["contact"], name_en=r["contact_en"], phone=r["phone"], bank=r["bank"],
                       account_no=r["directory_account"], note="手机号转账", created_at=clock.iso(ctx.now))
-        ctx.session.add(payee)
+        ctx.session.add(contact)
         ctx.session.flush()
-    return transfer_run(ctx, {**r, "payee_id": payee.id})
+    return transfer_run(ctx, {**r, "contact_id": contact.id})
 
 
 def phone_transfer_describe(ctx: Ctx, r: dict) -> str:
     memo = ctx.t(f"，备注“{r['memo']}”", f", note “{r['memo']}”") if r.get("memo") else ""
     new = ctx.t("（第一次转给 TA）", " (first transfer to them)") if r.get("first_time") else \
-        ctx.t("（今天新添加的收款人）", " (payee added today)") if r.get("payee_new") else ""
-    return ctx.t(f"从{r['source']}向 {r['payee']}（{r['phone_masked']}，{r['bank']} ****{r['account_tail']}）{new} 转账 {yuan(r['fen'])}{memo}{arrival_text(ctx, r)}",
-                 f"Transfer {yuan(r['fen'])} from {r['source_en']} to {r['payee_en']} ({r['phone_masked']}, "
+        ctx.t("（今天新添加的联系人）", " (contact added today)") if r.get("contact_new") else ""
+    return ctx.t(f"从{r['source']}向 {r['contact']}（{r['phone_masked']}，{r['bank']} ****{r['account_tail']}）{new} 转账 {yuan(r['fen'])}{memo}{arrival_text(ctx, r)}",
+                 f"Transfer {yuan(r['fen'])} from {r['source_en']} to {r['contact_en']} ({r['phone_masked']}, "
                  f"{transfers.bank_en(r['bank'])} ****{r['account_tail']}){new}{memo}{arrival_text(ctx, r)}")
 
 
@@ -233,13 +233,13 @@ register(Action(
 
 
 class CancelTransferArgs(Args):
-    transfer: str | None = Field(default=None, max_length=40)  # a transfer id (or its start) or the payee
+    transfer: str | None = Field(default=None, max_length=40)  # a transfer id (or its start) or the contact
 
 
 def transfer_label(t: Transfer, lang: str) -> str:
     when = t.arrive_at[5:16].replace("T", " ")
-    return f"{t.payee_name} {yuan(t.amount_fen)}，预计 {when} 到账" if lang == "zh" \
-        else f"{t.payee_name_en} {yuan(t.amount_fen)}, arriving {when}"
+    return f"{t.contact_name} {yuan(t.amount_fen)}，预计 {when} 到账" if lang == "zh" \
+        else f"{t.contact_name_en} {yuan(t.amount_fen)}, arriving {when}"
 
 
 def cancel_resolve(ctx: Ctx, args: CancelTransferArgs) -> dict:
@@ -251,9 +251,9 @@ def cancel_resolve(ctx: Ctx, args: CancelTransferArgs) -> dict:
         if by_id:
             rows = by_id
         else:
-            found = find_payee(ctx.session, ctx.user.id, args.transfer)
+            found = find_contact(ctx.session, ctx.user.id, args.transfer)
             matches = {found.value.id} if found.value else {p.id for p in found.options}
-            rows = [t for t in rows if t.payee_id in matches]
+            rows = [t for t in rows if t.contact_id in matches]
     if not rows:
         raise Refuse("NOTHING_TO_CANCEL", "没有可以撤销的转账：只有延时到账、而且还没到账的转账才能撤销。",
                      "There is no transfer to cancel: only a delayed transfer that hasn't arrived yet can be cancelled.")
@@ -261,7 +261,7 @@ def cancel_resolve(ctx: Ctx, args: CancelTransferArgs) -> dict:
         raise Ask("transfer", "要撤销哪一笔？", "Which transfer should I cancel?",
                   [{"value": t.id, "label_zh": transfer_label(t, "zh"), "label_en": transfer_label(t, "en")} for t in rows[:6]])
     t = rows[0]
-    return {"transfer_id": t.id, "payee": t.payee_name, "payee_en": t.payee_name_en, "fen": t.amount_fen,
+    return {"transfer_id": t.id, "contact": t.contact_name, "contact_en": t.contact_name_en, "fen": t.amount_fen,
             "arrive_at": t.arrive_at}
 
 
@@ -274,10 +274,10 @@ def cancel_run(ctx: Ctx, r: dict) -> dict:
 
 register(Action(
     name="transfer_cancel", args=CancelTransferArgs,
-    help="Cancel a delayed transfer that has not arrived yet; the money comes back. transfer = its id or the payee.",
+    help="Cancel a delayed transfer that has not arrived yet; the money comes back. transfer = its id or the contact.",
     resolve=cancel_resolve, run=cancel_run,
-    describe=lambda ctx, r: ctx.t(f"撤销向 {r['payee']} 的 {yuan(r['fen'])} 转账（尚未到账，钱退回原账户）",
-                                  f"Cancel the {yuan(r['fen'])} transfer to {r['payee_en']} (not arrived yet; the money comes back)"),
+    describe=lambda ctx, r: ctx.t(f"撤销向 {r['contact']} 的 {yuan(r['fen'])} 转账（尚未到账，钱退回原账户）",
+                                  f"Cancel the {yuan(r['fen'])} transfer to {r['contact_en']} (not arrived yet; the money comes back)"),
     reply=lambda ctx, r, res: ctx.t(f"已撤销，{yuan(res['fen'])} 已回到您的账户。", f"Cancelled. {yuan(res['fen'])} is back in your account."),
     rule="Y_TRANSFER_CANCEL",
     examples=["撤销刚才给周凯的转账", "cancel the transfer to Zhou Kai"],
@@ -288,7 +288,7 @@ register(Action(
 
 
 class ScheduleArgs(Args):
-    payee: str = Field(min_length=1, max_length=40)
+    contact: str = Field(min_length=1, max_length=40)
     amount_yuan: float | None = Field(default=None, gt=0)
     when: str | None = Field(default=None, max_length=25)
     repeat: Literal["none", "monthly"] = "none"
@@ -296,7 +296,7 @@ class ScheduleArgs(Args):
 
 
 def schedule_resolve(ctx: Ctx, args: ScheduleArgs) -> dict:
-    payee = resolve_payee(ctx, args.payee)
+    contact = resolve_contact(ctx, args.contact)
     fen = amount_fen(args.amount_yuan, ctx)
     if fen > SINGLE_TRANSFER_CAP:
         raise Refuse("OVER_SINGLE_CAP", f"单笔转账上限为 {yuan(SINGLE_TRANSFER_CAP)}。",
@@ -308,12 +308,12 @@ def schedule_resolve(ctx: Ctx, args: ScheduleArgs) -> dict:
         raise Refuse("PAST_DATE", "预约时间需要晚于现在。", "The time must be in the future.")
     if moment > ctx.now + timedelta(days=366):
         raise Refuse("TOO_FAR", "最多只能预约一年以内。", "Transfers can be scheduled up to a year ahead.")
-    return {**payee_fields(ctx, payee), "fen": fen, "memo": args.memo, "run_at": clock.iso(moment),
+    return {**contact_fields(ctx, contact), "fen": fen, "memo": args.memo, "run_at": clock.iso(moment),
             "repeat": args.repeat, "pay_day": moment.date().isoformat()}
 
 
 def schedule_run(ctx: Ctx, r: dict) -> dict:
-    row = ScheduledTransfer(user_id=ctx.user.id, payee_id=r["payee_id"], amount_fen=r["fen"], memo=r["memo"],
+    row = ScheduledTransfer(user_id=ctx.user.id, contact_id=r["contact_id"], amount_fen=r["fen"], memo=r["memo"],
                             run_at=r["run_at"], repeat=r["repeat"], plan_id=ctx.plan.id if ctx.plan else None,
                             created_at=clock.iso(ctx.now))
     ctx.session.add(row)
@@ -333,16 +333,16 @@ def schedule_compensate(ctx: Ctx, r: dict, res: dict) -> dict:
 def schedule_describe(ctx: Ctx, r: dict) -> str:
     when = r["run_at"][:16].replace("T", " ")
     repeat = ctx.t("，之后每月同日重复", ", then every month on that day") if r["repeat"] == "monthly" else ""
-    return ctx.t(f"预约在 {when} 向 {describe_payee(ctx, r)} 转账 {yuan(r['fen'])}{repeat}",
-                 f"Schedule {yuan(r['fen'])} to {describe_payee(ctx, r)} for {when}{repeat}")
+    return ctx.t(f"预约在 {when} 向 {describe_contact(ctx, r)} 转账 {yuan(r['fen'])}{repeat}",
+                 f"Schedule {yuan(r['fen'])} to {describe_contact(ctx, r)} for {when}{repeat}")
 
 
 register(Action(
     name="schedule_transfer", args=ScheduleArgs,
-    help="Transfer at a future time. payee, amount_yuan, when = YYYY-MM-DD or YYYY-MM-DDTHH:MM (bank time), repeat none|monthly, memo.",
+    help="Transfer at a future time. contact, amount_yuan, when = YYYY-MM-DD or YYYY-MM-DDTHH:MM (bank time), repeat none|monthly, memo.",
     resolve=schedule_resolve, run=schedule_run, describe=schedule_describe,
-    reply=lambda ctx, r, res: ctx.t(f"已预约：{res['run_at'][:16].replace('T', ' ')} 向 {r['payee']} 转 {yuan(res['fen'])}。到时会再按当天额度检查一次。",
-                                    f"Scheduled: {yuan(res['fen'])} to {r['payee_en']} on {res['run_at'][:16].replace('T', ' ')}. It is checked against that day's limit again before it runs."),
+    reply=lambda ctx, r, res: ctx.t(f"已预约：{res['run_at'][:16].replace('T', ' ')} 向 {r['contact']} 转 {yuan(res['fen'])}。到时会再按当天额度检查一次。",
+                                    f"Scheduled: {yuan(res['fen'])} to {r['contact_en']} on {res['run_at'][:16].replace('T', ' ')}. It is checked against that day's limit again before it runs."),
     rule="PAYMENT", payment=lambda r: r["fen"], compensate=schedule_compensate,
     examples=["每月1号给房东转3200房租", "send mom 500 next Friday"],
 ))
@@ -352,7 +352,7 @@ register(Action(
 
 
 class CollectArgs(Args):
-    payees: list[str] = Field(min_length=1, max_length=10)
+    contacts: list[str] = Field(min_length=1, max_length=10)
     total_yuan: float | None = Field(default=None, gt=0)
     from_merchant: str | None = Field(default=None, max_length=40)
     include_me: bool = True
@@ -374,7 +374,7 @@ def split_names(ctx: Ctx, text: str) -> list[str]:
     """'张伟王芳' written without a separator: split it only into names the customer has saved, in order."""
     if len(text) < 4 or not re.fullmatch(r"[一-龥]+", text):
         return [text]
-    names = sorted({p.name for p in ctx.session.exec(select(Payee).where(Payee.user_id == ctx.user.id))}, key=len, reverse=True)
+    names = sorted({p.name for p in ctx.session.exec(select(Contact).where(Contact.user_id == ctx.user.id))}, key=len, reverse=True)
     parts, rest = [], text
     while rest:
         name = next((n for n in names if rest.startswith(n)), None)
@@ -387,11 +387,11 @@ def split_names(ctx: Ctx, text: str) -> list[str]:
 
 def collect_resolve(ctx: Ctx, args: CollectArgs) -> dict:
     people = []
-    named = [(index, part) for index, text in enumerate(args.payees) for part in split_names(ctx, text)]
+    named = [(index, part) for index, text in enumerate(args.contacts) for part in split_names(ctx, text)]
     for index, text in named:
-        payee = resolve_payee(ctx, text, f"payees.{index}")  # a question about a name answers its original entry
-        if payee.id not in {p["payee_id"] for p in people}:
-            people.append({"payee_id": payee.id, "name": payee.name, "name_en": payee.name_en or payee.name})
+        contact = resolve_contact(ctx, text, f"contacts.{index}")  # a question about a name answers its original entry
+        if contact.id not in {p["contact_id"] for p in people}:
+            people.append({"contact_id": contact.id, "name": contact.name, "name_en": contact.name_en or contact.name})
     source_txn = None
     receipt = load_receipt(ctx, args.receipt) if args.receipt else None
     if receipt is not None and args.total_yuan is None:
@@ -446,7 +446,7 @@ def collect_describe(ctx: Ctx, r: dict) -> str:
 
 register(Action(
     name="collect", args=CollectArgs,
-    help="Split a bill (AA): request equal shares from payees. total_yuan, or receipt (an attached receipt id), or from_merchant to use a recent payment there; include_me; title.",
+    help="Split a bill (AA): request equal shares from contacts. total_yuan, or receipt (an attached receipt id), or from_merchant to use a recent payment there; include_me; title.",
     resolve=collect_resolve, run=collect_run, describe=collect_describe,
     reply=lambda ctx, r, res: ctx.t(
         f"已向 {res['count']} 人发起收款，每人 {yuan(res['share_fen'])}。对方付款后会自动到账。" if res["count"] > 1
@@ -458,10 +458,10 @@ register(Action(
 ))
 
 
-# --- add payee ---
+# --- add contact ---
 
 
-class PayeeAddArgs(Args):
+class ContactAddArgs(Args):
     name: str = Field(min_length=1, max_length=30)
     phone: str | None = Field(default=None, max_length=20)
     account_no: str | None = Field(default=None, max_length=24)
@@ -470,7 +470,7 @@ class PayeeAddArgs(Args):
     note: str | None = Field(default=None, max_length=40)
 
 
-def payee_add_resolve(ctx: Ctx, args: PayeeAddArgs) -> dict:
+def contact_add_resolve(ctx: Ctx, args: ContactAddArgs) -> dict:
     phone = "".join(ch for ch in (args.phone or "") if ch.isdigit())
     account = "".join(ch for ch in (args.account_no or "") if ch.isdigit())
     if phone and not (len(phone) == 11 and phone.startswith("1")):
@@ -479,39 +479,39 @@ def payee_add_resolve(ctx: Ctx, args: PayeeAddArgs) -> dict:
         raise Refuse("BAD_ACCOUNT", "卡号应为 12–19 位数字。", "The account number must have 12–19 digits.")
     if not phone and not account:
         raise Ask("phone", "请提供对方的手机号或银行卡号。", "Please give their phone number or account number.")
-    for p in ctx.session.exec(select(Payee).where(Payee.user_id == ctx.user.id)):
+    for p in ctx.session.exec(select(Contact).where(Contact.user_id == ctx.user.id)):
         if (phone and p.phone == phone) or (account and p.account_no == account):
-            raise Refuse("PAYEE_EXISTS", f"该收款人已存在：{p.name}。", f"This payee already exists: {p.name}.")
+            raise Refuse("CONTACT_EXISTS", f"该联系人已存在：{p.name}。", f"This contact already exists: {p.name}.")
     return {"name": args.name, "phone": phone, "account_no": account or ("6230" + phone.rjust(12, "0"))[-16:],
             "bank": args.bank or ctx.t("手机号转账", "Phone transfer"), "alias": args.alias, "note": args.note}
 
 
-def payee_add_run(ctx: Ctx, r: dict) -> dict:
-    payee = Payee(user_id=ctx.user.id, name=r["name"], name_en=r["name"], aliases=[r["alias"]] if r["alias"] else [],
+def contact_add_run(ctx: Ctx, r: dict) -> dict:
+    contact = Contact(user_id=ctx.user.id, name=r["name"], name_en=r["name"], aliases=[r["alias"]] if r["alias"] else [],
                   phone=r["phone"] or "", bank=r["bank"], account_no=r["account_no"], note=r["note"],
                   created_at=clock.iso(ctx.now))
-    ctx.session.add(payee)
+    ctx.session.add(contact)
     ctx.session.flush()
-    return {"payee_id": payee.id, "name": payee.name}
+    return {"contact_id": contact.id, "name": contact.name}
 
 
-def payee_add_compensate(ctx: Ctx, r: dict, res: dict) -> dict:
-    used = ctx.session.exec(select(Txn.id).where(Txn.payee_id == res["payee_id"])).first()
-    payee = ctx.session.get(Payee, res["payee_id"])
-    if payee and not used:
-        ctx.session.delete(payee)
+def contact_add_compensate(ctx: Ctx, r: dict, res: dict) -> dict:
+    used = ctx.session.exec(select(Txn.id).where(Txn.contact_id == res["contact_id"])).first()
+    contact = ctx.session.get(Contact, res["contact_id"])
+    if contact and not used:
+        ctx.session.delete(contact)
         return {"removed": True}
     return {"removed": False}
 
 
 register(Action(
-    name="payee_add", args=PayeeAddArgs, help="Save a new payee: name plus phone (11 digits) or account_no; optional bank, alias, note.",
-    resolve=payee_add_resolve, run=payee_add_run,
-    describe=lambda ctx, r: ctx.t(f"新增收款人 {r['name']}（{r['bank']} ****{r['account_no'][-4:]}）",
-                                  f"Add payee {r['name']} ({transfers.bank_en(r['bank'])} ****{r['account_no'][-4:]})"),
-    reply=lambda ctx, r, res: ctx.t(f"已添加收款人 {res['name']}。新收款人 24 小时内的大额付款需要强验证。",
-                                    f"Added {res['name']}. Large payments to a new payee need strong verification for 24 hours."),
-    rule="Y_PAYEE_ADD", compensate=payee_add_compensate,
+    name="contact_add", args=ContactAddArgs, help="Save a new contact: name plus phone (11 digits) or account_no; optional bank, alias, note.",
+    resolve=contact_add_resolve, run=contact_add_run,
+    describe=lambda ctx, r: ctx.t(f"新增联系人 {r['name']}（{r['bank']} ****{r['account_no'][-4:]}）",
+                                  f"Add contact {r['name']} ({transfers.bank_en(r['bank'])} ****{r['account_no'][-4:]})"),
+    reply=lambda ctx, r, res: ctx.t(f"已添加联系人 {res['name']}。新联系人 24 小时内的大额付款需要强验证。",
+                                    f"Added {res['name']}. Large payments to a new contact need strong verification for 24 hours."),
+    rule="Y_CONTACT_ADD", compensate=contact_add_compensate,
 ))
 
 
@@ -659,8 +659,8 @@ def order_resolve(ctx: Ctx, args: OrderArgs) -> dict:
         raise Refuse("PAST_DATE", "送达日期已经过去。", "That delivery date has passed.")
     recipient = None
     if args.recipient:
-        payee = resolve_payee(ctx, args.recipient, "recipient")
-        recipient = {"payee_id": payee.id, "name": payee.name, "name_en": payee.name_en or payee.name}
+        contact = resolve_contact(ctx, args.recipient, "recipient")
+        recipient = {"contact_id": contact.id, "name": contact.name, "name_en": contact.name_en or contact.name}
     # both languages are kept: the slip can be read in either, whatever language the request was in
     pay_from, label, label_en = "checking", "活期账户", "current account"
     if args.pay_from and args.pay_from.startswith("$"):
@@ -685,7 +685,7 @@ def order_run(ctx: Ctx, r: dict) -> dict:
                        plan_id=ctx.plan.id if ctx.plan else None, memo=r["item_name"], category="gifts")
     order = Order(user_id=ctx.user.id, merchant=r["merchant"], item=r["item"], item_name=r["item_name"],
                   amount_fen=r["fen"], deliver_on=r["deliver_on"],
-                  recipient=r["recipient"]["payee_id"] if r["recipient"] else None, status="paid",
+                  recipient=r["recipient"]["contact_id"] if r["recipient"] else None, status="paid",
                   pay_from=source.id, pay_at=clock.iso(ctx.now), plan_id=ctx.plan.id if ctx.plan else None,
                   created_at=clock.iso(ctx.now), paid_at=txn.at)
     ctx.session.add(order)
