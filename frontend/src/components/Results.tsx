@@ -11,7 +11,7 @@ import { SealMark } from './Seal'
 /** A ruled table in the ledger's style. */
 export function Table({ head, children, minWidth = '30rem' }: { head: ReactNode[]; children: ReactNode; minWidth?: string }) {
   return (
-    <div className="overflow-x-auto ruled bg-field">
+    <div className="overflow-x-auto card">
       <table className="w-full border-collapse text-left text-[0.9rem]" style={{ minWidth }}>
         <thead>
           <tr className="rule-b bg-paper text-[0.82rem] text-rule2">
@@ -29,7 +29,7 @@ type Row = { key: string; main: ReactNode; sub?: ReactNode; value?: ReactNode; m
 /** A list of rows as on the app's pages: what it is, a grey detail line, the amount on the right. */
 function Rows({ items }: { items: Row[] }) {
   return (
-    <ul className="divide-y divide-[var(--rule)] ruled bg-field">
+    <ul className="divide-y divide-[var(--rule)] card">
       {items.map((row) => (
         <li key={row.key} className={`flex items-center gap-3 px-3 py-2.5 ${row.muted ? 'text-ink2' : ''}`}>
           <div className="min-w-0 flex-1">
@@ -51,7 +51,7 @@ export function Bars({ rows }: { rows: { label: string; fen: number; hint?: stri
         <li key={row.label}>
           <div className="flex items-baseline justify-between gap-3 text-sm">
             <span className="truncate">{row.label}{row.hint && <span className="ml-1.5 text-xs text-ink2">{row.hint}</span>}</span>
-            <span className="num shrink-0 font-mono">{yuan(row.fen)}</span>
+            <span className="num shrink-0 font-semibold">{yuan(row.fen)}</span>
           </div>
           <div className="budget-track"><span style={{ width: `${Math.max(2, (row.fen / top) * 100)}%` }} /></div>
         </li>
@@ -98,7 +98,7 @@ function Question({ card }: { card: Card }) {
   }
   if (card.field === 'answers') {
     return (
-      <div className="ruled bg-field p-4">
+      <div className="card p-4">
         <ol className="space-y-4">
           {card.options.map((q: { question_zh: string; question_en: string; choices_zh: string[]; choices_en: string[] }, i: number) => (
             <li key={i}>
@@ -148,7 +148,7 @@ export function Result({ card }: { card: Card }) {
       )
     case 'receipt':
       return (
-        <div className="flex items-center gap-3 ruled bg-field px-3 py-2.5">
+        <div className="flex items-center gap-3 card px-3 py-2.5">
           <SealMark kind="done" size={30} />
           <div><p className="font-semibold text-jade">{tr('Done', '已办成')} <span className="num font-mono text-ink">{yuan(card.fen)}</span></p>
             {card.balance_fen !== undefined && <p className="num text-[0.85rem] text-ink2">{tr('Balance after', '交易后余额')} {yuan(card.balance_fen)}</p>}</div>
@@ -170,17 +170,17 @@ export function Result({ card }: { card: Card }) {
         }))} />
       )
     case 'spending':
-      return <div className="ruled bg-field p-4"><Bars rows={card.categories.slice(0, 8).map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%` }))} /></div>
+      return <div className="card p-4"><Bars rows={card.categories.slice(0, 8).map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%` }))} /></div>
     case 'report':
       return (
-        <div className="ruled bg-field p-4">
+        <div className="card p-4">
           <Columns series={card.series} />
           <div className="mt-4"><Bars rows={card.categories.slice(0, 6).map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%` }))} /></div>
         </div>
       )
     case 'anomalies':
       return (
-        <ol className="divide-y divide-rule ruled bg-field">
+        <ol className="divide-y divide-rule card">
           {card.items.map((a: { txn_id: string | null; at: string; merchant: string | null; fen: number; reason_zh: string; reason_en: string; code: string; category?: string }) => (
             <li key={`${a.code}-${a.txn_id ?? a.category}`} className="grid grid-cols-[auto_1fr_auto] gap-x-3 px-3 py-2.5">
               <SealMark kind="flag" size={28} />
@@ -250,7 +250,7 @@ export function Result({ card }: { card: Card }) {
       const show = (v: number) => (card.unit === 'count' ? tr(`${v} times`, `${v} 次`) : card.unit === 'percent' ? `${v}%` : yuan(Math.round(v * 100)))
       return (
         <div className="space-y-2">
-          <div className="ruled bg-field p-4">
+          <div className="card p-4">
             <p className="text-sm text-ink2">{card.title}</p>
             {card.value !== null && <p className="num cond mt-1 text-[1.8rem] font-bold leading-none">{show(card.value)}</p>}
             {card.rows.length > 0 && (

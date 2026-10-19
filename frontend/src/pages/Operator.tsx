@@ -71,7 +71,7 @@ function Operator() {
             </ul>
           )}
         </Panel>
-        {!d ? <p className="ruled bg-field px-4 py-10 text-center text-ink2">{tr('Choose a conversation on the left.', '从左侧选择一个会话。')}</p> : (
+        {!d ? <p className="card px-4 py-10 text-center text-ink2">{tr('Choose a conversation on the left.', '从左侧选择一个会话。')}</p> : (
           <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
             <Panel title={d.user.name} note={d.user.email} right={<span className="flex flex-wrap gap-2">
               {d.locks.length > 0 && <button type="button" className="btn btn-line py-1.5" onClick={() => void act(() => api.operatorUnlock(d.conversation_id))}>{tr('Lift safety lock', '解除安全锁')}</button>}

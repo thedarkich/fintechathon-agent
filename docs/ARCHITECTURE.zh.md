@@ -71,7 +71,7 @@ flowchart LR
 | 小票读取 | `pipeline/*`、`receipts.py` | 在隔离进程中解析上传文件；视觉模型（如已配置）或 PDF 规则返回固定格式；标记隐藏文字和类似指令的内容。 |
 | 回复 | `agent/replies.py` 及各操作的 `reply` | 每句包含事实的话都由代码根据结果写出，中英文双语。 |
 | 审计 | `agent/audit.py` | 每位客户一条只追加、以哈希串联的日志；`GET /api/audit/verify` 重新计算整条链。 |
-| 前端 | `frontend/src` | React 网页应用：首页（一键开通演示账户）；助手（对话，每个请求一张确认卡）；账户与转账；账单；理财；卡片与安全；记录（你办过的事和哈希链审计日志）；安全原理；人工客服控制台。 |
+| 前端 | `frontend/src` | React 网页应用：首页（一键开通演示账户）；首页；助手（对话，每个请求一张确认卡）；转账；账单；理财；卡片；自动续费；记录（你办过的事和哈希链审计日志）；安全原理；人工客服控制台。 |
 
 技术栈：Python 3.11、FastAPI、SQLModel + SQLite（WAL）、React 18 + Vite + TypeScript + Tailwind。用 Docker Compose 部署在 Caddy 之后（自动 HTTPS）。不使用任何 CDN：所有资源都由自己的服务器提供，确保中国大陆的手机能稳定加载。
 

@@ -4,26 +4,32 @@
 @tailwind components;
 @tailwind utilities;
 
-/* One visual system for the site and the app: a white page, grey rounded surfaces, one strong green,
-   a bright mint for the main call to action on green, bold Manrope headings. */
+/* One visual system for the site and the app: a white page, white cards lifted by a soft shadow,
+   pale tiles inside them, pastel icon circles, big bold figures and one strong green for actions. */
 :root {
-  --paper: #ffffff; --paper-2: #e9ebf0; --field: #f1f2f6; --sheet: #f7f8fa;
-  --ink: #071222; --ink-2: #5f6670; --ink-hover: #000000; --ink-off: #a3a9b2;
-  --rule: #e3e5ea; --rule-strong: #d3d7de; --cinnabar: #b83f42; --cinnabar-wash: #fff1f1;
-  --jade: #007a5a; --row-new: #e7f8f3; --wave-1: #f1f2f6; --shadow: rgba(7,18,34,.07);
-  --action: #007a5a; --action-ink: #ffffff; --accent-wash: #e7f8f3; --ring: #007a5a; --radius: 20px;
-  --cta: #64f995; --cta-ink: #071222; --dot: #faae17;
-  --hero: linear-gradient(135deg, #007a5a 0%, #00835f 100%);
+  --paper: #ffffff; --paper-2: #e9ecf0; --field: #f5f6f8; --sheet: #f9fafb;
+  --card: #ffffff; --card-shadow: 0 1px 2px rgba(16,24,40,.04), 0 4px 18px rgba(16,24,40,.07);
+  --ink: #111827; --ink-2: #5f6672; --ink-hover: #000000; --ink-off: #a3a9b2;
+  --rule: #eceef2; --rule-strong: #d9dde3; --cinnabar: #c62828; --cinnabar-wash: #fdecec;
+  --jade: #156b42; --row-new: #e8f5ee; --wave-1: #f5f6f8; --shadow: rgba(16,24,40,.08);
+  --action: #1a7f4f; --action-ink: #ffffff; --accent-wash: #e8f5ee; --ring: #1a7f4f; --radius: 22px;
+  --blue: #2563eb; --blue-wash: #e8f1fd; --violet: #7c3aed; --violet-wash: #f1ecfd;
+  --amber: #e3a008; --amber-pill: #f4b740; --amber-wash: #fff6e5; --amber-ink: #8a5a00;
+  --cta: #1a7f4f; --cta-ink: #ffffff; --dot: #f4b740;
+  --hero: linear-gradient(135deg, #1a7f4f 0%, #1f9160 100%);
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --paper: #0b1320; --paper-2: #1f2e42; --field: #152132; --sheet: #111b2a;
+  --paper: #0e141b; --paper-2: #26313e; --field: #1c2530; --sheet: #131b24;
+  --card: #151d27; --card-shadow: 0 0 0 1px rgba(255,255,255,.05), 0 6px 20px rgba(0,0,0,.35);
   --ink: #eef2f6; --ink-2: #9aa6b2; --ink-hover: #ffffff; --ink-off: #5d6b7a;
-  --rule: #243447; --rule-strong: #33465c; --cinnabar: #f0959a; --cinnabar-wash: #3a1f24;
-  --jade: #3fd19e; --row-new: #12302a; --wave-1: #152132; --shadow: rgba(0,0,0,.32);
-  --action: #2bc28e; --action-ink: #04140e; --accent-wash: #12302a; --ring: #2bc28e;
-  --cta: #64f995; --cta-ink: #071222; --dot: #faae17;
-  --hero: linear-gradient(135deg, #00664b 0%, #007a5a 100%);
+  --rule: #243140; --rule-strong: #33465c; --cinnabar: #f39494; --cinnabar-wash: #3a1f24;
+  --jade: #5ad6a0; --row-new: #12302a; --wave-1: #1c2530; --shadow: rgba(0,0,0,.35);
+  --action: #34c88a; --action-ink: #04140e; --accent-wash: #12302a; --ring: #34c88a;
+  --blue: #8db1f7; --blue-wash: #172a4a; --violet: #bba1f8; --violet-wash: #2a1f45;
+  --amber: #f4c35a; --amber-pill: #f4b740; --amber-wash: #3a2e14; --amber-ink: #f4c35a;
+  --cta: #34c88a; --cta-ink: #04140e; --dot: #f4b740;
+  --hero: linear-gradient(135deg, #136643 0%, #1a7f4f 100%);
   color-scheme: dark;
 }
 
@@ -56,7 +62,7 @@ body {
 }
 h1, h2, h3 { text-wrap: balance; }
 p, li { text-wrap: pretty; }
-.lp-slide-copy p, .lp-section-lead, .lp-tile-text, .lp-banner-copy p, .lp-cta p { text-wrap: balance; }
+.lp-hero-copy p, .lp-section-lead { text-wrap: balance; }
 
 .keep {
   word-break: keep-all;
@@ -67,19 +73,18 @@ p, li { text-wrap: pretty; }
   font-variant-numeric: tabular-nums;
 }
 
-/* A card: a grey rounded surface with no border. The fill is in :where() so a bg-* class still wins. */
+/* A card: white, rounded, lifted by a soft shadow. The fill is in :where() so a bg-* class still wins. */
 .ruled,
-.ruled-strong {
+.ruled-strong,
+.card {
   border-radius: var(--radius);
 }
-:where(.ruled, .ruled-strong) {
-  background-color: var(--field);
+:where(.ruled, .ruled-strong, .card) {
+  background-color: var(--card);
+  box-shadow: var(--card-shadow);
 }
-/* on a grey card, fields and secondary buttons are white, as they would vanish grey on grey */
-.ruled :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not(.bg-transparent), textarea:not(.bg-transparent), select),
-:is(.ruled, .confirm-card, .bot-bubble) .btn-line {
-  background-color: var(--paper);
-}
+/* a pale tile inside a card, as the figures sit in the reference */
+.tile { border-radius: 16px; background: var(--field); }
 .rule-b {
   border-bottom: 1px solid var(--rule);
 }
@@ -120,9 +125,10 @@ button {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  min-height: 40px;
   border-radius: 12px;
   padding: 0.625rem 1.25rem;
-  font-weight: 600;
+  font-weight: 700;
   border: 1px solid transparent;
   transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease, filter 120ms ease;
 }
@@ -130,11 +136,7 @@ button {
   background: var(--action);
   color: var(--action-ink);
 }
-.btn-ink:hover { background: color-mix(in srgb, var(--action) 88%, var(--action-ink)); }
-.btn-ink:disabled {
-  background: var(--ink-off);
-  cursor: not-allowed;
-}
+.btn-ink:not(:disabled):hover { filter: brightness(1.08); }
 .btn-line {
   background: var(--field);
   color: var(--ink);
@@ -142,26 +144,64 @@ button {
 .btn-line:hover {
   background: var(--paper-2);
 }
-/* the bright button, for the main action on a green surface */
+/* the bright button for the main action */
 .btn-cta {
   background: var(--cta);
   color: var(--cta-ink);
 }
 .btn-cta:hover { filter: brightness(1.05); }
 .btn-cinnabar {
-  border: 1px solid color-mix(in srgb, var(--cinnabar) 40%, transparent);
   color: var(--cinnabar);
-  background: transparent;
-}
-.btn-cinnabar:hover {
   background: var(--cinnabar-wash);
 }
-.btn-line:disabled,
-.btn-cinnabar:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  background: transparent;
+.btn-cinnabar:hover {
+  filter: brightness(0.97);
 }
+/* A button that can't be pressed yet looks it: grey, flat, a no-entry cursor. Beats any bg-* on the button. */
+.btn:disabled,
+.btn[aria-disabled=true] {
+  background: var(--paper-2);
+  color: var(--ink-2);
+  border-color: transparent;
+  box-shadow: none;
+  filter: none;
+  cursor: not-allowed;
+}
+
+/* Pastel icon circles, big figures, thick bars, rating pills, notices and badges: the reference's parts. */
+.icon-dot { display: inline-grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; }
+.tint-green { background: var(--accent-wash); color: var(--action); }
+.tint-blue { background: var(--blue-wash); color: var(--blue); }
+.tint-violet { background: var(--violet-wash); color: var(--violet); }
+.tint-amber { background: var(--amber-wash); color: var(--amber); }
+.tint-red { background: var(--cinnabar-wash); color: var(--cinnabar); }
+.stat-value { font-size: clamp(1.6rem, 2.6vw, 2.25rem); font-weight: 800; letter-spacing: -0.025em; line-height: 1.1; }
+.stat-label { font-size: 0.85rem; color: var(--ink-2); }
+.bar-thick { width: 100%; height: 10px; border-radius: 999px; background: var(--paper-2); overflow: hidden; }
+.bar-thick > span { display: block; height: 100%; border-radius: inherit; background: var(--action); }
+.pills { display: inline-flex; gap: 4px; }
+.pills > i { width: 20px; height: 8px; border-radius: 999px; background: var(--paper-2); }
+.pills.is-green > i.on { background: var(--action); }
+.pills.is-amber > i.on { background: var(--amber-pill); }
+.pills.is-red > i.on { background: var(--cinnabar); }
+.notice { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: 16px; }
+.notice-icon { display: inline-grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; font-weight: 800; }
+.notice-title { font-weight: 700; line-height: 1.35; }
+.notice-body { margin-top: 2px; font-size: 0.9rem; line-height: 1.5; }
+.notice-alert { background: var(--cinnabar-wash); }
+.notice-alert .notice-icon { background: var(--cinnabar); color: #fff; }
+.notice-alert .notice-title { color: var(--cinnabar); }
+.notice-highlight { background: var(--amber-wash); }
+/* dark marks on amber: white on amber is too faint */
+.notice-highlight .notice-icon { background: var(--amber); color: #111827; }
+.notice-info { background: var(--accent-wash); }
+.notice-info .notice-icon { background: var(--action); color: var(--action-ink); }
+:root[data-theme="dark"] .notice-alert .notice-icon, :root[data-theme="dark"] .notice-highlight .notice-icon { color: #111827; }
+.badge { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; border-radius: 999px; padding: 3px 10px; font-size: 0.78rem; font-weight: 700; line-height: 1.35; }
+.badge-green { background: var(--accent-wash); color: var(--jade); }
+.badge-amber { background: var(--amber-wash); color: var(--amber-ink); }
+.badge-red { background: var(--cinnabar-wash); color: var(--cinnabar); }
+.badge-grey { background: var(--field); color: var(--ink-2); }
 
 /* The one bold moment: a seal stamping down onto the outcome */
 @keyframes stamp {
@@ -223,32 +263,31 @@ button {
   }
 }
 
-/* The workspace uses the same two-row navigation as the landing page. */
 .workspace { min-height: 100dvh; }
 .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--jade); flex-shrink: 0; }
 .page-content { width: min(1280px, calc(100% - 48px)); margin: 0 auto; padding: 36px 0 72px; }
-.page-content h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.page-content h1 { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
 .page-content h1 + p { margin-top: 8px; }
-.eyebrow { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); }
+.eyebrow { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
 .panel-heading { padding: 20px 24px; display: flex; justify-content: space-between; gap: 12px; align-items: center; border-bottom: 1px solid var(--rule); }
 .panel-heading h2 { font-size: 16px; font-weight: 600; }
 .panel-heading p { color: var(--ink-2); font-size: 13px; margin-top: 4px; }
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
-.metric-card { border-radius: var(--radius); background: var(--field); padding: 24px; min-width: 0; }
+.metric-card { border-radius: var(--radius); background: var(--card); box-shadow: var(--card-shadow); padding: 22px; min-width: 0; }
 .metric-card dt, .metric-label { color: var(--ink-2); font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
-.metric-card dd { font-size: 28px; font-weight: 600; letter-spacing: -0.03em; margin-top: 16px; line-height: 1.1; }
+.metric-card dd { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin-top: 12px; line-height: 1.1; }
 .metric-card small { font-size: 12px; font-weight: 400; color: var(--ink-2); margin-left: 5px; letter-spacing: 0; }
 .metric-foot { display: flex; flex-wrap: wrap; gap: 10px 24px; color: var(--ink-2); font-size: 12px; margin-top: 14px; }
 .metric-foot strong { color: var(--ink); font-weight: 500; margin-left: 6px; }
-.agent-avatar { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--paper-2); border: 1px solid var(--rule); border-radius: 999px; color: var(--ink-2); }
-.agent-avatar.guarded { color: var(--jade); background: var(--accent-wash); }
+.agent-avatar { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--field); border-radius: 999px; color: var(--ink-2); }
+.agent-avatar.guarded { color: var(--action); background: var(--accent-wash); }
 .page-content > *, .page-content section, .page-content form, .page-content label { min-width: 0; }
 .page-content input, .page-content select { min-width: 0; }
 .agent-detail { font-size: 12px; color: var(--ink-2); margin-top: 18px; }
 .agent-detail summary { cursor: pointer; width: fit-content; }
 .agent-detail p { margin-top: 8px; }
-.budget-track { width: 100%; height: 5px; border-radius: 6px; background: var(--paper-2); overflow: hidden; margin-top: 12px; }
-.budget-track span { display: block; height: 100%; background: var(--jade); border-radius: inherit; }
+.budget-track { width: 100%; height: 10px; border-radius: 999px; background: var(--paper-2); overflow: hidden; margin-top: 8px; }
+.budget-track span { display: block; height: 100%; background: var(--action); border-radius: inherit; }
 .workspace table { font-size: 13px; }
 .workspace th { padding-top: 12px; padding-bottom: 12px; }
 .workspace td { padding-top: 14px; padding-bottom: 14px; }
@@ -263,30 +302,36 @@ button {
   .page-content { width: calc(100% - 32px); padding: 20px 0 48px; }
   .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .metric-card { padding: 16px; }
-  .metric-card dd { font-size: 24px; margin-top: 12px; }
+  .metric-card dd { font-size: 24px; margin-top: 10px; }
   .metric-card dt { font-size: 12px; }
   .page-content h1 { font-size: 28px; }
   .panel-heading { padding: 16px; }
 }
-
-/* A service: a white rounded tile with a green line icon, its name underneath; a grey panel holds a grid of them. */
-.service-panel { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px 8px; border-radius: 24px; background: var(--field); padding: 26px 16px 22px; }
-.service-tile { display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 2px; text-align: center; font-size: 14px; font-weight: 600; line-height: 1.25; color: var(--ink); }
-.service-icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 18px; background: var(--paper); color: var(--action); border: 1px solid var(--rule); box-shadow: 0 6px 16px var(--shadow); transition: transform .15s ease, border-color .15s ease; }
-.service-tile:hover .service-icon, .service-tile:focus-visible .service-icon { border-color: var(--action); transform: translateY(-2px); }
-.service-tile:disabled { opacity: .6; }
+/* Phones: everything you tap is at least 44px tall. */
 @media (max-width: 767px) {
-  .service-panel { gap: 16px 4px; padding: 18px 6px 16px; }
-  .service-icon { width: 56px; height: 56px; border-radius: 16px; }
-  .service-tile { font-size: 12.5px; }
+  .btn { min-height: 44px; }
+  [role=tablist] > [role=tab] { min-height: 40px; }
 }
-@media (prefers-reduced-motion: reduce) { .service-icon { transition: none; } }
 
-/* on a grey card, the pill tabs' track is white */
-.ruled [role=tablist] { background-color: var(--paper); }
+/* A service: a pastel icon circle with its name underneath, on a white card that holds a grid of them. */
+.service-panel { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.service-tile { display: flex; align-items: center; gap: 14px; min-height: 76px; padding: 14px 16px; border-radius: 20px; background: var(--card); box-shadow: var(--card-shadow); text-align: left; font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--ink); transition: transform .15s ease, box-shadow .15s ease; }
+.service-tile small { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 500; color: var(--ink-2); }
+.service-icon { display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; }
+.service-tile:hover, .service-tile:focus-visible { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(16,24,40,.05), 0 10px 26px rgba(16,24,40,.10); }
+.service-tile:disabled { opacity: .6; }
+@media (max-width: 1023px) { .service-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 767px) {
+  .service-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .service-tile { gap: 10px; min-height: 64px; padding: 12px; font-size: 14px; }
+  .service-icon { width: 40px; height: 40px; }
+  .service-tile small { display: none; }
+  .service-panel .is-tabbed { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .service-tile { transition: none; } }
 
 /* lists inside the assistant's grey bubble are white */
-.bot-bubble .ruled { background-color: var(--paper); }
+.bot-bubble .ruled { background-color: var(--card); box-shadow: none; }
 
 /* The chat history slides in from the left on phones. */
 @keyframes drawer-in { from { transform: translateX(-100%); } to { transform: none; } }
@@ -299,10 +344,10 @@ button {
 :root[data-text="large"] .site-mainnav a { font-size: 17px; }
 :root[data-text="large"] .tabbar a, :root[data-text="large"] .tabbar button { font-size: 13.5px; }
 .service-panel.is-large { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.service-panel.is-large .service-tile { flex-direction: row; justify-content: flex-start; gap: 14px; padding: 6px 10px; font-size: 20px; text-align: left; }
-.service-panel.is-large .service-icon { width: 72px; height: 72px; }
+.service-panel.is-large .service-tile { gap: 16px; padding: 16px 18px; font-size: 20px; }
+.service-panel.is-large .service-icon { width: 64px; height: 64px; }
 @media (max-width: 767px) {
-  .service-panel.is-large { gap: 14px 8px; padding: 16px 10px; }
-  .service-panel.is-large .service-tile { flex-direction: column; text-align: center; font-size: 18px; }
-  .service-panel.is-large .service-icon { width: 64px; height: 64px; }
+  .service-panel.is-large { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .service-panel.is-large .service-tile { flex-direction: column; text-align: center; font-size: 18px; padding: 18px 8px; }
+  .service-panel.is-large .service-icon { width: 60px; height: 60px; }
 }

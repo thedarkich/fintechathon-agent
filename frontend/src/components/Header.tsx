@@ -7,9 +7,9 @@ import { useAuth } from '../lib/auth'
 import { SiteHeader } from './SiteChrome'
 
 const PAGE_TITLES: Record<string, [string, string]> = {
-  home: ['Home', '首页'], send: ['Send money', '转账'],
-  assistant: ['Assistant', '助手'], accounts: ['Accounts', '账户'], bills: ['Spending', '账单'],
-  wealth: ['Invest', '理财'], controls: ['Cards & security', '卡片与安全'], ledger: ['History', '记录'], operator: ['Staff', '客服'],
+  home: ['Home', '首页'], send: ['Transfers', '转账'], bills: ['Spending', '账单'], wealth: ['Invest', '理财'],
+  controls: ['Cards', '卡片'], subscriptions: ['Subscriptions', '自动续费'], assistant: ['Assistant', '助手'],
+  ledger: ['History', '记录'], operator: ['Staff', '客服'],
 }
 
 /** The workspace header: one row of pages, with the bank's clock in the account menu. `extra` sits before the account (the demo tools). */

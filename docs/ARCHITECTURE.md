@@ -71,7 +71,7 @@ flowchart LR
 | Receipt reader | `pipeline/*`, `receipts.py` | Parses uploads in an isolated worker; a vision model (when configured) or PDF rules return a fixed schema; hidden text and instruction-like content are flagged. |
 | Replies | `agent/replies.py`, each action's `reply` | Every sentence with a fact is written by code from results, in Chinese and English. |
 | Audit | `agent/audit.py` | Append-only, hash-chained log per customer; `GET /api/audit/verify` recomputes the chain. |
-| Frontend | `frontend/src` | React web app: landing page with a one-click demo account; Assistant (chat, with one confirm card per request); Accounts & transfers; Spending; Invest; Cards & security; History (what you asked for, and the hash-chained audit log); How it stays safe; operator console. |
+| Frontend | `frontend/src` | React web app: landing page with a one-click demo account; Home; Assistant (chat, with one confirm card per request); Transfers; Spending; Invest; Cards; Subscriptions; History (what you asked for, and the hash-chained audit log); How it stays safe; operator console. |
 
 Stack: Python 3.11, FastAPI, SQLModel on SQLite (WAL), React 18 + Vite + TypeScript + Tailwind. One Docker Compose deployment behind Caddy (automatic HTTPS). No CDNs: everything is served from our own host so phones in mainland China load it reliably.
 

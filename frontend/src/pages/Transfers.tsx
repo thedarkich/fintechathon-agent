@@ -26,7 +26,7 @@ function Stages({ t }: { t: Transfer }) {
   ]
   const waiting = t.status === 'accepted' ? 1 : -1 // the next stage pulses while the transfer waits
   return (
-    <ol className="grid grid-cols-3 overflow-hidden rounded-box bg-paper" aria-label={tr('Stages', '进度')}>
+    <ol className="grid grid-cols-3 overflow-hidden rounded-box bg-[var(--field)]" aria-label={tr('Stages', '进度')}>
       {boxes.map((b, i) => {
         const event = reached(b.status)
         const bad = event && (b.status === 'returned' || b.status === 'cancelled')
@@ -109,7 +109,7 @@ function SmsPanel() {
     ? (mine.data?.items ?? []).map((m) => ({ id: m.id, who: null as string | null, text: lang === 'zh' ? m.text : m.text_en, at: m.at }))
     : (theirs.data?.items ?? []).map((m) => ({ id: m.id, who: lang === 'zh' ? m.payee : m.payee_en, text: lang === 'zh' ? m.text : m.text_en, at: m.at }))
   return (
-    <div className="ruled bg-field">
+    <div className="card">
       <div className="p-3 pb-0">
         <p className="mb-2 px-1 text-sm font-semibold">{tr('Text messages', '短信')} <span className="font-normal text-ink2">{tr('(simulated phones)', '（模拟手机）')}</span></p>
         <Segmented stretch className="flex w-full" label={tr('Text messages', '短信')} value={tab} onChange={setTab}
@@ -118,7 +118,7 @@ function SmsPanel() {
       {!items.length ? <p className="px-4 py-4 text-sm text-ink2">{tr('No messages.', '暂无短信。')}</p> : (
         <ol className="max-h-80 space-y-2 overflow-y-auto p-3">
           {items.map((m) => (
-            <li key={m.id} className="rounded-box bg-paper px-3 py-2 text-[0.85rem] leading-relaxed">
+            <li key={m.id} className="rounded-box bg-[var(--field)] px-3 py-2 text-[0.85rem] leading-relaxed">
               {m.who && <span className="mb-0.5 block text-xs font-semibold text-ink2">{m.who}</span>}
               {m.text}
               <span className="mt-1 block font-mono text-[0.72rem] text-ink2">{stamp(m.at)}</span>
@@ -130,7 +130,7 @@ function SmsPanel() {
   )
 }
 
-/** Transfers as the bank processes them, next to both phones: a section of the Accounts page. */
+/** Transfers as the bank processes them, next to both phones: a tab of the Transfers page. */
 export function TransfersSection({ className = '' }: { className?: string }) {
   const { tr, lang } = useLang()
   const qc = useQueryClient()
@@ -146,12 +146,12 @@ export function TransfersSection({ className = '' }: { className?: string }) {
     void qc.invalidateQueries()
   }
   return (
-    <Section id="transfers" title={tr('Transfers', '转账')} className={className}
+    <Section id="transfers" title={tr('Where my money is', '到账进度')} className={className}
       aside={status && <p role="status" className={`text-sm font-semibold ${status.ok ? 'text-jade' : 'text-cinnabar'}`}>{status.text}</p>}>
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
         {!list.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : !items.length
-          ? <p className="ruled bg-field px-4 py-4 text-sm text-ink2">{tr('No transfers yet.', '还没有转账。')}</p>
-          : <ul className="min-w-0 divide-y divide-[var(--rule)] ruled bg-field">{items.map((t, i) => <TransferRow key={t.id} t={t} demo={!!health.data?.demo_tools} open={i === 0} onDone={done} />)}</ul>}
+          ? <p className="card px-4 py-4 text-sm text-ink2">{tr('No transfers yet.', '还没有转账。')}</p>
+          : <ul className="min-w-0 divide-y divide-[var(--rule)] card">{items.map((t, i) => <TransferRow key={t.id} t={t} demo={!!health.data?.demo_tools} open={i === 0} onDone={done} />)}</ul>}
         <SmsPanel />
       </div>
     </Section>

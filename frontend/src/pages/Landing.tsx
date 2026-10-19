@@ -1,14 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang } from '../i18n'
 import { SiteHeader, SiteFooter } from '../components/SiteChrome'
-import { HeroSlider, type Slide } from '../components/HeroSlider'
 import { Icon, type IconName } from '../components/Icon'
 import { Seal } from '../components/Seal'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { Badge, IconDot, TierTag, type Tint } from '../components/bits'
 import { getAdminToken } from '../api/client'
 import { useAuth, useStartDemo } from '../lib/auth'
-import { yuan } from '../lib/format'
 import '../landing.css'
 
 const reduceMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -26,7 +24,6 @@ function PhoneDemo() {
   }, [step])
   const rows: [string, string][] = [
     [tr('To', '收款人'), tr('Wang Xiuying (Mom)', '王秀英（妈妈）')],
-    [tr('Account', '收款账户'), tr('ICBC ****7801', '中国工商银行 ****7801')],
     [tr('Amount', '金额'), '¥200.00'],
     [tr('Arrives', '到账'), tr('Now', '实时到账')],
   ]
@@ -39,7 +36,7 @@ function PhoneDemo() {
           {step === 1 && <p className="lp-typing" aria-hidden><i /><i /><i /></p>}
           {step >= 2 && <p className="lp-bubble lp-bot">{tr('Please check:', '请核对：')}</p>}
           {step >= 2 && (
-            <div className={`lp-card ${step >= 4 ? 'is-done' : ''}`}>
+            <div className="lp-card">
               <div className="lp-card-head"><b>{step >= 4 ? tr('Done', '已办好') : tr('Please confirm', '请确认')}</b>{step < 4 ? <span className="lp-tag">{tr('Needs your OK', '需确认')}</span> : <Seal kind="done" size={40} />}</div>
               <dl>{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd className={k === tr('Amount', '金额') ? 'lp-amount' : ''}>{v}</dd></div>)}</dl>
               {step < 4 && <div className="lp-card-actions"><span className={`lp-btn ${step === 3 ? 'is-pressed' : ''}`}>{tr('Confirm', '确认')}</span><span className="lp-btn lp-btn-line">{tr('Cancel', '取消')}</span></div>}
@@ -52,165 +49,6 @@ function PhoneDemo() {
       <div className={`lp-notice ${step >= 5 ? 'is-shown' : ''}`} aria-hidden={step < 5}>
         <p className="lp-notice-who"><Icon name="phone" size={13} /> {tr('Mom’s phone', '妈妈的手机')}</p>
         <p>{tr('[ICBC] Your account ending 7801 received RMB 200.00 from Li Ming.', '【中国工商银行】您尾号7801的账户收到李明转账人民币200.00元。')}</p>
-      </div>
-    </div>
-  )
-}
-
-/** A phone screen for the other slides: the same frame as the demo, showing one screen of the app. */
-function PhoneScreen({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="lp-phones">
-      <div className="lp-phone">
-        <div className="lp-phone-bar"><span>9:41</span><b>{title}</b><span>•••</span></div>
-        <div className="lp-screen">{children}</div>
-      </div>
-    </div>
-  )
-}
-
-function TransferScreen() {
-  const { tr } = useLang()
-  return (
-    <PhoneScreen title={tr('Transfers', '转账')}>
-      <p className="lp-field"><span>+86</span> 135 1234 0000</p>
-      <div className="lp-who"><span className="lp-avatar">*</span><div><b>*艳</b><small>{tr('Agricultural Bank of China', '中国农业银行')}</small></div></div>
-      <p className="lp-warn">{tr('First transfer to this number: check the name.', '第一次转给这个号码：请核对姓名。')}</p>
-      <p className="lp-big">¥200</p>
-      <span className="lp-btn">{tr('Send ¥200.00', '转账 ¥200.00')}</span>
-      <p className="lp-fine">{tr('Over ¥500 to someone new: PIN + code, arrives in 2 hours.', '给新收款人超过 ¥500：需验证，2 小时后到账。')}</p>
-    </PhoneScreen>
-  )
-}
-
-/** The cross-scenario plan: one sentence becomes money set aside now and two orders that wait for their day. */
-function PlanScreen() {
-  const { tr } = useLang()
-  const steps: [string, string, string][] = [
-    [tr('Gift money', '礼物钱'), tr('Set aside now', '已预留'), '¥1,000'],
-    [tr('Roses', '鲜花'), tr('Orders 11-20', '11-20 下单'), '¥199'],
-    [tr('Cake', '蛋糕'), tr('Orders 11-20', '11-20 下单'), '¥168'],
-  ]
-  return (
-    <PhoneScreen title={tr('Birthday plan', '生日计划')}>
-      <div className="lp-who"><span className="lp-avatar"><Icon name="clock" size={18} /></span><div><b>{tr('Chen Jing · 11-22', '陈静 · 11-22')}</b><small className="lp-ok">{tr('Wife’s birthday', '老婆的生日')}</small></div></div>
-      {steps.map(([what, when, amount]) => <div key={what} className="lp-bill"><span><b>{what}</b><small>{when}</small></span><b>{amount}</b></div>)}
-      <p className="lp-fine">{tr('Checked again before each order. Stop it any time.', '下单前会再检查一次，随时可以叫停。')}</p>
-    </PhoneScreen>
-  )
-}
-
-type Feature = [IconName, string, string, string, string]
-
-/** The features in one row that slides, as a bank's product tiles do: each ends in a phone showing the sentence and the answer. */
-function FeatureRail({ features, onTry, busy }: { features: Feature[]; onTry: (text: string) => void; busy: boolean }) {
-  const { tr } = useLang()
-  const rail = useRef<HTMLDivElement>(null)
-  const [page, setPage] = useState(0)
-  const [pages, setPages] = useState(1)
-  useEffect(() => {
-    const el = rail.current
-    if (!el) return
-    const measure = () => {
-      const tile = el.firstElementChild as HTMLElement | null
-      const per = tile ? Math.max(1, Math.round(el.clientWidth / tile.offsetWidth)) : 1
-      setPages(Math.max(1, Math.ceil(features.length / per)))
-      setPage(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)))
-    }
-    measure()
-    el.addEventListener('scroll', measure, { passive: true })
-    const watcher = new ResizeObserver(measure)
-    watcher.observe(el)
-    return () => { el.removeEventListener('scroll', measure); watcher.disconnect() }
-  }, [features.length])
-  const go = (to: number) => {
-    const el = rail.current
-    if (el) el.scrollTo({ left: Math.max(0, Math.min(pages - 1, to)) * el.clientWidth, behavior: 'smooth' })
-  }
-  return <>
-    <div className="lp-rail" ref={rail}>
-      {features.map(([icon, title, text, example, reply]) => (
-        <button key={title} type="button" className="lp-tile" disabled={busy} onClick={() => onTry(example)} aria-label={tr(`${title}. Try saying: ${example}`, `${title}。试试说：${example}`)}>
-          <span className="lp-tile-title">{title}</span>
-          <span className="lp-tile-text">{text}</span>
-          <span className="lp-tile-phone" aria-hidden>
-            <span className="lp-tile-me">{example}</span>
-            <span className="lp-tile-bot"><Icon name={icon} size={15} />{reply}</span>
-          </span>
-        </button>
-      ))}
-    </div>
-    {pages > 1 && (
-      <div className="lp-rail-controls">
-        <button type="button" className="lp-arrow lp-arrow-dark" onClick={() => go(page - 1)} disabled={page === 0} aria-label={tr('Previous', '上一组')}><ArrowLeft size={20} /></button>
-        <div className="lp-dots">{Array.from({ length: pages }, (_, i) => <button key={i} type="button" onClick={() => go(i)} aria-label={tr(`Page ${i + 1}`, `第 ${i + 1} 组`)} aria-current={i === page} className={i === page ? 'is-active' : ''} />)}</div>
-        <button type="button" className="lp-arrow lp-arrow-dark" onClick={() => go(page + 1)} disabled={page >= pages - 1} aria-label={tr('Next', '下一组')}><ArrowRight size={20} /></button>
-      </div>
-    )}
-  </>
-}
-
-const TIERS = {
-  yellow: ['Needs your OK', '需确认'],
-  red: ['Needs PIN + code', '需验证'],
-} as const
-
-/** How the bank's fixed rules would treat a payment: the same thresholds as the server's policy. */
-function RuleCheck({ onTry }: { onTry: (path: string) => void }) {
-  const { tr } = useLang()
-  const [kind, setKind] = useState<'transfer' | 'invest'>('transfer')
-  const [amount, setAmount] = useState(200)
-  const [paid, setPaid] = useState(0)
-  const [fresh, setFresh] = useState(false)
-  const transfer = kind === 'transfer'
-  const total = paid + amount
-  const newPayee = transfer && fresh && amount > 500
-  const tier = !transfer || total > 1000 || newPayee ? 'red' : 'yellow'
-  const why = !transfer
-    ? tr('Buying an investment always needs your PIN and an SMS code, or a passkey, whatever the amount. Only products within your risk level can be bought.', '买理财不论金额，都要交易密码加短信验证码，或通行密钥；只能买不超过你风险等级的产品。')
-    : newPayee
-      ? tr(`Over ¥500 to a payee added today: your PIN and a code, and the money arrives 2 hours later so you can still cancel.`, '给今天新加的收款人超过 ¥500：需要交易密码和验证码，钱 2 小时后到账，到账前可以撤销。')
-      : total > 1000
-        ? tr(`Today's payments would reach ${yuan(total * 100)}, over ¥1,000: your PIN and an SMS code, or a passkey.`, `今天累计将达 ${yuan(total * 100)}，超过 ¥1,000：需要交易密码和短信验证码，或通行密钥。`)
-        : tr(`Today's payments stay at ${yuan(total * 100)}, under ¥1,000: you see the details and tap Confirm.`, `今天累计 ${yuan(total * 100)}，不超过 ¥1,000：看清楚后点“确认”即可。`)
-  const kinds = [['transfer', tr('Transfer', '转账')], ['invest', tr('Buy a fund', '买理财')]] as const
-  return (
-    <div className="lp-calc">
-      <div role="tablist" className="lp-pills lp-calc-tabs">
-        {kinds.map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={kind === key} onClick={() => setKind(key)}>{label}</button>)}
-      </div>
-      <div className="lp-calc-body">
-        <div className="lp-calc-form">
-          <label className="lp-calc-label" htmlFor="calc-amount">{tr('Amount', '金额')}</label>
-          <p className="lp-calc-amount">{yuan(amount * 100)}</p>
-          <input id="calc-amount" type="range" min={10} max={3000} step={10} value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
-          <div className="lp-calc-scale"><span>¥10</span><span>¥3,000</span></div>
-          {transfer && <>
-            <p className="lp-calc-label">{tr('Already paid today', '今天已经付了')}</p>
-            <div className="lp-pills">
-              {[0, 300, 800].map((n) => <button key={n} type="button" aria-pressed={paid === n} onClick={() => setPaid(n)}>{yuan(n * 100)}</button>)}
-            </div>
-          </>}
-          {transfer && <>
-            <p className="lp-calc-label">{tr('Who to', '收款人')}</p>
-            <div className="lp-pills">
-              <button type="button" aria-pressed={!fresh} onClick={() => setFresh(false)}>{tr('Paid before', '转过的人')}</button>
-              <button type="button" aria-pressed={fresh} onClick={() => setFresh(true)}>{tr('Added today', '今天新加的')}</button>
-            </div>
-          </>}
-        </div>
-        <div className="lp-calc-result" aria-live="polite">
-          <div className="lp-frost">
-            <p className="lp-calc-label">{tr('The bank’s rules say', '银行规则的判断')}</p>
-            <p className="lp-calc-tier">{tr(TIERS[tier][0], TIERS[tier][1])}</p>
-            <p className="lp-calc-why">{why}</p>
-          </div>
-          <div className="lp-actions">
-            <button type="button" className="site-button cta" onClick={() => onTry(transfer ? '/send' : '/wealth')}>{tr('Try it with a demo account', '用演示账户试试')}</button>
-            <Link to="/how" className="site-button ghost">{tr('The rules', '规则原理')}</Link>
-          </div>
-          <p className="lp-calc-note">{tr('An illustration of the bank’s fixed rules; nothing is sent.', '示意规则判断，不会提交任何内容。')}</p>
-        </div>
       </div>
     </div>
   )
@@ -239,80 +77,68 @@ export default function LandingPage() {
   }, [params, tr, t])
 
   const start = demo.busy ? tr('Opening your bank…', '正在开通…') : signedIn ? tr('Open the app', '进入银行') : tr('Try it now, no sign-up', '马上试试，不用注册')
-  const actions = <>
-    <button type="button" className="site-button cta" disabled={demo.busy} onClick={() => void go('/home')}>{start}</button>
-    <Link to="/how" className="site-button ghost">{tr('How it stays safe', '安全原理')}</Link>
-  </>
-  const slides: Slide[] = [
-    { key: 'ask', title: <>{tr('Say it once.', '你说一句，')}<br />{tr('We do it.', '我来办。')}</>,
-      lead: tr('Send money, check your spending, freeze a card or plan a birthday, in Chinese or English. Before any money moves, you see exactly what will happen and say yes.', '转账、查账、冻结卡片、准备生日，用中文或英文说一句就行。动钱之前，你会看清楚要办什么，由你来点头。'),
-      visual: <PhoneDemo /> },
-    { key: 'phone', title: <>{tr('See who it is,', '先看清是谁，')}<br />{tr('then send.', '再转账。')}</>,
-      lead: tr('Type a phone number and the bank shows whose account it is, with the name masked. A first transfer to someone new is checked harder.', '输入手机号，银行先告诉你这是谁的账户（姓名打码）。第一次转给新的人，检查更严。'),
-      visual: <TransferScreen /> },
-    { key: 'plan', title: <>{tr('Plan it once,', '说一次，')}<br />{tr('it happens on time.', '到点就办。')}</>,
-      lead: tr('“My wife’s birthday is next month”: money is set aside now, flowers and a cake are ordered two days before. Every step is checked again when it runs, and you can stop it any time.', '“下个月老婆生日”：现在预留礼物钱，提前两天订花和蛋糕。每一步执行前都会再检查一次，随时可以叫停。'),
-      visual: <PlanScreen /> },
+  // the brief's six scenarios, in its order, each with a sentence to try
+  const scenarios: [IconName, Tint, string, string, string][] = [
+    ['send', 'green', tr('Transfers', '转账'), tr('By phone number or payee; see who it is before you send.', '手机号或收款人都行，转账前先看清是谁。'), tr('Send Mom 200', '给妈妈转200')],
+    ['chart', 'blue', tr('Spending', '账单'), tr('Where the money went, and anything that looks odd.', '钱花在哪了，有没有可疑交易。'), tr('Where did my money go last month?', '上个月钱都花哪了')],
+    ['trend', 'violet', tr('Invest', '理财'), tr('Suggestions within your risk level, nothing above it.', '按你的风险等级推荐，超出的不让买。'), tr('100000 for a year: what should I buy?', '有10万一年不用，推荐个理财')],
+    ['card', 'amber', tr('Cards', '卡片'), tr('Freeze, report lost or change a limit by saying so.', '冻结、挂失、调限额，说一声就办。'), tr('I lost my card', '我的卡丢了')],
+    ['bell', 'blue', tr('Subscriptions', '自动续费'), tr('Every automatic charge, and services you pay for twice.', '每一笔自动扣费，重复的会员一目了然。'), tr('What am I paying for every month?', '我有哪些自动续费')],
+    ['agents', 'green', tr('Many things in one sentence', '一句话办多件事'), tr('Money set aside now, flowers and a cake ordered in time.', '现在预留礼物钱，到时订好花和蛋糕。'), tr("It's my wife's birthday next month, help me prepare", '下个月老婆生日，帮我准备一下')],
   ]
-  const services: [string, IconName, string, string][] = [
-    ['/send', 'send', 'Transfers', '转账'], ['/bills', 'chart', 'Spending', '账单'], ['/wealth', 'trend', 'Invest', '理财'], ['/controls', 'card', 'Cards', '卡片'],
-    ['/controls?tab=subscriptions', 'bell', 'Subscriptions', '自动续费'], ['/accounts', 'bank', 'Accounts', '账户'], ['/assistant', 'chat', 'Assistant', '助手'], ['/how', 'shield', 'Safety', '安全'],
-  ]
-  const examples = [tr("What's my balance?", '我卡里还有多少钱'), tr('Where did my money go last month?', '上个月钱都花哪了'), tr('Freeze my virtual card', '冻结我的虚拟卡'), tr('Cancel iQIYI', '取消爱奇艺会员'), tr("It's my wife's birthday next month, help me prepare", '下个月老婆生日，帮我准备一下')]
-  const features: Feature[] = [
-    ['arrow', tr('Send money in a sentence', '一句话转账'), tr('See who, how much and when it arrives, then confirm.', '看清收款人、金额和到账时间再确认。'), tr('Send Mom 200', '给妈妈转200'), tr('To Wang Xiuying (Mom), ¥200.00. Confirm?', '收款人：王秀英（妈妈），¥200.00。确认吗？')],
-    ['chart', tr('Where did the money go?', '钱花哪了，一问就知'), tr('Categories, trends and anything suspicious.', '分类、走势、可疑交易，一目了然。'), tr('Where did my money go last month?', '上个月钱都花哪了'), tr('Spending by category, with dining first.', '按类别列出支出，餐饮最多。')],
-    ['card', tr('Lost a card? Freeze it now', '卡丢了，先冻结'), tr('Freeze, report lost, change a limit, just by saying so.', '冻结、挂失、调限额，说一声就办。'), tr('I lost my card', '我的卡丢了'), tr('Freeze the debit card first? One tap.', '先冻结借记卡？点一下确认。')],
-    ['bell', tr('Cancel what you don’t use', '不用的会员，取消'), tr('Every monthly charge found for you, duplicates included.', '自动找出每月扣钱的会员，重复的一目了然。'), tr('What am I paying for every month?', '我有哪些自动续费'), tr('Two music services: cancel one?', '有两个音乐会员，取消一个？')],
-    ['trend', tr('Investing, explained', '理财，问得明白'), tr('Suggestions that fit your risk test, nothing above it.', '按风险测评推荐，超出承受能力的不让买。'), tr('100000 for a year: what should I buy?', '有10万一年不用，推荐个理财'), tr('Low-risk picks that match your test.', '按你的风险测评，推荐稳健产品。')],
-    ['clock', tr('A birthday, planned', '生日，一句话安排'), tr('Money set aside, flowers and a cake ordered in time.', '预留礼物钱，提前订好花和蛋糕。'), tr('My wife’s birthday is next month', '下个月老婆生日，帮我准备一下'), tr('Set aside ¥1,000, order two days before.', '预留 ¥1,000，提前两天下单。')],
-  ]
-  const safety: [string, string][] = [
-    [tr('Nothing moves without your yes', '动钱之前，先问你'), tr('You see who, how much and when, then tap Confirm.', '先看收款人、金额和到账时间，你点“确认”才办。')],
-    [tr('Big payments need your PIN', '大额要验证'), tr('Over ¥1,000 a day: PIN and an SMS code. The AI never sees them.', '当天超过 ¥1,000：交易密码加短信验证码，AI 看不到。')],
-    [tr('Anything odd waits', '有风险，先等等'), tr('A large payment to someone new arrives 2 hours later.', '给新收款人的大额转账，2 小时后才到账。')],
-  ]
+  const chips = [tr('Send Mom 200', '给妈妈转200'), tr('What subscriptions do I have?', '我有哪些自动续费'), tr('Anything suspicious?', '有没有可疑交易'), tr('Freeze my virtual card', '冻结我的虚拟卡')]
 
   return <div className="public-site landing-page"><SiteHeader />
     <main className="lp" id="main-content" tabIndex={-1}>
-      <HeroSlider slides={slides} actions={actions} />
-      {demo.error && <p role="alert" className="lp-error">{demo.error}</p>}
-
-      <nav className="lp-services" aria-label={tr('Services', '服务')}>
-        {services.map(([to, icon, en, zh]) => to === '/how'
-          ? <Link key={to} to={to} className="lp-service"><span><Icon name={icon} size={24} /></span>{tr(en, zh)}</Link>
-          : <button key={to} type="button" className="lp-service" disabled={demo.busy} onClick={() => void go(to)}><span><Icon name={icon} size={24} /></span>{tr(en, zh)}</button>)}
-      </nav>
-
-      <div className="lp-info">
-        <section className="lp-info-card" aria-labelledby="try-title">
-          <div className="lp-info-head"><h2 id="try-title">{tr('Try saying', '试着这样说')}</h2><span>{tr('Opens a demo account', '会开一个演示账户')}</span></div>
-          <ul className="lp-rows">
-            {examples.map((text) => (
-              <li key={text}><button type="button" disabled={demo.busy} onClick={() => tryIt(text)}><span>“{text}”</span><Icon name="arrow" size={16} /></button></li>
-            ))}
-          </ul>
-        </section>
-        <section className="lp-info-card lp-info-safe" aria-labelledby="safe-title">
-          <div className="min-w-0">
-            <h2 id="safe-title">{tr('The AI never touches your money', 'AI 碰不到你的钱')}</h2>
-            <ul className="lp-steps">
-              {safety.map(([title, text]) => <li key={title}><b>{title}</b><span>{text}</span></li>)}
-            </ul>
-            <Link to="/how" className="site-button lp-white">{tr('See how it works', '看看原理')} <span aria-hidden>→</span></Link>
+      <section className="lp-hero">
+        <div className="lp-hero-copy">
+          <Badge tone="green">{tr('A simulated bank · Chinese and English', '模拟银行 · 中英文都能说')}</Badge>
+          <h1>{tr('Say it once.', '你说一句，')}<br />{tr('We do it.', '我来办。')}</h1>
+          <p>{tr('Send money, check your spending, freeze a card or plan a birthday. Before any money moves, you see exactly what will happen and say yes.', '转账、查账、冻结卡片、准备生日，说一句就行。动钱之前，你会看清楚要办什么，由你来点头。')}</p>
+          <div className="lp-actions">
+            <button type="button" className="site-button cta" disabled={demo.busy} onClick={() => void go('/home')}>{start}</button>
+            <Link to="/how" className="site-button secondary">{tr('How it stays safe', '安全原理')}</Link>
           </div>
-          <span className="lp-info-seal" aria-hidden><Seal kind="done" size={132} /></span>
-        </section>
-      </div>
-
-      <section className="lp-section" id="features">
-        <h2>{tr('One sentence does it', '一句话，能办这些事')}</h2>
-        <FeatureRail features={features} onTry={tryIt} busy={demo.busy} />
+          {demo.error && <p role="alert" className="lp-error">{demo.error}</p>}
+        </div>
+        <div className="lp-hero-visual"><PhoneDemo /></div>
       </section>
 
-      <section className="lp-section" id="calc">
-        <h2>{tr('Will it need your OK?', '算一算：要不要确认？')}</h2>
-        <RuleCheck onTry={(path) => void go(path)} />
+      <section className="lp-section" id="scenarios">
+        <h2>{tr('Six kinds of banking, one sentence each', '六类业务，一句话就能办')}</h2>
+        <div className="lp-scenarios">
+          {scenarios.map(([icon, tint, name, line, example]) => (
+            <article key={name} className="card lp-scenario">
+              <div className="flex items-center gap-3"><IconDot icon={icon} tint={tint} /><h3>{name}</h3></div>
+              <p className="lp-scenario-line">{line}</p>
+              <p className="lp-scenario-say">“{example}”</p>
+              <button type="button" className="btn btn-line mt-auto w-full" disabled={demo.busy} onClick={() => tryIt(example)}>{tr('Try it', '试一试')}</button>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="lp-section" id="safety">
+        <h2>{tr('The AI never touches your money', 'AI 碰不到你的钱')}</h2>
+        <ol className="lp-steps3">
+          <li className="card">
+            <IconDot icon="agents" tint="violet" />
+            <h3>{tr('The AI proposes', 'AI 提议')}</h3>
+            <p>{tr('It turns your words into steps from a fixed list of bank actions. It never sees your account and can’t approve anything.', '它把你的话拆成步骤，只能从固定的银行操作里选。它看不到你的账户，也不能批准任何事。')}</p>
+          </li>
+          <li className="card">
+            <IconDot icon="shield" tint="blue" />
+            <h3>{tr('The rules decide', '规则决定')}</h3>
+            <p>{tr('Fixed code decides what each step needs:', '固定代码决定每一步需要什么：')}</p>
+            <p className="mt-3 flex flex-wrap gap-1.5"><TierTag tier="green" /><TierTag tier="yellow" /><TierTag tier="red" /></p>
+          </li>
+          <li className="card">
+            <IconDot icon="check" tint="green" />
+            <h3>{tr('You say yes', '你来点头')}</h3>
+            <p>{tr('Nothing moves before you confirm. Over ¥1,000 a day needs your PIN and an SMS code, which the AI never sees.', '你确认之前，钱一分不动。当天超过 ¥1,000 要交易密码加短信验证码，AI 看不到。')}</p>
+          </li>
+        </ol>
+        <p className="mt-5 text-center"><Link to="/how" className="lp-link inline-flex min-h-11 items-center">{tr('See how it works', '看看原理')} →</Link></p>
       </section>
 
       <section className="lp-section lp-ask" id="ask">
@@ -323,9 +149,7 @@ export default function LandingPage() {
           <button type="submit" className="site-button" disabled={!ask.trim() || demo.busy}>{tr('Go', '去办')}</button>
         </form>
         <div className="lp-pills lp-ask-chips">
-          {[tr('Send Mom 200', '给妈妈转200'), tr('What subscriptions do I have?', '我有哪些自动续费'), tr('Anything suspicious?', '有没有可疑交易'), tr('Freeze my virtual card', '冻结我的虚拟卡')].map((text) => (
-            <button key={text} type="button" disabled={demo.busy} onClick={() => tryIt(text)}>{text}</button>
-          ))}
+          {chips.map((text) => <button key={text} type="button" disabled={demo.busy} onClick={() => tryIt(text)}>{text}</button>)}
         </div>
         <p className="lp-note">{signedIn ? tr('A simulated bank for the competition. No real money moves.', '参赛演示用的模拟银行，不涉及真实资金。')
           : <>{tr('Opens a demo account with its own simulated bank. ', '会为你开一个自带模拟银行的演示账户。')}<Link to="/signup" className="lp-link">{tr('Or create your own account', '或者注册自己的账户')}</Link></>}</p>

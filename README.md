@@ -53,7 +53,7 @@ The demo account's PIN is shown in the verification window (with a “Fill it in
 - **Safety on every risky transfer**: the payee's name is checked before anything is sent (as with the UK's Confirmation of Payee), a risky payment asks what it is for and shows the warning for that answer (scam answers hold the money until tomorrow; only the customer can answer, never the AI), and the customer chooses when the money arrives: now, in 2 hours or tomorrow, cancellable until then.
 - **Large text (长辈版)**: a header switch makes everything bigger and Home shows the four tasks used most.
 - **Receipts and voice**: split a bill from a receipt photo or PDF (read in an isolated worker; hidden instructions are flagged and raise the tier); voice input through the browser where available.
-- **Web app**: bilingual (中文 / English), light and dark, works at phone width: landing page with one-click demo, Home, Transfers, Assistant, Accounts & transfers, Spending, Invest, Cards & security, History, How it stays safe, operator console. See [frontend/README.md](frontend/README.md).
+- **Web app**: bilingual (中文 / English), light and dark, works at phone width: landing page with one-click demo, Home, then one page per scenario of the brief (Transfers, Spending, Invest, Cards, Subscriptions), the Assistant, History, How it stays safe, operator console. See [frontend/README.md](frontend/README.md).
 
 Not built: an IM channel (WeChat, WeCom or Feishu); the web app works in WeChat's in-app browser. The AI provider has not been chosen, so the model planner has been tested only with a fake model; every published number comes from the offline planner.
 
@@ -77,7 +77,7 @@ To use a model, set `LLM_ENABLED=true`, `AI_BASE_URL`, `AI_API_KEY` and `AI_MODE
 cd backend && uv run pytest -q
 ```
 
-101 tests run every scenario through the HTTP API with the offline planner, plus the model planner with a fake model. They cover the tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, scheduling, transfers, human takeover, the demo account, the sandbox, receipts, the audit chain, and the app's screens (phone transfers, bills and their automatic-payment limit, QR codes).
+101 tests run every scenario through the HTTP API with the offline planner, plus the model planner with a fake model. They cover the tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, scheduling, transfers, human takeover, the demo account, the sandbox, receipts, the audit chain, transfers by phone number (on the Transfers screen and in chat), and the safer-transfer checks (the name check before sending, the payment-purpose question the AI can't answer, and the arrival choice).
 
 ### Evaluation sets
 

@@ -177,7 +177,7 @@ export default function Assistant() {
   )
 
   return (
-    <main tabIndex={-1} className="page-content !max-w-[1280px]">
+    <main tabIndex={-1} className="page-content assistant-page !max-w-[1280px]">
       <div className="flex items-start gap-6">
       {wide && open && (
         <aside className="sticky top-[calc(var(--header-h)+16px)] flex max-h-[calc(100dvh-var(--header-h)-2rem)] w-64 shrink-0 flex-col rounded-panel bg-[var(--field)]">{history()}</aside>
@@ -192,7 +192,7 @@ export default function Assistant() {
           <div className="sticky top-[var(--header-h)] z-10 -mx-1 flex min-h-[52px] items-center gap-2 bg-paper px-1 py-2">
             {!open && (
               <button type="button" onClick={() => showHistory(true)} aria-expanded={false} aria-label={tr('Show chat history', '展开对话记录')} title={tr('Chat history', '对话记录')}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rule text-ink2 hover:bg-paper2">
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-rule text-ink2 hover:bg-paper2">
                 <PanelLeftOpen size={18} />
               </button>
             )}

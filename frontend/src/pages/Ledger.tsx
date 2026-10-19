@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { AuditEntry } from '../api/types'
 import { useLang } from '../i18n'
-import { PageHead, PageTabs, Section, Segmented, useTab } from '../components/bits'
+import { Badge, PageHead, PageTabs, Section, Segmented, useTab } from '../components/bits'
 import { Requests } from '../components/Requests'
 import { SealMark, type MarkKind } from '../components/Seal'
 import { clock, shortAddr, timeAgo } from '../lib/format'
@@ -127,10 +127,10 @@ export default function Ledger() {
   return (
     <main tabIndex={-1} className="page-content ">
       <PageHead title={t.ledger_title} right={chain.data && (
-        <p className={`flex items-center gap-1.5 text-sm ${chain.data.ok ? 'text-jade' : 'font-semibold text-cinnabar'}`}>
-          <SealMark kind={chain.data.ok ? 'done' : 'blocked'} size={22} />
+        <Badge tone={chain.data.ok ? 'green' : 'red'} className="px-3 py-1.5 text-sm">
+          <SealMark kind={chain.data.ok ? 'done' : 'blocked'} size={18} />
           {chain.data.ok ? tr('Record checked: nothing changed', '记录已核验：未被改动') : tr('Record check failed', '记录核验未通过')}
-        </p>
+        </Badge>
       )} />
       <PageTabs label={t.ledger_title} value={tab} onChange={setTab}
         options={[['requests', tr('Your requests', '你办过的事')], ['audit', tr('Audit log (for reviewers)', '审计日志（供审核）')]] as const} />
@@ -149,7 +149,7 @@ export default function Ledger() {
 
       {entries.isLoading ? <div className="mt-3 h-64 animate-pulse rounded-box bg-paper2" aria-hidden /> : rows.length === 0 ? <p className="mt-6 text-ink2">{t.ledger_empty}</p> : <>
         {/* desktop: a ruled ledger page */}
-        <div className="mt-3 hidden overflow-x-auto ruled bg-field md:block">
+        <div className="mt-3 hidden overflow-x-auto card md:block">
           <table className="w-full min-w-[760px] border-collapse text-left text-[0.95rem]">
             <thead>
               <tr className="rule-b bg-paper text-[0.85rem] text-rule2">
@@ -178,7 +178,7 @@ export default function Ledger() {
         </div>
 
         {/* phone: one slip per entry */}
-        <ol className="mt-3 divide-y divide-rule ruled bg-field md:hidden">
+        <ol className="mt-3 divide-y divide-rule card md:hidden">
           {rows.map((e) => {
             const meta = info(e.kind)
             return (

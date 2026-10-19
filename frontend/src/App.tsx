@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { HashRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { HashRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { DemoDock } from './components/DemoDock'
 import { ServerBanner } from './components/ServerBanner'
@@ -36,7 +36,7 @@ const TeamAccess = page(() => import('./pages/TeamAccess'))
 const Assistant = page(() => import('./pages/Assistant'))
 const Home = page(() => import('./pages/Home'))
 const Send = page(() => import('./pages/Send'))
-const Accounts = page(() => import('./pages/Accounts'))
+const Subscriptions = page(() => import('./pages/Subscriptions'))
 const How = page(() => import('./pages/How'))
 const Bills = page(() => import('./pages/Bills'))
 const Wealth = page(() => import('./pages/Wealth'))
@@ -57,6 +57,12 @@ const queryClient = new QueryClient({
 
 function Loading() {
   return <div className="mx-auto mt-24 h-2 w-40 animate-pulse rounded-full bg-paper2" aria-label="Loading" />
+}
+
+/** Accounts' tabs moved to Transfers: an older link opens the same tab there. */
+function AccountsMoved() {
+  const tab = new URLSearchParams(useLocation().search).get('tab')
+  return <Navigate to={tab && tab !== 'accounts' ? `/send?tab=${tab}` : '/send'} replace />
 }
 
 /** Every workspace page shares one header and one conversation, so asking from any page continues the same thread. */
@@ -96,8 +102,9 @@ export default function App() {
                   <Route path="/payments" element={<Navigate to="/home" replace />} />
                   <Route path="/qr" element={<Navigate to="/home" replace />} />
                   <Route path="/assistant" element={<Assistant />} />
-                  <Route path="/accounts" element={<Accounts />} />
-                  <Route path="/transfers" element={<Navigate to="/accounts?tab=transfers" replace />} />
+                  <Route path="/accounts" element={<AccountsMoved />} />
+                  <Route path="/transfers" element={<Navigate to="/send?tab=transfers" replace />} />
+                  <Route path="/subscriptions" element={<Subscriptions />} />
                   <Route path="/bills" element={<Bills />} />
                   <Route path="/wealth" element={<Wealth />} />
                   <Route path="/controls" element={<Controls />} />

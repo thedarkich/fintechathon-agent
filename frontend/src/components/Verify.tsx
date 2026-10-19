@@ -120,7 +120,7 @@ export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPas
                 <Fingerprint size={15} />{tr('Passkey', '通行密钥')}
               </button>
             </div>
-            {!canPasskey && <p className="text-xs text-ink2">{tr('Add a passkey (face or fingerprint unlock) on the Cards & security page to use it here.', '在“卡片与安全”页添加通行密钥（面容或指纹解锁）后可在此使用。')}</p>}
+            {!canPasskey && <p className="text-xs text-ink2">{tr('Add a passkey (face or fingerprint unlock) under Cards → Security to use it here.', '在“卡片 → 安全”里添加通行密钥（面容或指纹解锁）后可在此使用。')}</p>}
           </fieldset>
 
           {method === 'sms' && (

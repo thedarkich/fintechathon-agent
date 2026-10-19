@@ -1,23 +1,23 @@
 # Frontend
 
-A bilingual (中文 / English) React app with light and dark themes that works at phone width. The customer talks to the assistant; every request that needs a yes becomes one confirm card: what will happen in label–value rows, the reason in one line, and the buttons. How the request was checked (the AI, the bank's rules, you) is one tap away on the card, and in full on the How it stays safe page.
+A bilingual (中文 / English) React app with light and dark themes that works at phone width. The menu follows the brief's six scenarios: Transfers, Spending, Invest, Cards, Subscriptions, and many things in one sentence (the assistant). The look: white cards with a soft shadow, pastel icon circles, big bold figures, thick bars and rating pills, and coloured notices (pale red alert, cream highlight). The customer talks to the assistant; every request that needs a yes becomes one confirm card: what will happen in label–value rows, the reason in one line, and the buttons. How the request was checked (the AI, the bank's rules, you) is one tap away on the card, and in full on the How it stays safe page.
 
 | Page | Route | What it shows |
 |---|---|---|
-| Landing | `/` | A green banner slider (the assistant with a phone playing a transfer, transfer by phone number, a birthday plan), example requests and the safety promise in two cards, six feature tiles, a rule check that shows whether a transfer or a fund purchase needs your OK or your PIN, and a box to just say what you need. “Try it now” opens a demo account in one click |
+| Landing | `/` | A hero with a phone playing a transfer, the six scenarios as cards (each with a sentence to try), safety in three steps (the AI proposes, the rules decide, you say yes), and a box to just say what you need. “Try it now” opens a demo account in one click |
 | How it stays safe | `/how` | The AI proposes, the rules decide, you approve: the three levels, an example request with the rule checks, the protections, the numbers |
 | Sign in / Create account | `/login`, `/signup` | Email sign-in, the 6-digit transaction PIN, or a demo account; signing in opens Home |
-| Home | `/home` | The first screen after signing in: current account (amounts can be hidden), one tile per scenario, a box to ask the assistant, subscriptions about to renew, recent transactions |
-| Transfers | `/send` | Type a phone number and see who it is (a saved payee, or a masked name such as “*小明” and their bank); recent people one tap away; the transfers with that person beside it |
+| Home | `/home` | The first screen after signing in: a box to ask the assistant, current account (amounts can be hidden), one tile per scenario (the sixth starts a birthday plan in the assistant), and what's coming up: reminders, a payment worth a look, the next subscription charge |
+| Transfers | `/send` | Tabs: Send (type a phone number and see who it is, a saved payee or a masked name such as “*小明” and their bank; recent people one tap away; arrival now, in 2 hours or tomorrow), Where my money is (each transfer with its stages, beside one SMS panel for your phone and the payee's), Payees, Scheduled & split |
 | Assistant | `/assistant` | Chat first: suggestions, the conversation, a confirm card per request, voice and receipt upload. Past chats in a side list that opens and closes (a drawer on phones); removing one only hides it, History keeps the record. `?ask=` sends a request on arrival |
-| Accounts & transfers | `/accounts` | Total and accounts; each transfer on one line with its stages folded underneath, beside one SMS panel (your phone, the payee's phone); payees, scheduled transfers (with Stop), split bills |
-| Spending | `/bills` | Spending by period, category and merchant; transactions worth a second look; search |
+| Spending | `/bills` | Spent, income, left over and the change on last period; by category and merchant; recent transactions; transactions worth a second look; search |
 | Invest | `/wealth` | Holdings, risk level, products with R1–R5 |
-| Cards & security | `/controls` | One tile per card (switches, freeze, limit, report lost), subscriptions, safety lock, passkeys, demo clock and reset |
+| Cards | `/controls` | Tabs: Cards (one tile per card: switches, freeze, limit, report lost) and Security (safety lock, passkeys) |
+| Subscriptions | `/subscriptions` | What renews automatically and what it costs a month, the next charge, services paid for twice; remind or cancel each |
 | History | `/ledger` | What you asked for (open one to see its card and trail), then the hash-chained audit log |
 | Operator | `/operator` | The human-takeover console, for operator accounts or the admin token |
 
-`/transfers` redirects to the transfers section of Accounts.
+Older links still work: `/accounts` and `/transfers` open the matching tab of Transfers, `/controls?tab=subscriptions` opens Subscriptions. The demo clock and reset are under Demo tools in the header.
 
 ## Run
 

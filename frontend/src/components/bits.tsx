@@ -31,13 +31,84 @@ export function OperatorGate({ children }: { children: ReactNode }) {
   )
 }
 
+export type Tint = 'green' | 'blue' | 'violet' | 'amber' | 'red'
+
+/** A small pill: pale green for good news, amber for "needs a look", red for a warning. */
+export function Badge({ tone = 'green', children, className = '' }: { tone?: Tint | 'grey'; children: ReactNode; className?: string }) {
+  const cls = tone === 'amber' ? 'badge-amber' : tone === 'red' ? 'badge-red' : tone === 'grey' || tone === 'blue' || tone === 'violet' ? 'badge-grey' : 'badge-green'
+  return <span className={`badge ${cls} ${className}`}>{children}</span>
+}
+
 /** The three levels in plain words: done right away, needs your OK, needs your PIN and a code. */
 export function TierTag({ tier }: { tier: Tier | null | undefined }) {
   const { tr } = useLang()
   if (!tier) return null
-  if (tier === 'green') return <span className="inline-flex items-center rounded-full border border-jade px-2 py-px text-[0.72rem] font-semibold leading-tight text-jade">{tr('Done right away', '直接办')}</span>
-  if (tier === 'yellow') return <span className="inline-flex items-center rounded-full bg-ink px-2 py-px text-[0.72rem] font-semibold leading-tight text-field">{tr('Needs your OK', '需确认')}</span>
-  return <span className="inline-flex items-center rounded-full bg-cinnabar px-2 py-px text-[0.72rem] font-semibold leading-tight text-white">{tr('Needs PIN + code', '需验证')}</span>
+  if (tier === 'green') return <Badge tone="green">{tr('Done right away', '直接办')}</Badge>
+  if (tier === 'yellow') return <Badge tone="amber">{tr('Needs your OK', '需确认')}</Badge>
+  return <Badge tone="red">{tr('Needs PIN + code', '需验证')}</Badge>
+}
+
+/** A white card with a soft shadow. */
+export function Card({ children, className = '', as: Tag = 'div', ...rest }: { children: ReactNode; className?: string; as?: 'div' | 'section' | 'article' | 'ul' | 'ol'; 'aria-label'?: string; 'aria-labelledby'?: string }) {
+  return <Tag className={`card ${className}`} {...rest}>{children}</Tag>
+}
+
+/** A pastel circle holding an icon. */
+export function IconDot({ icon, tint = 'green', size = 44 }: { icon: IconName; tint?: Tint; size?: number }) {
+  return <span className={`icon-dot tint-${tint}`} style={{ width: size, height: size }} aria-hidden><Icon name={icon} size={Math.round(size * 0.45)} /></span>
+}
+
+/** A thick rounded bar, filled to a share (0–1). */
+export function ThickBar({ share, color }: { share: number; color?: string }) {
+  return <div className="bar-thick" aria-hidden><span style={{ width: `${Math.max(2, Math.min(1, share) * 100)}%`, ...(color ? { background: color } : {}) }} /></div>
+}
+
+/**
+ * One figure, as in the reference: a pastel icon circle and a label, the number big and bold underneath,
+ * then a small note, a coloured percentage or a thick bar.
+ */
+export function StatTile({ icon, tint = 'green', label, value, sub, delta, share, className = '', valueClass = '' }: {
+  icon?: IconName; tint?: Tint; label: string; value: ReactNode; sub?: ReactNode
+  delta?: { text: string; good: boolean } | null; share?: number; className?: string; valueClass?: string
+}) {
+  return (
+    <div className={`card min-w-0 p-5 max-sm:p-4 ${className}`}>
+      <div className="flex items-center gap-3">
+        {icon && <IconDot icon={icon} tint={tint} size={40} />}
+        <span className="stat-label min-w-0 flex-1 truncate">{label}</span>
+        {delta && <span className={`text-sm font-bold ${delta.good ? 'text-jade' : 'text-cinnabar'}`}>{delta.text}</span>}
+      </div>
+      <p className={`stat-value num mt-3 ${valueClass}`}>{value}</p>
+      {sub && <p className="mt-1 text-sm text-ink2">{sub}</p>}
+      {share !== undefined && <div className="mt-3"><ThickBar share={share} /></div>}
+    </div>
+  )
+}
+
+/** A level out of five as five rounded pills, and "n/5" beside them. */
+export function RatingPills({ value, max = 5, tone = 'green', label, showValue = true }: { value: number; max?: number; tone?: 'green' | 'amber' | 'red'; label: string; showValue?: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-2" role="img" aria-label={`${label} ${value}/${max}`}>
+      <span className={`pills is-${tone}`}>{Array.from({ length: max }, (_, i) => <i key={i} className={i < value ? 'on' : ''} />)}</span>
+      {showValue && <b className="num text-sm">{value}/{max}</b>}
+    </span>
+  )
+}
+
+/** A message in a coloured box: a pale-red alert, a cream highlight, or green information. */
+export function Notice({ tone = 'info', title, children, icon, action, className = '' }: {
+  tone?: 'alert' | 'highlight' | 'info'; title?: ReactNode; children?: ReactNode; icon?: IconName; action?: ReactNode; className?: string
+}) {
+  return (
+    <div className={`notice notice-${tone} ${className}`} role={tone === 'alert' ? 'alert' : undefined}>
+      <span className="notice-icon" aria-hidden>{icon ? <Icon name={icon} size={15} /> : tone === 'info' ? 'i' : '!'}</span>
+      <div className="min-w-0 flex-1">
+        {title && <p className="notice-title">{title}</p>}
+        {children && <div className={title ? 'notice-body' : 'text-[0.93rem] leading-snug'}>{children}</div>}
+      </div>
+      {action && <div className="shrink-0 self-center">{action}</div>}
+    </div>
+  )
 }
 
 /** The page title, with the page's own controls on the right. No intro text: the page shows what it is. */
@@ -54,7 +125,7 @@ export function PageHead({ title, right }: { title: string; right?: ReactNode })
 export function Section({ title, aside, id, className = '', children }: { title: string; aside?: ReactNode; id?: string; className?: string; children: ReactNode }) {
   return (
     <section id={id} className={`scroll-mt-6 ${className}`}>
-      <div className="mb-3 flex min-h-9 flex-wrap items-center justify-between gap-2">
+      <div className="mb-3 flex min-h-10 flex-wrap items-center justify-between gap-2">
         <h2 className="text-xl font-bold tracking-[-0.01em]">{title}</h2>
         {aside}
       </div>
@@ -68,14 +139,16 @@ export function AskButton({ label, hint, className = 'btn btn-line py-1.5 text-s
   return <Link to={`/assistant?hint=${encodeURIComponent(hint)}`} className={className}>{label}</Link>
 }
 
-/** One service: a white tile with a green icon and its name; a link, or a button when it needs to do something first. */
-export function ServiceTile({ icon, label, to, onClick, disabled }: { icon: IconName; label: string; to?: string; onClick?: () => void; disabled?: boolean }) {
-  const inner = <><span className="service-icon"><Icon name={icon} size={28} /></span><span>{label}</span></>
-  return to ? <Link to={to} className="service-tile">{inner}</Link>
-    : <button type="button" className="service-tile" onClick={onClick} disabled={disabled}>{inner}</button>
+/** One service: a white tile with a pastel icon circle, its name and a short line; a link, or a button when it needs to do something first. */
+export function ServiceTile({ icon, tint = 'green', label, sub, to, onClick, disabled, className = '' }: {
+  icon: IconName; tint?: Tint; label: string; sub?: string; to?: string; onClick?: () => void; disabled?: boolean; className?: string
+}) {
+  const inner = <><span className={`service-icon tint-${tint}`}><Icon name={icon} size={24} /></span><span className="min-w-0">{label}{sub && <small>{sub}</small>}</span></>
+  return to ? <Link to={to} className={`service-tile ${className}`}>{inner}</Link>
+    : <button type="button" className={`service-tile ${className}`} onClick={onClick} disabled={disabled}>{inner}</button>
 }
 
-/** Pill tabs: a grey track with the chosen option in solid green. */
+/** Pill tabs: a pale track with the chosen option in solid green. */
 export function Segmented<T extends string>({ value, options, onChange, label, className = '', stretch = false }: {
   value: T; options: readonly (readonly [T, string])[]; onChange: (value: T) => void; label: string; className?: string; stretch?: boolean
 }) {
@@ -83,7 +156,7 @@ export function Segmented<T extends string>({ value, options, onChange, label, c
     <div role="tablist" aria-label={label} className={`tab-scroll inline-flex max-w-full gap-1 rounded-[14px] bg-[var(--field)] p-1 ${className}`}>
       {options.map(([key, text]) => (
         <button key={key} type="button" role="tab" aria-selected={value === key} onClick={() => onChange(key)}
-          className={`${stretch ? 'flex-1' : ''} whitespace-nowrap rounded-[11px] px-4 py-1.5 text-[0.93rem] font-semibold ${value === key ? 'bg-[var(--action)] text-[var(--action-ink)]' : 'text-ink2 hover:text-ink'}`}>{text}</button>
+          className={`${stretch ? 'flex-1' : ''} whitespace-nowrap rounded-[11px] px-4 py-2 text-[0.93rem] font-semibold ${value === key ? 'bg-[var(--action)] text-[var(--action-ink)] shadow-[0_1px_3px_var(--shadow)]' : 'text-ink2 hover:text-ink'}`}>{text}</button>
       ))}
     </div>
   )
@@ -91,7 +164,7 @@ export function Segmented<T extends string>({ value, options, onChange, label, c
 
 /**
  * The page's open tab, kept in the address (?tab=…) so a link or a reload opens the same tab.
- * An older #anchor link (e.g. /accounts#transfers) opens the tab of that name.
+ * An older #anchor link (e.g. /send#payees) opens the tab of that name.
  */
 export function useTab<T extends string>(keys: readonly T[], fallback: T): [T, (tab: T) => void] {
   const [params, setParams] = useSearchParams()
@@ -116,7 +189,7 @@ export function PageTabs<T extends string>({ value, options, onChange, label }: 
 /** A panel with a heading bar, as on the controls page. */
 export function Panel({ title, note, right, children, id }: { title: string; note?: string; right?: ReactNode; children: ReactNode; id?: string }) {
   return (
-    <section className="ruled overflow-hidden bg-field" id={id}>
+    <section className="card overflow-hidden" id={id}>
       <div className="panel-heading"><div>
         <h2 className="cond text-xl font-bold leading-tight">{title}</h2>
         {note && <p className="text-sm text-ink2">{note}</p>}
@@ -125,3 +198,8 @@ export function Panel({ title, note, right, children, id }: { title: string; not
     </section>
   )
 }
+
+/** The list style used everywhere: a white card, rows separated by hairlines. */
+export const LIST = 'card divide-y divide-[var(--rule)] overflow-hidden'
+export const ROW = 'flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-3 text-[0.95rem]'
+export const EMPTY = 'card px-4 py-4 text-sm text-ink2'
