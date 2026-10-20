@@ -33,7 +33,7 @@ export default function TeamAccess() {
         <form className="mt-7" onSubmit={submit}><label className="auth-field">{tr('Operator access token', '工作人员访问令牌')}<input type="password" required autoComplete="off" value={token} onChange={e => setToken(e.target.value)} spellCheck={false} /></label>
           {error && <p className="auth-message" role="alert">{error}</p>}
           <button className="site-button auth-submit" disabled={busy || !token.trim()}>{busy ? tr('Checking access…', '正在验证…') : tr('Open console', '进入工作台')} <span aria-hidden>→</span></button>
-        </form><p className="auth-access-note">{tr('An operator account works too: sign in with it and open the Operator page.', '也可以用工作人员账户登录，然后打开“客服”页面。')}</p><Link className="auth-switch block" to="/login">{tr('Sign in with an account instead', '改用账户登录')} →</Link>
+        </form><p className="auth-access-note">{tr('An operator account works too: sign in with it and open the Operator page.', '也可以用工作人员账户登录，然后打开“客服”页面。')}</p><Link className="auth-switch flex min-h-11 items-center justify-center" to="/login">{tr('Sign in with an account instead', '改用账户登录')} →</Link>
       </section>
     </main><SiteFooter /></div>
 }

@@ -136,7 +136,7 @@ html { scroll-padding-top: calc(var(--header-h) + 16px); }
 .auth-flow-row { display: flex; align-items: center; gap: 14px; position: relative; }
 .auth-flow-row + .auth-flow-row { margin-top: 26px; }
 .auth-flow-row + .auth-flow-row:before { content: ''; position: absolute; top: -23px; left: 16px; height: 19px; width: 1px; background: var(--rule-strong); }
-.auth-flow-row > span { display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-wash); font-size: 14px; font-weight: 800; color: var(--action); }
+.auth-flow-row > span { display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-wash); font-size: 14px; font-weight: 800; color: var(--jade); }
 .auth-flow-row:last-child > span { color: var(--action-ink); border-color: var(--action); background: var(--action); }
 .auth-flow-row strong { font-size: 14px; font-weight: 700; }
 .auth-flow-row p { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
@@ -155,7 +155,7 @@ html { scroll-padding-top: calc(var(--header-h) + 16px); }
 .auth-label-row > span { font-size: 10px; font-weight: 400; color: var(--ink-2); }
 .auth-password { position: relative; }
 .auth-password input { padding-right: 48px; }
-.auth-password button { position: absolute; right: 7px; top: 5px; display: grid; place-items: center; width: 36px; height: 36px; color: var(--ink-2); }
+.auth-password button { position: absolute; right: 2px; top: 2px; display: grid; place-items: center; width: 44px; height: 44px; color: var(--ink-2); }
 .auth-submit { width: 100%; justify-content: space-between; min-height: 48px; margin-top: 7px; }
 .auth-field-error { color: var(--cinnabar); font-size: 11px; font-weight: 400; margin-top: 7px; }
 .auth-message { font-size: 13px; padding: 12px 14px; border-radius: 12px; color: var(--cinnabar); background: var(--cinnabar-wash); margin: 10px 0; }

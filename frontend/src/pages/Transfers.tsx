@@ -91,7 +91,7 @@ function TransferRow({ t, demo, open, onDone }: { t: Transfer; demo: boolean; op
         </div>
       )}
       <details className="mt-2 pl-[38px]" open={open}>
-        <summary className="cursor-pointer text-cap text-ink2">{tr('Stages', '进度')}</summary>
+        <summary className="inline-flex min-h-10 cursor-pointer items-center text-cap text-ink2">{tr('Stages', '进度')}</summary>
         <div className="mt-2"><Stages t={t} /></div>
         <p className="mt-2 text-cap text-ink2">{t.route_label} · {t.arrival_label}{t.memo ? ` · ${tr('note', '备注')} ${t.memo}` : ''}</p>
       </details>

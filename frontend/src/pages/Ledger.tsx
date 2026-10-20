@@ -162,7 +162,7 @@ export default function Ledger() {
         <div className="mt-3 hidden overflow-x-auto card md:block">
           <table className="w-full min-w-[760px] border-collapse text-left text-body">
             <thead>
-              <tr className="rule-b bg-paper text-cap text-rule2">
+              <tr className="rule-b bg-paper text-cap font-semibold text-ink2">
                 <th className="w-[4.5rem] px-3 py-2 font-normal">#</th>
                 <th className="w-[6.5rem] px-3 py-2 font-normal">{t.col_time}</th>
                 <th className="w-[12rem] px-3 py-2 font-normal">{t.col_event}</th>

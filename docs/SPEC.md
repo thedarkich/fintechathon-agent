@@ -20,7 +20,7 @@ message (text / photo / voice)
   → audit          every stage above appends to the customer's hash-chained audit log
 ```
 
-Tool results never go back into the model. The planner sees only the customer's own words, short code-written summaries of earlier turns, today's date and the action catalogue. Merchant names, transaction notes and other outside text never reach it, so they cannot inject instructions.
+Tool results never go back into the model. The planner sees only the customer's own words, short code-written summaries of earlier turns (what was planned, in the customer's terms, never what it resolved to), today's date and the action catalogue. Follow-ups that lean on the turn before (“再转100”, “餐饮呢”, “就买第二个”) are completed by code first; the model is asked only when that doesn't apply. Merchant names, transaction notes and other outside text never reach it, so they cannot inject instructions.
 
 ## 2. Money and time
 

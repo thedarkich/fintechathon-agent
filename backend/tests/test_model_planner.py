@@ -140,3 +140,25 @@ def test_every_prompt_example_is_a_valid_plan():
         for step in plan.steps:
             if step.action == "analyze":
                 guard.check(step.args["code"])  # raises if the sandbox would refuse it
+
+
+def test_the_model_remembers_earlier_turns_without_seeing_account_data(tmp_path):
+    """The planner gets earlier turns as the customer said them and as they were planned; never the records they
+    resolved to (the payee's name and note in the records, the account, a merchant)."""
+    bank, gateway = bank_with(tmp_path, ModelUnavailable("down", code="MODEL_TIMEOUT"))  # the offline planner answers
+    bank.chat("给妈妈转200")
+    bank.chat("再给她转50")  # settled by code as a follow-up
+    bank.chat("她生日是哪天")
+    prompt = gateway.calls[-1]["user"]
+    assert "Customer: 给妈妈转200" in prompt and '"payee": "妈妈"' in prompt and '"amount_yuan": 200' in prompt
+    for record in ("王秀英", "家人", "7801", "工商银行"):
+        assert record not in prompt
+
+
+def test_list_follow_ups_are_settled_by_code_before_the_model(tmp_path):
+    bank, gateway = bank_with(tmp_path, ModelUnavailable("down", code="MODEL_TIMEOUT"))
+    bank.chat("有10万一年不用，推荐个理财")
+    calls = len(gateway.calls)
+    body = bank.chat("就买第二个")
+    assert len(gateway.calls) == calls  # the model was not asked: the list it would need never left the bank
+    assert body["plan"]["source"] == "followup" and body["plan"]["steps"][0]["action"] == "wealth_subscribe"

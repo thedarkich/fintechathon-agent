@@ -206,8 +206,8 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
         session.add(pending)
 
     # a follow-up ('再转100', '改成300', '餐饮呢', '取消第一个'): fixed code completes it from the request before.
-    # The AI planner reads the conversation itself, so this is for the offline planner.
-    follow = None if planner.online or attachment else followup.resolve(session, user.id, conversation.id, clean)
+    # Settled by code before any model call: a list's contents ('第二个') never need to reach the model.
+    follow = None if attachment else followup.resolve(session, user.id, conversation.id, clean, ctx.today)
     if follow is not None and follow.stop is not None and follow.stop.status in ("awaiting_approval", "clarifying"):
         ctx.plan = follow.stop
         executor.cancel(ctx, follow.stop, rollback=False)  # the card it replaces can no longer be confirmed
@@ -223,7 +223,7 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
         proposed, source = follow.plan, "followup"
     # the planner learns only that a receipt is attached (its id), never what it says
     planner_text = clean + (f"\n[Attached receipt id: {attachment.id}]" if attachment else "")
-    if planner.online:
+    if planner.online and proposed is None:
         try:
             proposed = await planner.plan_with_model(planner_text, history(session, conversation.id)[:-1], ctx.today, versions)
             source = "ai"

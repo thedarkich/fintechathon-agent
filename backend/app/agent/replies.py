@@ -5,6 +5,7 @@ changed since the last report, and the approval card carries the exact details b
 """
 
 import copy
+import json
 
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -37,6 +38,14 @@ def approval_card(ctx: Ctx, plan: Plan) -> dict:
             "needs": "verify" if plan.tier == "red" else "confirm", "secrets": secrets, "steps": steps}
 
 
+def planned(step: dict) -> str:
+    """A step for the planner's memory, as it was planned: the action and the arguments taken from the customer's
+    words ("妈妈", 200). Never what they resolved to in the bank's records (names, notes, accounts, merchants), so
+    no account data and no outside text reaches the model through the history."""
+    args = {k: v for k, v in (step.get("args") or {}).items() if v not in (None, "", [], {})}
+    return f"{step['action']} {json.dumps(args, ensure_ascii=False, sort_keys=True)}" if args else step["action"]
+
+
 def compose(ctx: Ctx, plan: Plan) -> tuple[str, list[dict], str]:
     """Returns (text, cards, summary). The summary is the code-written context the planner sees next turn."""
     lines: list[str] = []
@@ -55,7 +64,7 @@ def compose(ctx: Ctx, plan: Plan) -> tuple[str, list[dict], str]:
                 card = action.card(ctx, resolved, step.get("result") or {})
                 if card:
                     cards.append(card)
-            summary.append(f"[done] {action.describe(ctx, resolved)}")
+            summary.append(f"[done] {planned(step)}")
         elif status == "failed":
             error = step.get("error") or {}
             text = error.get("zh") if ctx.lang == "zh" else error.get("en")
@@ -69,7 +78,7 @@ def compose(ctx: Ctx, plan: Plan) -> tuple[str, list[dict], str]:
             when = step["run_at_resolved"][:16].replace("T", " ")
             lines.append(ctx.t(f"已安排：{when} 执行“{action.describe(ctx, resolved)}”。执行前会再检查一次额度和安全规则。",
                                f"Scheduled for {when}: {action.describe(ctx, resolved)}. Limits and safety rules are checked again before it runs."))
-            summary.append(f"[scheduled {when}] {action.describe(ctx, resolved)}")
+            summary.append(f"[scheduled {when}] {planned(step)}")
         elif status == "compensated":
             lines.append(ctx.t(f"已撤销：{action.describe(ctx, resolved)}", f"Undone: {action.describe(ctx, resolved)}"))
             summary.append(f"[undone] {step['action']}")
@@ -85,7 +94,8 @@ def compose(ctx: Ctx, plan: Plan) -> tuple[str, list[dict], str]:
     if plan.status == "clarifying" and plan.ask:
         lines.append(plan.ask["zh"] if ctx.lang == "zh" else plan.ask["en"])
         cards.append({"type": "question", "plan_id": plan.id, "field": plan.ask["field"], "options": plan.ask["options"]})
-        summary.append(f"[asked] {plan.ask['en']}")
+        asked = next((s for s in steps if s["id"] == plan.ask.get("step_id")), None)
+        summary.append(f"[asked] {plan.ask['field']}" + (f" for {planned(asked)}" if asked else ""))
     elif plan.status == "awaiting_approval":
         card = approval_card(ctx, plan)
         cards.append(card)
@@ -94,7 +104,7 @@ def compose(ctx: Ctx, plan: Plan) -> tuple[str, list[dict], str]:
             lines.append(ctx.t("这笔要验证身份，请核对：", "This one needs your PIN and a code. Please check:"))
         else:
             lines.append(ctx.t("请核对：", "Please check:"))
-        summary.append("[awaiting approval] " + "; ".join(i["text"] for i in card["steps"]))
+        summary.append("[awaiting approval] " + "; ".join(planned(s) for s in steps if s.get("status") == "pending"))
     elif plan.status == "rolled_back":
         lines.append(ctx.t("计划未能全部完成，已撤销可以安全撤销的步骤。", "The plan couldn't finish, so I undid the steps that can be safely undone."))
     elif plan.status == "cancelled":

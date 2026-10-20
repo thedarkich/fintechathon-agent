@@ -14,7 +14,7 @@ export function Table({ head, children, minWidth = '30rem' }: { head: ReactNode[
     <div className="overflow-x-auto card">
       <table className="w-full border-collapse text-left text-body" style={{ minWidth }}>
         <thead>
-          <tr className="rule-b bg-paper text-cap text-rule2">
+          <tr className="rule-b bg-paper text-cap font-semibold text-ink2">
             {head.map((h, i) => <th key={i} className={`px-3 py-2 font-normal ${i === head.length - 1 ? 'text-right' : ''}`}>{h}</th>)}
           </tr>
         </thead>
