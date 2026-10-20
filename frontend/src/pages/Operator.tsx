@@ -46,7 +46,7 @@ function Operator() {
   const d = detail.data
   return (
     <main tabIndex={-1} className="page-content ">
-      <h1 className="cond text-[2.4rem] font-extrabold leading-tight">{tr('Operator console', '客服工作台')}</h1>
+      <h1 className="cond text-[2.5rem] font-extrabold leading-tight">{tr('Operator console', '客服工作台')}</h1>
       <p className="max-w-[44rem] text-ink2">{tr('Conversations a customer handed over, and customers under a safety lock. You can reply, cancel a waiting plan, hand the customer back to the assistant or lift a lock. You can never approve a step for a customer.', '客户转人工的会话，以及被安全锁限制的客户。你可以回复、取消等待中的计划、交还助手或解除安全锁，但不能替客户确认任何步骤。')}</p>
       <dl className="metric-grid mt-7">
         <div className="metric-card"><dt>{tr('Waiting', '待处理')}<Icon name="inbox" size={17} /></dt><dd>{queue.isLoading ? '—' : items.length}</dd></div>

@@ -20,8 +20,8 @@ const SCENARIOS: [string, IconName, Tint, [string, string], [string, string]][] 
   ['/bills', 'chart', 'blue', ['Spending', '账单'], ['Where it went, anything odd', '花在哪了、可疑交易']],
   ['/wealth', 'trend', 'violet', ['Invest', '理财'], ['Holdings and your risk level', '持仓、风险等级']],
   ['/controls', 'card', 'amber', ['Cards', '卡片'], ['Freeze, limits, report lost', '冻结、限额、挂失']],
-  ['/subscriptions', 'bell', 'blue', ['Subscriptions', '自动续费'], ['Next charge, paid twice', '下次扣费、重复订阅']],
-  ['birthday', 'agents', 'green', ['Many things in one sentence', '一句话办多件事'], ['e.g. plan a birthday', '比如准备生日']],
+  ['/subscriptions', 'bell', 'cyan', ['Subscriptions', '自动续费'], ['Next charge, paid twice', '下次扣费、重复订阅']],
+  ['birthday', 'agents', 'ink', ['Many things in one sentence', '一句话办多件事'], ['e.g. plan a birthday', '比如准备生日']],
 ]
 // on a phone the tab bar already has Transfers and Spending
 const TABBED = ['/send', '/bills']
@@ -67,12 +67,12 @@ export default function Home() {
   return (
     <main tabIndex={-1} className="page-content">
       <h1 className="mb-4">{user?.name ? tr(`${hello}, ${user.name}`, `${hello}，${user.name}`) : hello}</h1>
-      <form onSubmit={submit} className="mb-6 flex items-center gap-3 rounded-[16px] bg-[var(--field)] p-1.5 pl-4 focus-within:shadow-[0_0_0_2px_var(--action)]">
+      <form onSubmit={submit} className="mb-6 flex items-center gap-3 rounded-tile border border-rule2 bg-card p-1.5 pl-4 focus-within:border-[var(--action)]">
         <Icon name="chat" size={19} className="text-[var(--action)]" />
         <input value={ask} onChange={(e) => setAsk(e.target.value)} maxLength={2000} aria-label={tr('Ask the assistant', '问问助手')}
           placeholder={tr('Ask the assistant, e.g. where did my money go?', '问问助手，比如“上个月钱花哪了”')}
-          className="min-w-0 flex-1 bg-transparent py-2.5 text-[0.97rem] outline-none focus-visible:outline-none" />
-        <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-[var(--action)] text-[var(--action-ink)] disabled:bg-paper2 disabled:text-ink2" disabled={!ask.trim() || !!pending} aria-label={tr('Ask', '发送')}>
+          className="min-w-0 flex-1 bg-transparent py-2.5 text-body outline-none focus-visible:outline-none" />
+        <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-box bg-[var(--action)] text-[var(--action-ink)] disabled:bg-paper2 disabled:text-ink2" disabled={!ask.trim() || !!pending} aria-label={tr('Ask', '发送')}>
           <SendHorizontal size={18} />
         </button>
       </form>
@@ -88,14 +88,14 @@ export default function Home() {
               </button>
             </div>
             {data && checking ? <>
-              <p className="num text-[2.75rem] font-extrabold leading-tight tracking-[-0.03em] max-sm:text-[2.3rem]">{money(checking.fen)}</p>
+              <p className="num text-[2.5rem] font-extrabold leading-tight tracking-[-0.03em] max-sm:text-[2.5rem]">{money(checking.fen)}</p>
               <div className={`mt-4 grid gap-3 ${large ? 'sm:grid-cols-2' : 'grid-cols-2'}`}>
                 <div className="tile flex items-center gap-3 p-3.5">
-                  <span className="max-sm:hidden"><IconDot icon="wallet" tint="blue" size={36} /></span>
+                  <span className="max-sm:hidden"><IconDot icon="wallet" size={36} /></span>
                   <span className="min-w-0"><span className="block text-xs text-ink2">{tr('Spent this month', '本月支出')}</span><span className="num block truncate font-bold">{money(data.month_spend_fen)}</span></span>
                 </div>
                 <div className="tile flex items-center gap-3 p-3.5">
-                  <span className="max-sm:hidden"><IconDot icon="trend" tint="green" size={36} /></span>
+                  <span className="max-sm:hidden"><IconDot icon="trend" size={36} /></span>
                   <span className="min-w-0"><span className="block text-xs text-ink2">{tr('Total', '总资产')}</span><span className="num block truncate font-bold">{money(data.cash_fen + data.invest_fen)}</span></span>
                 </div>
               </div>
@@ -121,7 +121,7 @@ export default function Home() {
             {forYou.map((n) => {
               const action = <button type="button" disabled={!!pending} onClick={() => void send(n.suggestion!)} className="btn btn-ink px-4 text-sm">{tr('Let the assistant do it', '让助手来办')}</button>
               return n.kind === 'anomaly'
-                ? <Notice key={n.id} tone="alert" title={n.title}><p className="line-clamp-2">{n.body}</p><div className="mt-2.5">{action}</div></Notice>
+                ? <Notice key={n.id} tone="alert" title={n.title}><p className="line-clamp-2">{n.body}</p><div className="mt-2.5"><Link to="/bills?tab=alerts" className="btn btn-line bg-[var(--card)] px-4 text-sm">{tr('Take a look', '去看看')}</Link></div></Notice>
                 : (
                   <div key={n.id} className="card flex gap-3 p-4">
                     <IconDot icon={n.kind === 'birthday' ? 'clock' : 'bell'} tint="violet" size={40} />
@@ -134,7 +134,7 @@ export default function Home() {
                 )
             })}
             {next && (
-              <Link to="/subscriptions" className="block rounded-[16px] focus-visible:outline-offset-4">
+              <Link to="/subscriptions" className="block rounded-tile focus-visible:outline-offset-4">
                 <Notice tone="highlight" icon="clock" title={tr(`Next charge: ${next.merchant}`, `下次扣费：${next.merchant}`)}
                   action={<span className="num font-extrabold">{money(next.fen)}</span>}>
                   <span className="text-ink2">{tr(`Renews ${next.next_charge_on.slice(5)}`, `${next.next_charge_on.slice(5)} 续费`)}{next.remind_days_before ? tr(` · reminder ${next.remind_days_before} days before`, ` · 提前 ${next.remind_days_before} 天提醒`) : ''}</span>

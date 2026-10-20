@@ -111,6 +111,18 @@ def remind_run(ctx: Ctx, r: dict) -> dict:
     return {"days_before": r["days_before"]}
 
 
+def remind_reply(ctx: Ctx, r: dict, res: dict) -> str:
+    from datetime import date
+
+    days, due = r["days_before"], r["next_charge_on"]
+    if (date.fromisoformat(due) - ctx.today).days < days:  # this charge is too close to be reminded about
+        return ctx.t(f"好的，{r['merchant']} 每次续费前 {days} 天会提醒您。这次扣费（{due}）已不足 {days} 天，从下一次续费开始提醒。",
+                     f"Done: I'll remind you {days} days before {r['merchant']} renews. The next charge ({due}) is less than "
+                     f"{days} days away, so the reminders start with the one after.")
+    return ctx.t(f"好的，{r['merchant']} 续费前 {days} 天会提醒您（下次扣费 {due}）。",
+                 f"Done: I'll remind you {days} days before {r['merchant']} renews (next charge {due}).")
+
+
 def remind_compensate(ctx: Ctx, r: dict, res: dict) -> dict:
     sub = ctx.session.get(Subscription, r["subscription_id"])
     sub.remind_days_before = r["remind"]
@@ -122,7 +134,5 @@ register(Action(
     name="subscription_remind", args=RemindArgs, help="Remind before a subscription renews. merchant (or kind, or none to be asked), days_before 1-30.",
     resolve=lambda ctx, a: {**sub_fields(pick(ctx, a.merchant)), "days_before": a.days_before}, run=remind_run,
     describe=lambda ctx, r: ctx.t(f"{r['merchant']} 续费前 {r['days_before']} 天提醒我", f"Remind me {r['days_before']} days before {r['merchant']} renews"),
-    reply=lambda ctx, r, res: ctx.t(f"好的，{r['merchant']} 续费前 {r['days_before']} 天会提醒您（下次扣费 {r['next_charge_on']}）。",
-                                    f"Done: I'll remind you {r['days_before']} days before {r['merchant']} renews (next charge {r['next_charge_on']})."),
-    rule="Y_SUBSCRIPTION", compensate=remind_compensate,
+    reply=remind_reply, rule="Y_SUBSCRIPTION", compensate=remind_compensate,
 ))

@@ -83,14 +83,14 @@ function Item({ text }: { text: string }) {
 
 export function ReplyText({ text }: { text: string }) {
   return (
-    <div className="space-y-2.5 text-[0.97rem] leading-relaxed">
+    <div className="space-y-2.5 text-body leading-relaxed">
       {blocks(text).map((block, i) => {
         if (block.kind === 'list') {
-          return <ul key={i} className="ruled divide-y divide-[var(--rule)] bg-field text-[0.93rem] leading-snug">{block.items.map((item, j) => <Item key={j} text={item} />)}</ul>
+          return <ul key={i} className="ruled divide-y divide-[var(--rule)] bg-field text-body leading-snug">{block.items.map((item, j) => <Item key={j} text={item} />)}</ul>
         }
         if (block.kind === 'tip') {
           return (
-            <p key={i} className="keep flex gap-2 rounded-box bg-[var(--accent-wash)] px-3 py-2 text-[0.93rem]">
+            <p key={i} className="keep flex gap-2 rounded-box bg-[var(--accent-wash)] px-3 py-2 text-body">
               <Lightbulb size={16} className="mt-[3px] shrink-0 text-jade" aria-hidden />
               <span><Amounts text={block.text} /></span>
             </p>

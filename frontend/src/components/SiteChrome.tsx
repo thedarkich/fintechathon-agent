@@ -119,7 +119,7 @@ export function SiteHeader({ workspace = false, status, extra }: { workspace?: b
         {workspace ? <>
           {extra}
           {signedIn && <AccountMenu status={status} />}
-        </> : signedIn
+        </> : /^\/(login|signup|team-token)$/.test(pathname) ? null : signedIn
           ? <Link className="site-pill" to={home}><span className="pill-long">{tr('Open the app', '进入银行')}</span><span className="pill-short">{tr('Open', '进入')}</span></Link>
           : <Link className="site-pill" to="/login">{tr('Sign in', '登录')}</Link>}
       </div>

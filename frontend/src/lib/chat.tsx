@@ -71,6 +71,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setConversationId(body.conversation_id)
       setEscalated(body.escalated)
       setMessages((current) => [...current, ...body.messages])
+      // a follow-up can replace or stop an earlier card ('改成300', '算了'): every card on screen re-reads its plan
+      void qc.invalidateQueries({ queryKey: ['plan'] })
       if (body.plan) showPlan(body.plan, body.messages[body.messages.length - 1]?.lang)
       refreshBank()
     } catch (err) {
@@ -78,7 +80,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     } finally {
       setPending(null)
     }
-  }, [conversationId, lang, pending, navigate, refreshBank, showPlan])
+  }, [conversationId, lang, pending, navigate, qc, refreshBank, showPlan])
 
   const apply = useCallback((result: PlanResult) => {
     if (result.plan.source === 'screen') {

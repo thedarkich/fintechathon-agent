@@ -48,7 +48,7 @@ def balance_reply(ctx: Ctx, r: dict, result: dict) -> str:
     lines = [f"{a['name']}（{a['number'][-4:]}）：{yuan(a['fen'])}" if ctx.lang == "zh"
              else f"{a['name']} (…{a['number'][-4:]}): {yuan(a['fen'])}" for a in result["accounts"]]
     if len(result["accounts"]) > 1:
-        lines.insert(0, ctx.t(f"合计 {yuan(result['total_fen'])}", f"Total {yuan(result['total_fen'])}"))
+        lines.insert(0, ctx.t(f"存款合计 {yuan(result['total_fen'])}（不含理财）", f"Cash total {yuan(result['total_fen'])} (not counting investments)"))
     return "\n".join(lines)
 
 

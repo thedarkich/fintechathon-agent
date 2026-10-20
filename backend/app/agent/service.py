@@ -5,7 +5,7 @@ import re
 from sqlmodel import Session, select
 
 from app import clock
-from app.agent import audit, executor, locks, offline, replies, screening
+from app.agent import audit, executor, followup, locks, offline, replies, screening
 from app.agent.actions import REGISTRY
 from app.agent.core import Ctx
 from app.agent.planner import Planner, PlanOut, StepOut, validate
@@ -185,11 +185,17 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
         answer = option_match(pending, clean)
         if answer is None and pending.ask["field"] in NUMERIC_FIELDS:
             numbers = offline.amounts(clean)
-            if len(numbers) == 1 and len(clean) <= 16:
+            if len(numbers) == 1 and len(clean) <= 16 and not offline.unclear_amount(clean):
                 answer = numbers[0]
         if answer is None and pending.ask["field"] == "when":
             moment, _ = offline.when_from(clean, ctx.today)
             answer = moment
+        if answer is None and pending.ask["field"] in NUMERIC_FIELDS and offline.unclear_amount(clean):
+            # '-100' or '200.555' answers the question but not usably: keep the question open and say why
+            out.append(add_message(session, ctx, conversation, "assistant", ctx.t(
+                "金额要大于 0，最多两位小数。请问是多少？", "The amount must be above 0, with at most two decimals. How much?")))
+            session.commit()
+            return conversation, out, pending
         if answer is not None:
             ctx.plan = pending
             plan = executor.answer(ctx, pending, answer)
@@ -199,9 +205,22 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
         pending.status = "cancelled"
         session.add(pending)
 
+    # a follow-up ('再转100', '改成300', '餐饮呢', '取消第一个'): fixed code completes it from the request before.
+    # The AI planner reads the conversation itself, so this is for the offline planner.
+    follow = None if planner.online or attachment else followup.resolve(session, user.id, conversation.id, clean)
+    if follow is not None and follow.stop is not None and follow.stop.status in ("awaiting_approval", "clarifying"):
+        ctx.plan = follow.stop
+        executor.cancel(ctx, follow.stop, rollback=False)  # the card it replaces can no longer be confirmed
+    if follow is not None and follow.note:
+        out.append(add_message(session, ctx, conversation, "assistant", ctx.t(*follow.note)))
+        session.commit()
+        return conversation, out, follow.stop
+
     versions: dict = {}
     source = "offline"
     proposed: PlanOut | None = None
+    if follow is not None and follow.plan is not None:
+        proposed, source = follow.plan, "followup"
     # the planner learns only that a receipt is attached (its id), never what it says
     planner_text = clean + (f"\n[Attached receipt id: {attachment.id}]" if attachment else "")
     if planner.online:

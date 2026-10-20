@@ -10,7 +10,7 @@ from app import clock
 from app.agent import audit, scheduler
 from app.api.security import problem, require_user
 from app.bank import transfers
-from app.bank.seed import reset_customer, seed_customer
+from app.bank.seed import remind_now, reset_customer, seed_customer
 from app.models import Transfer, UserAccount
 
 router = APIRouter(prefix="/api/demo", dependencies=[Depends(require_user)])
@@ -77,5 +77,6 @@ async def reset(request: Request, user_id: str = Depends(require_user)):
         session.flush()
         seed_customer(session, user, clock.now(session, user_id))
         audit.append(session, user_id, "demo_reset", {})
+        remind_now(session, user, clock.now(session, user_id))
         session.commit()
         return {"ok": True, "now": clock.iso(clock.now(session, user_id))}

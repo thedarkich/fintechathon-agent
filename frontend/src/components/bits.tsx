@@ -31,11 +31,11 @@ export function OperatorGate({ children }: { children: ReactNode }) {
   )
 }
 
-export type Tint = 'green' | 'blue' | 'violet' | 'amber' | 'red'
+export type Tint = 'green' | 'blue' | 'violet' | 'amber' | 'red' | 'cyan' | 'ink' | 'scope'
 
 /** A small pill: pale green for good news, amber for "needs a look", red for a warning. */
 export function Badge({ tone = 'green', children, className = '' }: { tone?: Tint | 'grey'; children: ReactNode; className?: string }) {
-  const cls = tone === 'amber' ? 'badge-amber' : tone === 'red' ? 'badge-red' : tone === 'grey' || tone === 'blue' || tone === 'violet' ? 'badge-grey' : 'badge-green'
+  const cls = tone === 'amber' ? 'badge-amber' : tone === 'red' ? 'badge-red' : tone === 'grey' || tone === 'blue' || tone === 'violet' || tone === 'cyan' || tone === 'ink' || tone === 'scope' ? 'badge-grey' : 'badge-green'
   return <span className={`badge ${cls} ${className}`}>{children}</span>
 }
 
@@ -54,7 +54,7 @@ export function Card({ children, className = '', as: Tag = 'div', ...rest }: { c
 }
 
 /** A pastel circle holding an icon. */
-export function IconDot({ icon, tint = 'green', size = 44 }: { icon: IconName; tint?: Tint; size?: number }) {
+export function IconDot({ icon, tint = 'scope', size = 44 }: { icon: IconName; tint?: Tint; size?: number }) {
   return <span className={`icon-dot tint-${tint}`} style={{ width: size, height: size }} aria-hidden><Icon name={icon} size={Math.round(size * 0.45)} /></span>
 }
 
@@ -67,7 +67,7 @@ export function ThickBar({ share, color }: { share: number; color?: string }) {
  * One figure, as in the reference: a pastel icon circle and a label, the number big and bold underneath,
  * then a small note, a coloured percentage or a thick bar.
  */
-export function StatTile({ icon, tint = 'green', label, value, sub, delta, share, className = '', valueClass = '' }: {
+export function StatTile({ icon, tint = 'scope', label, value, sub, delta, share, className = '', valueClass = '' }: {
   icon?: IconName; tint?: Tint; label: string; value: ReactNode; sub?: ReactNode
   delta?: { text: string; good: boolean } | null; share?: number; className?: string; valueClass?: string
 }) {
@@ -75,7 +75,7 @@ export function StatTile({ icon, tint = 'green', label, value, sub, delta, share
     <div className={`card min-w-0 p-5 max-sm:p-4 ${className}`}>
       <div className="flex items-center gap-3">
         {icon && <IconDot icon={icon} tint={tint} size={40} />}
-        <span className="stat-label min-w-0 flex-1 truncate">{label}</span>
+        <span className="stat-label min-w-0 flex-1 leading-snug">{label}</span>
         {delta && <span className={`text-sm font-bold ${delta.good ? 'text-jade' : 'text-cinnabar'}`}>{delta.text}</span>}
       </div>
       <p className={`stat-value num mt-3 ${valueClass}`}>{value}</p>
@@ -86,7 +86,7 @@ export function StatTile({ icon, tint = 'green', label, value, sub, delta, share
 }
 
 /** A level out of five as five rounded pills, and "n/5" beside them. */
-export function RatingPills({ value, max = 5, tone = 'green', label, showValue = true }: { value: number; max?: number; tone?: 'green' | 'amber' | 'red'; label: string; showValue?: boolean }) {
+export function RatingPills({ value, max = 5, tone = 'scope', label, showValue = true }: { value: number; max?: number; tone?: 'scope' | 'green' | 'amber' | 'red'; label: string; showValue?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2" role="img" aria-label={`${label} ${value}/${max}`}>
       <span className={`pills is-${tone}`}>{Array.from({ length: max }, (_, i) => <i key={i} className={i < value ? 'on' : ''} />)}</span>
@@ -104,9 +104,9 @@ export function Notice({ tone = 'info', title, children, icon, action, className
       <span className="notice-icon" aria-hidden>{icon ? <Icon name={icon} size={15} /> : tone === 'info' ? 'i' : '!'}</span>
       <div className="min-w-0 flex-1">
         {title && <p className="notice-title">{title}</p>}
-        {children && <div className={title ? 'notice-body' : 'text-[0.93rem] leading-snug'}>{children}</div>}
+        {children && <div className={title ? 'notice-body' : 'text-body leading-snug'}>{children}</div>}
       </div>
-      {action && <div className="shrink-0 self-center">{action}</div>}
+      {action && <div className="notice-action shrink-0 self-center">{action}</div>}
     </div>
   )
 }
@@ -115,7 +115,7 @@ export function Notice({ tone = 'info', title, children, icon, action, className
 export function PageHead({ title, right }: { title: string; right?: ReactNode }) {
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-      <h1 className="cond text-[2rem] font-extrabold leading-tight">{title}</h1>
+      <h1>{title}</h1>
       {right}
     </div>
   )
@@ -126,7 +126,7 @@ export function Section({ title, aside, id, className = '', children }: { title:
   return (
     <section id={id} className={`scroll-mt-6 ${className}`}>
       <div className="mb-3 flex min-h-10 flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-bold tracking-[-0.01em]">{title}</h2>
+        <h2 className="section-title">{title}</h2>
         {aside}
       </div>
       {children}
@@ -153,10 +153,10 @@ export function Segmented<T extends string>({ value, options, onChange, label, c
   value: T; options: readonly (readonly [T, string])[]; onChange: (value: T) => void; label: string; className?: string; stretch?: boolean
 }) {
   return (
-    <div role="tablist" aria-label={label} className={`tab-scroll inline-flex max-w-full gap-1 rounded-[14px] bg-[var(--field)] p-1 ${className}`}>
+    <div role="tablist" aria-label={label} className={`segmented tab-scroll inline-flex max-w-full gap-1 rounded-tile p-1 ${className}`}>
       {options.map(([key, text]) => (
         <button key={key} type="button" role="tab" aria-selected={value === key} onClick={() => onChange(key)}
-          className={`${stretch ? 'flex-1' : ''} whitespace-nowrap rounded-[11px] px-4 py-2 text-[0.93rem] font-semibold ${value === key ? 'bg-[var(--action)] text-[var(--action-ink)] shadow-[0_1px_3px_var(--shadow)]' : 'text-ink2 hover:text-ink'}`}>{text}</button>
+          className={`${stretch ? 'flex-1' : ''} whitespace-nowrap rounded-box px-4 py-2 text-body font-semibold ${value === key ? 'segmented-on' : 'text-ink2 hover:text-ink'}`}>{text}</button>
       ))}
     </div>
   )
@@ -201,5 +201,5 @@ export function Panel({ title, note, right, children, id }: { title: string; not
 
 /** The list style used everywhere: a white card, rows separated by hairlines. */
 export const LIST = 'card divide-y divide-[var(--rule)] overflow-hidden'
-export const ROW = 'flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-3 text-[0.95rem]'
+export const ROW = 'flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-3 text-body'
 export const EMPTY = 'card px-4 py-4 text-sm text-ink2'

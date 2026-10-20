@@ -180,7 +180,7 @@ export default function Assistant() {
     <main tabIndex={-1} className="page-content assistant-page !max-w-[1280px]">
       <div className="flex items-start gap-6">
       {wide && open && (
-        <aside className="sticky top-[calc(var(--header-h)+16px)] flex max-h-[calc(100dvh-var(--header-h)-2rem)] w-64 shrink-0 flex-col rounded-panel bg-[var(--field)]">{history()}</aside>
+        <aside className="sticky top-[calc(var(--header-h)+16px)] flex max-h-[calc(100dvh-var(--header-h)-2rem)] w-64 shrink-0 flex-col card">{history()}</aside>
       )}
       {!wide && open && <>
         <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setDrawer(false)} aria-hidden />
@@ -189,10 +189,10 @@ export default function Assistant() {
 
       <div className="mx-auto flex min-h-[calc(100dvh-210px)] w-full min-w-0 max-w-3xl flex-1 flex-col">
         {(!open || messages.length > 0) && (
-          <div className="sticky top-[var(--header-h)] z-10 -mx-1 flex min-h-[52px] items-center gap-2 bg-paper px-1 py-2">
+          <div className="sticky top-[var(--header-h)] z-10 -mx-1 flex min-h-[52px] items-center gap-2 bg-bg px-1 py-2">
             {!open && (
               <button type="button" onClick={() => showHistory(true)} aria-expanded={false} aria-label={tr('Show chat history', '展开对话记录')} title={tr('Chat history', '对话记录')}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-rule text-ink2 hover:bg-paper2">
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-box border border-rule text-ink2 hover:bg-paper2">
                 <PanelLeftOpen size={18} />
               </button>
             )}
@@ -212,7 +212,7 @@ export default function Assistant() {
               {tips.length > 0 && (
                 <div className="mt-6 space-y-2">
                   {tips.map((n) => (
-                    <button key={n.id} type="button" disabled={!!pending} onClick={() => void send(n.suggestion!)} className="flex w-full items-start gap-3 rounded-[18px] bg-[var(--field)] px-4 py-3 text-left hover:bg-paper2">
+                    <button key={n.id} type="button" disabled={!!pending} onClick={() => void send(n.suggestion!)} className="card flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-field">
                       <Icon name={n.kind === 'anomaly' ? 'flag' : n.kind === 'birthday' ? 'clock' : 'bell'} size={18} className="mt-0.5 shrink-0 text-[var(--action)]" />
                       <span className="min-w-0"><span className="block font-semibold">{n.title}</span><span className="block text-sm text-ink2">{n.suggestion}</span></span>
                     </button>
@@ -221,7 +221,7 @@ export default function Assistant() {
               )}
               <div className="mt-6 flex flex-wrap gap-2">
                 {SUGGESTIONS.map(([icon, en, zh]) => (
-                  <button key={zh} type="button" disabled={!!pending} onClick={() => void send(lang === 'zh' ? zh : en)} className="flex items-center gap-2 rounded-[12px] bg-[var(--field)] px-3.5 py-2 text-left text-[0.93rem] font-medium hover:bg-paper2">
+                  <button key={zh} type="button" disabled={!!pending} onClick={() => void send(lang === 'zh' ? zh : en)} className="card flex min-h-10 items-center gap-2 !rounded-full px-4 py-2 text-left text-body font-medium hover:bg-field">
                     <Icon name={icon} size={16} className="shrink-0 text-[var(--action)]" />
                     <span>{lang === 'zh' ? zh : en}</span>
                   </button>
@@ -236,7 +236,7 @@ export default function Assistant() {
               return (
                 <div key={m.id} className="ml-auto flex w-fit max-w-[85%] flex-col items-end gap-1.5" title={stamp(m.at)}>
                   {file && <img src={file.preview} alt={tr('Attached receipt', '附带的小票')} className="h-28 ruled bg-white object-contain" />}
-                  <p className="keep whitespace-pre-wrap rounded-2xl rounded-br-md bg-[var(--action)] px-4 py-2.5 text-[0.95rem] text-[var(--action-ink)]">{m.text}</p>
+                  <p className="keep whitespace-pre-wrap rounded-tile rounded-br-md bg-[var(--action)] px-4 py-2.5 text-body text-[var(--action-ink)]">{m.text}</p>
                 </div>
               )
             }
@@ -246,24 +246,24 @@ export default function Assistant() {
                 <span className="mt-0.5 shrink-0">{m.role === 'operator' ? <span className="agent-avatar !h-7 !w-7"><Icon name="users" size={14} /></span> : <BrandSeal size={28} />}</span>
                 <div className="min-w-0 flex-1 space-y-2.5">
                   {m.role === 'operator' && <p className="text-xs font-semibold text-ink2">{tr('Bank staff', '人工客服')}</p>}
-                  {m.text && <div className="bot-bubble w-fit max-w-full rounded-[18px] rounded-tl-md bg-[var(--field)] px-4 py-2.5"><ReplyText text={m.cards.some((c) => DATA_CARDS.has(c.type)) ? m.text.split('\n')[0].replace(/[:：]\s*$/, '') : m.text} /></div>}
+                  {m.text && <div className="bot-bubble card w-fit max-w-full !rounded-tile !rounded-tl-md px-4 py-2.5"><ReplyText text={m.cards.some((c) => DATA_CARDS.has(c.type)) ? m.text.split('\n')[0].replace(/[:：]\s*$/, '') : m.text} /></div>}
                   {m.cards.filter((card) => card.type !== 'receipt').map((card, i) => <Result key={`${m.id}-${i}`} card={card} />)}
                 </div>
               </div>
             )
           })}
           {pending && <>
-            <p className="keep ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-[var(--action)] px-4 py-2.5 text-[0.95rem] text-[var(--action-ink)] opacity-70">{pending}</p>
+            <p className="keep ml-auto w-fit max-w-[85%] rounded-tile rounded-br-md bg-[var(--action)] px-4 py-2.5 text-body text-[var(--action-ink)] opacity-70">{pending}</p>
             <p className="flex items-center gap-2 text-sm text-ink2" role="status"><span className="step-live inline-block h-2 w-2 rounded-full bg-jade" aria-hidden />{tr('Working on it…', '正在处理…')}</p>
           </>}
           {error && <p role="alert" className="text-sm font-semibold text-cinnabar">{error}</p>}
           <div ref={end} />
         </div>
 
-        <form onSubmit={submit} className="sticky bottom-[var(--tabbar-h)] -mx-1 bg-paper px-1 pb-4 pt-2">
+        <form onSubmit={submit} className="sticky bottom-[var(--tabbar-h)] -mx-1 bg-bg px-1 pb-4 pt-2">
           {escalated && <p className="mb-2 text-xs font-semibold text-ink2">{tr('A member of bank staff is handling this conversation.', '人工客服正在处理本次对话。')}</p>}
           {attachment && (
-            <div className="mb-2 flex items-center gap-3 rounded-[14px] bg-[var(--field)] p-2">
+            <div className="card mb-2 flex items-center gap-3 p-2">
               {attachment.preview && <img src={attachment.preview} alt="" className="h-12 w-12 rounded-[4px] bg-white object-contain" />}
               <div className="min-w-0 flex-1 text-sm">
                 <p className="truncate font-semibold">{attachment.reading.merchant || tr('Receipt', '小票')}</p>
@@ -274,20 +274,20 @@ export default function Assistant() {
             </div>
           )}
           {uploadError && <p role="alert" className="mb-2 text-xs font-semibold text-cinnabar">{uploadError}</p>}
-          <div className="flex items-end gap-2 rounded-[16px] border border-transparent bg-[var(--field)] p-1.5 shadow-[0_6px_24px_var(--shadow)] focus-within:border-[var(--action)]">
+          <div className="flex items-end gap-2 rounded-tile border border-rule2 bg-card p-1.5 shadow-[0_6px_24px_var(--shadow)] focus-within:border-[var(--action)]">
             <input ref={fileRef} type="file" accept=".pdf,.png,.jpg,.jpeg" className="sr-only" onChange={(e) => void attach(e.target.files?.[0])} />
-            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-ink2 hover:bg-paper2" aria-label={tr('Attach a receipt', '添加小票')} title={tr('Attach a receipt photo or PDF', '添加小票照片或 PDF')}>
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-box text-ink2 hover:bg-paper2" aria-label={tr('Attach a receipt', '添加小票')} title={tr('Attach a receipt photo or PDF', '添加小票照片或 PDF')}>
               <Paperclip size={18} className={uploading ? 'step-live' : ''} />
             </button>
             {Recognition && (
-              <button type="button" onClick={listen} className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${listening ? 'bg-ink text-field' : 'text-ink2 hover:bg-paper2'}`} aria-label={tr('Speak', '语音输入')} aria-pressed={listening} title={tr('Speak', '语音输入')}>
+              <button type="button" onClick={listen} className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-box ${listening ? 'bg-ink text-field' : 'text-ink2 hover:bg-paper2'}`} aria-label={tr('Speak', '语音输入')} aria-pressed={listening} title={tr('Speak', '语音输入')}>
                 <Mic size={18} />
               </button>
             )}
             <textarea ref={box} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1} maxLength={2000}
               placeholder={hint ? tr(`e.g. ${hint}`, `例如：${hint}`) : tr('What do you need?', '说说你要办的事…')}
-              aria-label={tr('Message', '消息')} className="max-h-32 min-h-[40px] min-w-0 flex-1 resize-none bg-transparent px-1 py-2 text-[0.97rem] outline-none focus-visible:outline-none" />
-            <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--action)] text-[var(--action-ink)] disabled:opacity-40" disabled={(!text.trim() && !attachment) || !!pending} aria-label={tr('Send', '发送')}><SendHorizontal size={18} /></button>
+              aria-label={tr('Message', '消息')} className="max-h-32 min-h-[40px] min-w-0 flex-1 resize-none bg-transparent px-1 py-2 text-body outline-none focus-visible:outline-none" />
+            <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-box bg-[var(--action)] text-[var(--action-ink)] disabled:opacity-40" disabled={(!text.trim() && !attachment) || !!pending} aria-label={tr('Send', '发送')}><SendHorizontal size={18} /></button>
           </div>
         </form>
       </div>

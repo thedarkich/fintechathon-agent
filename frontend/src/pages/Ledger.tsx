@@ -81,7 +81,17 @@ function detail(e: AuditEntry, lang: 'zh' | 'en'): string {
       return `${s(d.kind)} · ${s(d.read_by)}${flags.length ? ` · ${flags.join(', ')}` : ''}`
     }
     case 'cancelled': return `${lang === 'zh' ? '停止' : 'stopped'} ${s(d.stopped)} · ${lang === 'zh' ? '撤销' : 'undone'} ${s(d.compensated)}`
-    case 'notification': return s(d.key)
+    case 'notification': {
+      const [kind, , extra] = s(d.key).split(':')
+      const names: Record<string, [string, string]> = {
+        birthday: ['生日提醒', 'Birthday reminder'], anomaly: ['可疑交易提醒', 'Unusual transaction alert'],
+        collection: ['AA 收款通知', 'Split bill update'], declined: ['交易被拒通知', 'Declined payment notice'],
+        plan: ['计划通知', 'Plan update'], renewal: ['续费提醒', 'Renewal reminder'],
+        scheduled: ['预约转账通知', 'Scheduled transfer notice'], transfer: ['转账通知', 'Transfer update'],
+      }
+      const name = names[kind] ? names[kind][lang === 'zh' ? 0 : 1] : kind
+      return kind === 'birthday' && extra ? `${name} · ${extra}` : name
+    }
     case 'demo_transfer': return d.outcome === 'return' ? (lang === 'zh' ? '对方银行退回' : 'the payee bank returns it') : (lang === 'zh' ? '立即清算' : 'cleared now')
     case 'demo_clock': {
       const hours = Math.round(Number(d.advanced_seconds) / 3600)
@@ -150,9 +160,9 @@ export default function Ledger() {
       {entries.isLoading ? <div className="mt-3 h-64 animate-pulse rounded-box bg-paper2" aria-hidden /> : rows.length === 0 ? <p className="mt-6 text-ink2">{t.ledger_empty}</p> : <>
         {/* desktop: a ruled ledger page */}
         <div className="mt-3 hidden overflow-x-auto card md:block">
-          <table className="w-full min-w-[760px] border-collapse text-left text-[0.95rem]">
+          <table className="w-full min-w-[760px] border-collapse text-left text-body">
             <thead>
-              <tr className="rule-b bg-paper text-[0.85rem] text-rule2">
+              <tr className="rule-b bg-paper text-cap text-rule2">
                 <th className="w-[4.5rem] px-3 py-2 font-normal">#</th>
                 <th className="w-[6.5rem] px-3 py-2 font-normal">{t.col_time}</th>
                 <th className="w-[12rem] px-3 py-2 font-normal">{t.col_event}</th>
@@ -165,11 +175,11 @@ export default function Ledger() {
                 const meta = info(e.kind)
                 return (
                   <tr key={e.seq} className={`rule-b align-top last:border-b-0 ${fresh.has(e.seq) ? 'row-new' : ''}`}>
-                    <td className="num px-3 py-2.5 font-mono text-[0.85rem] text-ink2">{e.seq}</td>
-                    <td className="num px-3 py-2.5 font-mono text-[0.85rem] text-ink2" title={e.at}>{clock(e.at)}</td>
+                    <td className="num px-3 py-2.5 font-mono text-cap text-ink2">{e.seq}</td>
+                    <td className="num px-3 py-2.5 font-mono text-cap text-ink2" title={e.at}>{clock(e.at)}</td>
                     <td className="px-3 py-2"><span className="flex items-center gap-2"><SealMark kind={meta.mark} size={26} /><span className="font-semibold" style={{ color: markInk(meta.mark) }}>{lang === 'zh' ? meta.zh : meta.en}</span></span></td>
-                    <td className="max-w-[28rem] break-words px-3 py-2.5 text-[0.9rem]">{detail(e, lang)}</td>
-                    <td className="px-3 py-2.5 font-mono text-[0.8rem] text-ink2" title={e.hash}>{shortAddr(e.hash, 6, 4)}</td>
+                    <td className="max-w-[28rem] break-words px-3 py-2.5 text-body">{detail(e, lang)}</td>
+                    <td className="px-3 py-2.5 font-mono text-cap text-ink2" title={e.hash}>{shortAddr(e.hash, 6, 4)}</td>
                   </tr>
                 )
               })}
@@ -186,7 +196,7 @@ export default function Ledger() {
                 <SealMark kind={meta.mark} size={30} />
                 <div className="min-w-0">
                   <p className="font-semibold leading-snug" style={{ color: markInk(meta.mark) }}>{lang === 'zh' ? meta.zh : meta.en}</p>
-                  <p className="truncate text-[0.9rem] text-ink2">{detail(e, lang)}</p>
+                  <p className="truncate text-body text-ink2">{detail(e, lang)}</p>
                 </div>
                 <div className="text-right"><p className="font-mono text-xs text-ink2">#{e.seq}</p><p className="text-xs text-ink2">{timeAgo(e.at, lang)}</p></div>
               </li>

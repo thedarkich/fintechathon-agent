@@ -61,9 +61,11 @@ PATTERNS = [
 
 SECRET_WORDS = re.compile(r"(?i)(password|passcode|\bpin\b|密码|口令|验证码|\bcode\b)")
 SECRET_PATTERNS = [
-    re.compile(r"(?i)(password|passcode|\bpin\b|密码|口令|支付密码|验证码|\bcode\b)\s*(is|:|：|是|为)?\s*[^\s，。,.]{4,}"),
+    # the word stays ('交易密码改成…'), the value after it goes
+    (re.compile(r"(?i)((?:password|passcode|\bpin\b|密码|口令|支付密码|验证码|\bcode\b)\s*"
+                r"(?:is|to|:|：|是|为|改成|改为|换成|设为|设成|设置为|设置成)?\s*)[^\s，。,.、一-鿿]{4,}"), r"\1[已隐藏 hidden]"),
     # a bare six-digit number only counts as a secret when the message talks about one
-    re.compile(r"(?<![\d.¥])\d{6}(?![\d.元块万])"),
+    (re.compile(r"(?<![\d.¥])\d{6}(?![\d.元块万])"), "[已隐藏 hidden]"),
 ]
 
 
@@ -82,7 +84,7 @@ def redact(text: str) -> tuple[str, bool]:
     hidden = False
     if not SECRET_WORDS.search(text):
         return text, False
-    for pattern in SECRET_PATTERNS:
-        text, count = pattern.subn("[已隐藏 hidden]", text)
+    for pattern, replacement in SECRET_PATTERNS:
+        text, count = pattern.subn(replacement, text)
         hidden = hidden or bool(count)
     return text, hidden

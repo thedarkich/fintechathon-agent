@@ -11,7 +11,7 @@ const KIND: Record<string, [string, string]> = { money_market: ['货币基金', 
 /** A product's risk, R1–R5, as five pills: green while it stays low, amber above. */
 function Risk({ level }: { level: number }) {
   const { tr } = useLang()
-  return <span className="inline-flex items-center gap-1.5 text-xs text-ink2">{tr('Risk', '风险')} <RatingPills value={level} tone={level <= 2 ? 'green' : 'amber'} label={tr('Risk level', '风险等级')} showValue={false} /><b className="num text-ink">R{level}</b></span>
+  return <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs text-ink2">{tr('Risk', '风险')} <RatingPills value={level} tone={level <= 2 ? 'scope' : 'amber'} label={tr('Risk level', '风险等级')} showValue={false} /><b className="num text-ink">R{level}</b></span>
 }
 
 /** Card 03, wealth operations: what you hold, your risk level, and the products you may buy. */
@@ -23,22 +23,22 @@ export default function Wealth() {
   const ask = (text: string) => void send(text)
   const pct = (bp: number) => `${(bp / 100).toFixed(2)}%`
   return (
-    <main tabIndex={-1} className="page-content">
+    <main tabIndex={-1} className="page-content scope-wealth">
       <PageHead title={tr('Invest', '理财')}
         right={<button type="button" className="btn btn-ink px-5" disabled={!!pending} onClick={() => ask(tr('Recommend a low-risk product', '推荐一个稳健的理财'))}>{tr('Get a suggestion', '让助手推荐')}</button>} />
       {!d ? <div className="h-64 animate-pulse rounded-box bg-paper2" /> : <>
-        <div className="grid gap-4 max-sm:gap-3 sm:grid-cols-3">
-          <StatTile icon="wallet" tint="blue" label={tr('Market value', '持仓市值')} value={yuan(d.holdings.value_fen)} sub={tr(`${d.holdings.items.length} holdings`, `${d.holdings.items.length} 只产品`)} />
-          <StatTile icon="trend" tint="green" label={tr('Total gain', '累计收益')} value={`${d.holdings.gain_fen > 0 ? '+' : ''}${yuan(d.holdings.gain_fen)}`} valueClass="text-jade" />
+        <div className="stat-grid grid gap-4 max-sm:gap-3 sm:grid-cols-3">
+          <StatTile icon="wallet" label={tr('Market value', '持仓市值')} value={yuan(d.holdings.value_fen)} sub={tr(`${d.holdings.items.length} holdings`, `${d.holdings.items.length} 只产品`)} />
+          <StatTile icon="trend" label={tr('Total gain', '累计收益')} value={`${d.holdings.gain_fen > 0 ? '+' : ''}${yuan(d.holdings.gain_fen)}`} valueClass="text-jade" />
           <div className="card min-w-0 p-5 max-sm:p-4">
             <div className="flex items-center gap-3">
-              <IconDot icon="shield" tint="violet" size={40} />
+              <IconDot icon="shield" size={40} />
               <span className="stat-label min-w-0 flex-1">{tr('Your risk level', '你的风险等级')}</span>
               <button type="button" className="min-h-10 px-1 text-sm font-semibold text-[var(--action)]" disabled={!!pending} onClick={() => ask(tr('Redo my risk assessment', '重新做风险测评'))}>{tr('Redo', '重新测评')}</button>
             </div>
             {d.profile ? <>
               <p className="stat-value mt-3">{LEVEL[d.profile.level][lang === 'zh' ? 0 : 1]}</p>
-              <div className="mt-2"><RatingPills value={d.profile.level} tone="green" label={tr('Risk level', '风险等级')} /></div>
+              <div className="mt-2"><RatingPills value={d.profile.level} label={tr('Risk level', '风险等级')} /></div>
             </> : <p className="stat-value mt-3">{tr('Not assessed', '未测评')}</p>}
           </div>
         </div>
@@ -47,12 +47,12 @@ export default function Wealth() {
           {!d.holdings.items.length ? <p className={EMPTY}>{tr('No holdings.', '没有持仓。')}</p> : (
             <ul className={LIST}>
               {d.holdings.items.map((h) => (
-                <li key={h.code} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5">
-                  <div className="min-w-0 flex-1">
+                <li key={h.code} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-4 py-3.5 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                  <div className="col-span-2 min-w-0 sm:col-span-1">
                     <p className="font-semibold">{h.name}</p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-ink2"><Risk level={h.risk_level} />{tr(`since ${h.since}`, `${h.since} 起`)}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <p className="num font-bold">{yuan(h.value_fen)}</p>
                     <p className="num text-xs font-semibold text-jade">{h.return_pct > 0 ? '+' : ''}{yuan(h.gain_fen)} ({h.return_pct > 0 ? '+' : ''}{h.return_pct}%)</p>
                   </div>
@@ -66,13 +66,13 @@ export default function Wealth() {
         <Section title={tr('Products', '产品')} className="mt-8">
           <ul className={LIST}>
             {d.products.items.map((p) => (
-              <li key={p.code} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5">
-                <div className="min-w-0 flex-1">
+              <li key={p.code} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-4 py-3.5 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                <div className="col-span-2 min-w-0 sm:col-span-1">
                   <p className="font-semibold">{p.name}</p>
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-ink2">{(KIND[p.kind] ?? [p.kind, p.kind])[lang === 'zh' ? 0 : 1]}<Risk level={p.risk_level} />{tr(`redeem T+${p.redeem_days}`, `赎回 T+${p.redeem_days}`)}</p>
                 </div>
-                <div className="text-right">
-                  <p className="num text-lg font-extrabold text-jade">{p.yield_bp ? pct(p.yield_bp) : pct(p.return_1y_bp)}</p>
+                <div className="text-left sm:text-right">
+                  <p className="num text-lg font-extrabold">{p.yield_bp ? pct(p.yield_bp) : pct(p.return_1y_bp)}</p>
                   <p className="text-xs text-ink2">{p.yield_bp ? tr('7-day annualised', '七日年化') : tr(`1 year · max drawdown ${pct(p.max_drawdown_bp)}`, `近一年 · 最大回撤 ${pct(p.max_drawdown_bp)}`)}</p>
                 </div>
                 {p.suitable

@@ -83,7 +83,7 @@ export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPas
   const ready = pin.length === 6 && (method === 'passkey' || (!!challenge && code.length === 6)) && (!needs || secret.length >= (needs === 'new_pin' ? 6 : 10))
   return (
     <div className="fixed inset-0 z-[60] flex justify-center bg-[rgba(0,0,0,0.55)] sm:items-center sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <form ref={dialog} onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="verify-title" className="flex h-full w-full flex-col overflow-hidden bg-field outline-none sm:h-auto sm:max-h-[92dvh] sm:max-w-lg sm:rounded-box sm:border-[1.5px] sm:border-rule2">
+      <form ref={dialog} onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="verify-title" className="flex h-full w-full flex-col overflow-hidden bg-[var(--card)] outline-none sm:h-auto sm:max-h-[92dvh] sm:max-w-lg sm:rounded-box sm:border-[1.5px] sm:border-rule2">
         <div className="flex items-start justify-between gap-3 border-b-[1.5px] border-rule2 px-4 py-3">
           <div className="min-w-0">
             <p id="verify-title" className="flex items-center gap-2 font-semibold"><ShieldCheck size={18} className="text-cinnabar" />{tr('Strong verification', '强验证')}</p>
@@ -113,10 +113,10 @@ export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPas
           <fieldset>
             <legend className="text-xs font-semibold">{tr('Second check', '第二重验证')}</legend>
             <div className="auth-tabs !my-2">
-              <button type="button" aria-pressed={method === 'sms'} onClick={() => setMethod('sms')} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[5px] px-2 py-2 text-[13px] ${method === 'sms' ? 'bg-field font-semibold text-[var(--action)] shadow-[0_1px_3px_var(--shadow)]' : 'text-ink2'}`}>
+              <button type="button" aria-pressed={method === 'sms'} onClick={() => setMethod('sms')} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[5px] px-2 py-2 text-cap ${method === 'sms' ? 'bg-[var(--card)] font-semibold text-[var(--action)] shadow-[0_1px_3px_var(--shadow)]' : 'text-ink2'}`}>
                 <MessageSquareText size={15} />{tr('SMS code', '短信验证码')}
               </button>
-              <button type="button" aria-pressed={method === 'passkey'} disabled={!canPasskey} onClick={() => setMethod('passkey')} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[5px] px-2 py-2 text-[13px] disabled:opacity-40 ${method === 'passkey' ? 'bg-field font-semibold text-[var(--action)] shadow-[0_1px_3px_var(--shadow)]' : 'text-ink2'}`}>
+              <button type="button" aria-pressed={method === 'passkey'} disabled={!canPasskey} onClick={() => setMethod('passkey')} className={`flex flex-1 items-center justify-center gap-1.5 rounded-[5px] px-2 py-2 text-cap disabled:opacity-40 ${method === 'passkey' ? 'bg-[var(--card)] font-semibold text-[var(--action)] shadow-[0_1px_3px_var(--shadow)]' : 'text-ink2'}`}>
                 <Fingerprint size={15} />{tr('Passkey', '通行密钥')}
               </button>
             </div>
@@ -133,7 +133,7 @@ export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPas
                     value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
                 </label>
                 {latest && (
-                  <div className="mt-3 border-l-2 border-ink2 bg-paper px-3 py-2 text-[0.85rem]">
+                  <div className="mt-3 rounded-box bg-[var(--field)] px-3 py-2 text-cap">
                     <p className="text-xs font-semibold text-ink2">{tr('Simulated phone (demo only)', '模拟手机短信（仅演示）')}</p>
                     <p className="mt-1">{lang === 'zh' ? latest.text : latest.text_en}</p>
                   </div>

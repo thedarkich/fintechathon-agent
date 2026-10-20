@@ -71,8 +71,13 @@ def fmt(value, unit: str, lang: str) -> str:
 
 
 def analyze_reply(ctx: Ctx, r: dict, res: dict) -> str:
-    lines = [f"{res['title']}: {fmt(res['value'], res['unit'], ctx.lang)}" if res["value"] is not None else res["title"]]
     rows = res["rows"]
+    head = res["title"]
+    if res["value"] is not None:
+        head += ("：" if ctx.lang == "zh" else ": ") + fmt(res["value"], res["unit"], ctx.lang)
+    if rows and all(len(str(label)) == 7 and str(label)[4] == "-" for label, _ in rows):
+        head += ctx.t(f"（{len(rows)} 个月有记录，按月列出）", f" ({len(rows)} months with any, by month)")
+    lines = [head]
     for label, value in rows[:12]:
         lines.append(f"· {label} {fmt(value, res['unit'], ctx.lang)}")
     if len(rows) > 12:

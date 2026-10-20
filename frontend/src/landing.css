@@ -1,6 +1,6 @@
 /* The landing page: a pale hero with the phone demo, the six scenario cards, safety in three steps,
    and a box to just say what you need. The safety page (How) shares the banner, grid and call to action. */
-.lp { width: min(1280px, calc(100% - 48px)); margin: 24px auto 0; }
+.lp { width: min(1200px, calc(100% - 48px)); margin: 24px auto 0; }
 .lp-error { margin-top: 12px; color: var(--cinnabar); font-size: 14px; }
 .lp-link { color: var(--action); font-weight: 700; }
 .lp-link:hover { text-decoration: underline; text-underline-offset: 4px; }
@@ -8,7 +8,7 @@
 .lp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 30px; }
 
 /* Hero: a pale green panel, the words on the left and the phone on the right */
-.lp-hero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 32px; min-height: 560px; padding: 48px 64px; border-radius: 32px; background: var(--accent-wash); }
+.lp-hero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 32px; min-height: 560px; padding: 48px 64px; border-radius: 24px; background: var(--accent-wash); }
 .lp-hero-copy h1 { margin-top: 18px; font-size: clamp(40px, 4.6vw, 60px); line-height: 1.15; font-weight: 800; letter-spacing: -.03em; }
 .lp-hero-copy p { margin-top: 18px; max-width: 470px; font-size: 17px; line-height: 1.7; color: var(--ink-2); }
 .lp-hero-visual { display: flex; justify-content: center; align-self: stretch; align-items: center; }
@@ -79,7 +79,7 @@
 .lp-ask-chips { justify-content: center; margin-top: 16px; }
 
 /* The safety page: a pale banner, white cards, a pale call to action */
-.lp-banner { position: relative; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: center; gap: 40px; border-radius: 32px; background: var(--accent-wash); padding: 56px 64px; }
+.lp-banner { position: relative; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: center; gap: 40px; border-radius: 24px; background: var(--accent-wash); padding: 56px 64px; }
 .lp-flow { display: grid; gap: 10px; }
 .lp-flow li { position: relative; display: flex; align-items: center; gap: 14px; border-radius: 18px; background: var(--card); box-shadow: var(--card-shadow); padding: 14px 18px; }
 .lp-flow li + li::before { content: ''; position: absolute; left: 39px; top: -10px; width: 2px; height: 10px; background: var(--rule-strong); }
@@ -98,7 +98,7 @@
 .lp-grid > .lp-point:nth-child(4n+2) .lp-icon { background: var(--blue-wash); color: var(--blue); }
 .lp-grid > .lp-point:nth-child(4n+3) .lp-icon { background: var(--violet-wash); color: var(--violet); }
 .lp-grid > .lp-point:nth-child(4n+4) .lp-icon { background: var(--amber-wash); color: var(--amber); }
-.lp-cta { margin-top: 88px; border-radius: 32px; background: var(--accent-wash); padding: 48px 40px; text-align: center; }
+.lp-cta { margin-top: 88px; border-radius: 24px; background: var(--accent-wash); padding: 48px 40px; text-align: center; }
 .lp-cta h2 { font-size: clamp(28px, 3.2vw, 40px); font-weight: 800; letter-spacing: -.02em; }
 .lp-cta p { margin: 12px auto 26px; max-width: 540px; line-height: 1.7; color: var(--ink-2); }
 
@@ -138,3 +138,15 @@
   .lp-bubble, .lp-card { animation: none; }
   .lp-typing i { animation: none; }
 }
+
+/* The example sentence is the button */
+.lp-scenario-try { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; border-radius: 14px; background: var(--field); padding: 10px 14px; text-align: left; font-size: 15px; font-weight: 600; color: var(--ink); transition: background .15s ease; }
+.lp-scenario-try:hover:not(:disabled) { background: var(--accent-wash); }
+.lp-scenario-go { flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--jade); }
+
+/* The test figures on the safety page */
+.lp-point .lp-stat { font-size: 2.8rem; font-weight: 800; line-height: 1; letter-spacing: -.02em; color: var(--jade); }
+
+/* The system, public pages: chips are white with an edge on the grey page */
+.lp-pills button:not([aria-pressed=true]):not([aria-selected=true]) { background: var(--card); box-shadow: inset 0 0 0 1px var(--rule-strong); }
+.lp-hero, .lp-banner, .lp-cta { border-radius: 24px; }

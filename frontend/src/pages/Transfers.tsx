@@ -32,7 +32,7 @@ function Stages({ t }: { t: Transfer }) {
         const bad = event && (b.status === 'returned' || b.status === 'cancelled')
         return (
           <li key={b.status} className={`flex min-h-[4.4rem] flex-col items-center justify-center gap-1 px-1 py-2 text-center ${i < 2 ? 'border-r border-rule' : ''}`}>
-            <span className={`text-[0.8rem] ${event ? 'font-semibold' : 'text-ink2'}`}>{tr(b.en, b.zh)}</span>
+            <span className={`text-cap ${event ? 'font-semibold' : 'text-ink2'}`}>{tr(b.en, b.zh)}</span>
             {event ? (
               <span className="inline-flex h-7 w-7 items-center justify-center rounded-full" aria-hidden
                 style={{ color: bad ? 'var(--ink-2)' : 'var(--jade)', background: `color-mix(in srgb, ${bad ? 'var(--ink-2)' : 'var(--jade)'} 14%, transparent)` }}>
@@ -41,7 +41,7 @@ function Stages({ t }: { t: Transfer }) {
             ) : (
               <span className={`h-7 w-7 rounded-full border-2 border-dashed border-rule ${i === waiting ? 'step-live' : ''}`} aria-hidden />
             )}
-            <span className="num font-mono text-[0.7rem] text-ink2">{event ? stamp(event.at).slice(6) : ''}</span>
+            <span className="num font-mono text-xs text-ink2">{event ? stamp(event.at).slice(6) : ''}</span>
           </li>
         )
       })}
@@ -76,24 +76,24 @@ function TransferRow({ t, demo, open, onDone }: { t: Transfer; demo: boolean; op
       <div className="flex items-center gap-3">
         <SealMark kind={MARK[t.status]} size={26} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{t.payee} <span className="font-mono text-[0.8rem] font-normal text-ink2">{t.bank} {t.account_tail}</span></p>
-          <p className={`text-[0.85rem] ${t.status === 'returned' ? 'font-semibold text-cinnabar' : waiting ? 'text-ink' : 'text-ink2'}`}>{status}</p>
+          <p className="truncate font-semibold">{t.payee} <span className="font-mono text-cap font-normal text-ink2">{t.bank} {t.account_tail}</span></p>
+          <p className={`text-cap ${t.status === 'returned' ? 'font-semibold text-cinnabar' : waiting ? 'text-ink' : 'text-ink2'}`}>{status}</p>
         </div>
         <strong className="num shrink-0 font-bold">{yuan(t.fen)}</strong>
       </div>
       {(t.cancellable || (demo && waiting)) && (
         <div className="mt-2 flex flex-wrap gap-2 pl-[38px]">
-          {t.cancellable && <button type="button" className="btn btn-line py-1 text-[0.85rem]" disabled={!!pending} onClick={() => void send(tr(`Cancel transfer #${t.id.slice(0, 8)}`, `撤销转账 #${t.id.slice(0, 8)}`))}>{tr('Cancel', '撤销')}</button>}
+          {t.cancellable && <button type="button" className="btn btn-line py-1 text-cap" disabled={!!pending} onClick={() => void send(tr(`Cancel transfer #${t.id.slice(0, 8)}`, `撤销转账 #${t.id.slice(0, 8)}`))}>{tr('Cancel', '撤销')}</button>}
           {demo && waiting && <>
-            <button type="button" className="btn btn-line py-1 text-[0.85rem]" disabled={busy} onClick={() => void step('next')}>{tr('Demo: clear it now', '演示：立即清算')}</button>
-            <button type="button" className="btn btn-line py-1 text-[0.85rem]" disabled={busy} onClick={() => void step('return')}>{tr('Demo: payee bank returns it', '演示：对方银行退回')}</button>
+            <button type="button" className="btn btn-line py-1 text-cap" disabled={busy} onClick={() => void step('next')}>{tr('Demo: clear it now', '演示：立即清算')}</button>
+            <button type="button" className="btn btn-line py-1 text-cap" disabled={busy} onClick={() => void step('return')}>{tr('Demo: payee bank returns it', '演示：对方银行退回')}</button>
           </>}
         </div>
       )}
       <details className="mt-2 pl-[38px]" open={open}>
-        <summary className="cursor-pointer text-[0.82rem] text-ink2">{tr('Stages', '进度')}</summary>
+        <summary className="cursor-pointer text-cap text-ink2">{tr('Stages', '进度')}</summary>
         <div className="mt-2"><Stages t={t} /></div>
-        <p className="mt-2 text-[0.8rem] text-ink2">{t.route_label} · {t.arrival_label}{t.memo ? ` · ${tr('note', '备注')} ${t.memo}` : ''}</p>
+        <p className="mt-2 text-cap text-ink2">{t.route_label} · {t.arrival_label}{t.memo ? ` · ${tr('note', '备注')} ${t.memo}` : ''}</p>
       </details>
     </li>
   )
@@ -118,10 +118,10 @@ function SmsPanel() {
       {!items.length ? <p className="px-4 py-4 text-sm text-ink2">{tr('No messages.', '暂无短信。')}</p> : (
         <ol className="max-h-80 space-y-2 overflow-y-auto p-3">
           {items.map((m) => (
-            <li key={m.id} className="rounded-box bg-[var(--field)] px-3 py-2 text-[0.85rem] leading-relaxed">
+            <li key={m.id} className="rounded-box bg-[var(--field)] px-3 py-2 text-cap leading-relaxed">
               {m.who && <span className="mb-0.5 block text-xs font-semibold text-ink2">{m.who}</span>}
               {m.text}
-              <span className="mt-1 block font-mono text-[0.72rem] text-ink2">{stamp(m.at)}</span>
+              <span className="mt-1 block font-mono text-xs text-ink2">{stamp(m.at)}</span>
             </li>
           ))}
         </ol>

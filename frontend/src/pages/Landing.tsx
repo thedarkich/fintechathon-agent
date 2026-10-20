@@ -83,10 +83,10 @@ export default function LandingPage() {
     ['chart', 'blue', tr('Spending', '账单'), tr('Where the money went, and anything that looks odd.', '钱花在哪了，有没有可疑交易。'), tr('Where did my money go last month?', '上个月钱都花哪了')],
     ['trend', 'violet', tr('Invest', '理财'), tr('Suggestions within your risk level, nothing above it.', '按你的风险等级推荐，超出的不让买。'), tr('100000 for a year: what should I buy?', '有10万一年不用，推荐个理财')],
     ['card', 'amber', tr('Cards', '卡片'), tr('Freeze, report lost or change a limit by saying so.', '冻结、挂失、调限额，说一声就办。'), tr('I lost my card', '我的卡丢了')],
-    ['bell', 'blue', tr('Subscriptions', '自动续费'), tr('Every automatic charge, and services you pay for twice.', '每一笔自动扣费，重复的会员一目了然。'), tr('What am I paying for every month?', '我有哪些自动续费')],
-    ['agents', 'green', tr('Many things in one sentence', '一句话办多件事'), tr('Money set aside now, flowers and a cake ordered in time.', '现在预留礼物钱，到时订好花和蛋糕。'), tr("It's my wife's birthday next month, help me prepare", '下个月老婆生日，帮我准备一下')],
+    ['bell', 'cyan', tr('Subscriptions', '自动续费'), tr('Every automatic charge, and services you pay for twice.', '每一笔自动扣费，重复的会员一目了然。'), tr('Cancel iQIYI', '取消爱奇艺会员')],
+    ['agents', 'ink', tr('Many things in one sentence', '一句话办多件事'), tr('Money set aside now, flowers and a cake ordered in time.', '现在预留礼物钱，到时订好花和蛋糕。'), tr("It's my wife's birthday next month, help me prepare", '下个月老婆生日，帮我准备一下')],
   ]
-  const chips = [tr('Send Mom 200', '给妈妈转200'), tr('What subscriptions do I have?', '我有哪些自动续费'), tr('Anything suspicious?', '有没有可疑交易'), tr('Freeze my virtual card', '冻结我的虚拟卡')]
+  const chips = [tr('Send Mom 200', '给妈妈转200'), tr('Where did my money go last month?', '上个月钱都花哪了'), tr('Anything suspicious?', '有没有可疑交易'), tr('Freeze my virtual card', '冻结我的虚拟卡')]
 
   return <div className="public-site landing-page"><SiteHeader />
     <main className="lp" id="main-content" tabIndex={-1}>
@@ -111,8 +111,8 @@ export default function LandingPage() {
             <article key={name} className="card lp-scenario">
               <div className="flex items-center gap-3"><IconDot icon={icon} tint={tint} /><h3>{name}</h3></div>
               <p className="lp-scenario-line">{line}</p>
-              <p className="lp-scenario-say">“{example}”</p>
-              <button type="button" className="btn btn-line mt-auto w-full" disabled={demo.busy} onClick={() => tryIt(example)}>{tr('Try it', '试一试')}</button>
+              <button type="button" className="lp-scenario-try" disabled={demo.busy} onClick={() => tryIt(example)}
+                aria-label={tr(`Try saying: ${example}`, `试试说：${example}`)}><span>“{example}”</span><span className="lp-scenario-go">{tr('Try it', '试一试')} →</span></button>
             </article>
           ))}
         </div>
@@ -122,7 +122,7 @@ export default function LandingPage() {
         <h2>{tr('The AI never touches your money', 'AI 碰不到你的钱')}</h2>
         <ol className="lp-steps3">
           <li className="card">
-            <IconDot icon="agents" tint="violet" />
+            <IconDot icon="agents" tint="ink" />
             <h3>{tr('The AI proposes', 'AI 提议')}</h3>
             <p>{tr('It turns your words into steps from a fixed list of bank actions. It never sees your account and can’t approve anything.', '它把你的话拆成步骤，只能从固定的银行操作里选。它看不到你的账户，也不能批准任何事。')}</p>
           </li>

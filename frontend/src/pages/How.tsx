@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLang } from '../i18n'
 import { SiteFooter, SiteHeader } from '../components/SiteChrome'
-import { Icon, type IconName } from '../components/Icon'
+import { Icon } from '../components/Icon'
 import { TierTag } from '../components/bits'
 import { useAuth, useStartDemo } from '../lib/auth'
 import '../landing.css'
@@ -20,12 +20,6 @@ export default function How() {
   const [view, setView] = useState<'request' | 'rules' | 'result'>('request')
   useEffect(() => { document.title = tr(`${t.brand_en} · How it stays safe`, `${t.brand} · 安全原理`); window.scrollTo(0, 0) }, [tr, t])
   const plan = JSON.stringify({ steps: [{ id: 's1', action: 'transfer', args: { payee: '房东', amount_yuan: 3200, memo: '房租' } }] }, null, 2)
-  const roles: [IconName, string, string][] = [
-    ['chat', tr('You say what you need', '你说出需求'), tr('In Chinese or English, typed, spoken or with a receipt photo. A PIN or code typed by mistake is hidden at once.', '中文英文都行，打字、语音或拍小票。误打的密码和验证码会立刻被隐藏。')],
-    ['agents', tr('The AI turns it into steps', 'AI 把它拆成步骤'), tr('It may only choose from a fixed list of 43 bank actions. It never sees your account, can’t move money and can’t approve anything.', '只能从固定的 43 个银行操作里选。它看不到你的账户，不能动钱，也不能批准任何事。')],
-    ['shield', tr('The bank’s rules check every step', '银行规则逐步检查'), tr('Fixed code matches names to your own records and decides what each step needs: nothing, your OK, or your PIN and a code.', '固定代码把名字和你自己的记录核对，并决定每一步需要什么：直接办、你确认，还是交易密码加验证码。')],
-    ['check', tr('You have the last word', '最后由你决定'), tr('You see exactly what will happen before it happens. Every step is kept in a record that can’t be quietly changed.', '办之前你会看清楚要办什么。每一步都记在无法被悄悄改动的记录里。')],
-  ]
   const levels: ['green' | 'yellow' | 'red', string, string][] = [
     ['green', tr('Questions: balance, spending, reports, unusual transactions, investment returns', '查询：余额、消费、报告、异常交易、理财收益'), tr('Answered right away', '马上回答')],
     ['yellow', tr('Payments while today’s total stays at or under ¥1,000; cancelling a subscription; a virtual card; a split bill; making a card safer', '当天累计不超过 ¥1,000 的付款；取消订阅；申请虚拟卡；AA 收款；让卡更安全的设置'), tr('You check the details and tap Confirm', '你核对内容后点“确认”')],
@@ -57,19 +51,13 @@ export default function How() {
         </ol>
       </section>
 
-      <div className="lp-grid lp-grid-4">
-        {roles.map(([icon, title, text], i) => (
-          <article key={title} className="lp-point"><span className="lp-icon"><Icon name={icon} size={20} /></span><h3>{i + 1}. {title}</h3><p>{text}</p></article>
-        ))}
-      </div>
-
       <section className="lp-section">
         <h2>{tr('Three levels, decided by fixed rules', '三个等级，由固定规则决定')}</h2>
-        <div className="mt-8 divide-y divide-[var(--rule)] overflow-hidden rounded-panel bg-[var(--field)]">
+        <div className="card mt-8 divide-y divide-[var(--rule)] overflow-hidden">
           {levels.map(([tier, what, how]) => (
             <div key={tier} className="grid gap-2 px-6 py-5 sm:grid-cols-[9rem_1fr_16rem] sm:items-center">
               <span><TierTag tier={tier} /></span>
-              <p className="text-[0.95rem] leading-relaxed">{what}</p>
+              <p className="text-body leading-relaxed">{what}</p>
               <p className="text-sm font-semibold text-ink2">{how}</p>
             </div>
           ))}
@@ -113,8 +101,8 @@ export default function How() {
       <section className="lp-section">
         <h2>{tr('Tested, not just promised', '经过测试，不只是承诺')}</h2>
         <div className="lp-grid">
-          {[['224', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['69', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['101', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
-            <article key={n} className="lp-point"><p className="text-[2.8rem] font-extrabold leading-none text-[var(--action)]">{n}</p><p className="mt-2">{text}</p></article>
+          {[['224', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['69', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['114', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
+            <article key={n} className="lp-point"><p className="lp-stat">{n}</p><p className="mt-2">{text}</p></article>
           ))}
         </div>
         <p className="mt-3 text-center text-sm text-ink2">{tr('Measured with the built-in rule-based planner. The AI model planner will be measured before we publish numbers for it.', '以上数字来自内置的规则规划器；接入 AI 模型后会先测量，再公布它的数字。')}</p>

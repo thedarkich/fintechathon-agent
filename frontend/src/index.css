@@ -265,7 +265,7 @@ button {
 
 .workspace { min-height: 100dvh; }
 .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--jade); flex-shrink: 0; }
-.page-content { width: min(1280px, calc(100% - 48px)); margin: 0 auto; padding: 36px 0 72px; }
+.page-content { width: min(1200px, calc(100% - 48px)); margin: 0 auto; padding: 36px 0 72px; }
 .page-content h1 { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
 .page-content h1 + p { margin-top: 8px; }
 .eyebrow { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
@@ -350,4 +350,66 @@ button {
   .service-panel.is-large { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .service-panel.is-large .service-tile { flex-direction: column; text-align: center; font-size: 18px; padding: 18px 8px; }
   .service-panel.is-large .service-icon { width: 60px; height: 60px; }
+}
+
+/* Large text on a phone: one figure per row, so big numbers never run out of their tile */
+@media (max-width: 767px) { :root[data-text="large"] .stat-grid { grid-template-columns: minmax(0, 1fr); } }
+.stat-value { overflow-wrap: anywhere; }
+
+/* ======================================================================================
+   The system. Surfaces: a grey page, white cards edged by a hairline, grey insets inside cards.
+   Colour: green acts (primary buttons, links, the current page); each scenario owns one colour for
+   its icons (转账 green · 账单 blue · 理财 violet · 卡片 amber · 自动续费 cyan · 助手 ink);
+   red and amber only ever mean "look at this". Type: 30 page · 18 section · 15 body · 13 caption · 12 small.
+   Radii: 12 controls and insets · 16 inner panels · 20 cards.
+   ====================================================================================== */
+:root {
+  --bg: #f4f5f7; --card: #ffffff; --field: #f1f3f6; --seg: #ffffff; --radius: 20px;
+  --card-shadow: 0 0 0 1px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.05);
+  --cyan: #0e7490; --cyan-wash: #e0f2f6;
+  --scope: var(--action); --scope-wash: var(--accent-wash);
+}
+:root[data-theme="dark"] {
+  --bg: #0e141b; --card: #161e28; --field: #1e2833; --seg: #3a4757;
+  --card-shadow: 0 0 0 1px rgba(255,255,255,.07);
+  --cyan: #67d4e8; --cyan-wash: #0f2f38;
+}
+html, body { background: var(--bg); }
+
+.scope-send { --scope: var(--action); --scope-wash: var(--accent-wash); }
+.scope-bills { --scope: var(--blue); --scope-wash: var(--blue-wash); }
+.scope-wealth { --scope: var(--violet); --scope-wash: var(--violet-wash); }
+.scope-cards { --scope: var(--amber-ink); --scope-wash: var(--amber-wash); }
+.scope-subs { --scope: var(--cyan); --scope-wash: var(--cyan-wash); }
+.tint-scope { background: var(--scope-wash); color: var(--scope); }
+.tint-cyan { background: var(--cyan-wash); color: var(--cyan); }
+.tint-ink { background: var(--ink); color: var(--card); }
+.tint-amber { color: var(--amber-ink); }
+
+/* tabs are neutral: a white pill on a grey track; green is kept for acting */
+.segmented { background: var(--paper-2); }
+.segmented-on { background: var(--seg); color: var(--ink); box-shadow: 0 1px 2px rgba(16,24,40,.12); }
+
+/* titles on the scale */
+.page-content h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
+.section-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; }
+@media (max-width: 760px) { .page-content h1 { font-size: 26px; } }
+
+/* secondary buttons are white with an edge, so they read the same on the page and inside a card */
+.btn-line { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule-strong); }
+.btn-line:hover { background: var(--field); }
+
+/* code shown to the customer is a light inset, like everything else */
+.agent-detail pre { background: var(--field) !important; color: var(--ink) !important; }
+
+/* charts and level pills take the page's colour */
+.budget-track span, .bar-thick > span { background: var(--scope); }
+.pills.is-scope > i.on { background: var(--scope); }
+
+/* Phones: figures two to a row (an odd last one takes the row); a notice's button goes under its words */
+@media (max-width: 639px) {
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat-grid > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .notice { flex-wrap: wrap; }
+  .notice-action { flex-basis: 100%; padding-left: 40px; }
 }

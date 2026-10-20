@@ -78,7 +78,7 @@ function StepIcon({ s }: { s: PlanStep }) {
     cancelled: ['–', 'var(--ink-2)', tr('cancelled', '已取消')], skipped: ['–', 'var(--ink-2)', tr('skipped', '未执行')],
   }
   const [glyph, color, label] = map[s.status] ?? ['○', 'var(--ink-2)', tr('waiting for you', '等你确认')]
-  return <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[0.7rem] font-bold" style={{ color, borderColor: color }} title={label} aria-label={label}>{glyph}</span>
+  return <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-bold" style={{ color, borderColor: color }} title={label} aria-label={label}>{glyph}</span>
 }
 
 function title(p: Plan, tr: (en: string, zh: string) => string) {
@@ -163,7 +163,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
             {main.map((d) => {
               const amount = d.value === yuan(single.fen ?? -1)
               return (
-                <div key={d.label} className={`flex justify-between gap-4 py-2.5 text-[0.95rem] ${amount ? 'items-center' : 'items-baseline'}`}>
+                <div key={d.label} className={`flex justify-between gap-4 py-2.5 text-body ${amount ? 'items-center' : 'items-baseline'}`}>
                   <dt className="shrink-0 text-ink2">{d.label}</dt>
                   <dd className={`min-w-0 text-right ${amount ? 'num text-[1.75rem] font-extrabold leading-none tracking-[-0.02em]' : 'font-semibold'}`}>{d.value}</dd>
                 </div>
@@ -173,7 +173,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
           {mismatch && <Notice tone="alert" className="mt-3" title={mismatch.label}>{mismatch.value}</Notice>}
           {warning && <Notice tone={scam ? 'alert' : 'highlight'} className="mt-3" title={warning.label}>{warning.value}</Notice>}
           {more.length > 0 && (
-            <details className="mt-2 text-[0.93rem]">
+            <details className="mt-2 text-body">
               <summary className="flex min-h-10 cursor-pointer items-center text-sm font-semibold text-ink2">{tr('More details', '更多信息')}</summary>
               <dl className="divide-y divide-[var(--rule)]">
                 {more.map((d) => <div key={d.label} className="flex items-baseline justify-between gap-4 py-2"><dt className="shrink-0 text-ink2">{d.label}</dt><dd className="min-w-0 text-right font-semibold">{d.value}</dd></div>)}
@@ -183,7 +183,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
         </> : (
           <ol className="space-y-2.5 py-1">
             {p.steps.map((s) => (
-              <li key={s.id} className="flex gap-2.5 text-[0.95rem] leading-snug">
+              <li key={s.id} className="flex gap-2.5 text-body leading-snug">
                 <StepIcon s={s} />
                 <span className={`min-w-0 flex-1 ${s.status === 'cancelled' || s.status === 'skipped' ? 'text-ink2 line-through' : ''}`}>
                   {s.text}
@@ -213,7 +213,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
               {s.purpose_options!.map((o) => (
                 <button key={o.value} type="button" aria-pressed={s.purpose === o.value} disabled={busy}
                   onClick={() => void act(() => api.purpose(p.id, s.id, o.value, lang))}
-                  className={`min-h-11 rounded-[12px] px-3 py-2 text-left text-sm font-semibold leading-snug ${s.purpose === o.value ? 'bg-[var(--action)] text-[var(--action-ink)]' : 'bg-[var(--card)] shadow-[0_1px_2px_var(--shadow)] hover:shadow-[0_0_0_2px_var(--action)]'}`}>
+                  className={`min-h-11 rounded-box px-3 py-2 text-left text-sm font-semibold leading-snug ${s.purpose === o.value ? 'bg-[var(--action)] text-[var(--action-ink)]' : 'bg-[var(--card)] shadow-[0_1px_2px_var(--shadow)] hover:shadow-[0_0_0_2px_var(--action)]'}`}>
                   {o.label}
                 </button>
               ))}

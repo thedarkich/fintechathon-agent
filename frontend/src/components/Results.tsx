@@ -12,9 +12,9 @@ import { SealMark } from './Seal'
 export function Table({ head, children, minWidth = '30rem' }: { head: ReactNode[]; children: ReactNode; minWidth?: string }) {
   return (
     <div className="overflow-x-auto card">
-      <table className="w-full border-collapse text-left text-[0.9rem]" style={{ minWidth }}>
+      <table className="w-full border-collapse text-left text-body" style={{ minWidth }}>
         <thead>
-          <tr className="rule-b bg-paper text-[0.82rem] text-rule2">
+          <tr className="rule-b bg-paper text-cap text-rule2">
             {head.map((h, i) => <th key={i} className={`px-3 py-2 font-normal ${i === head.length - 1 ? 'text-right' : ''}`}>{h}</th>)}
           </tr>
         </thead>
@@ -33,10 +33,10 @@ function Rows({ items }: { items: Row[] }) {
       {items.map((row) => (
         <li key={row.key} className={`flex items-center gap-3 px-3 py-2.5 ${row.muted ? 'text-ink2' : ''}`}>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[0.93rem]">{row.main}</p>
+            <p className="truncate text-body">{row.main}</p>
             {row.sub && <p className="text-xs text-ink2">{row.sub}</p>}
           </div>
-          {row.value !== undefined && <span className="num shrink-0 font-mono text-[0.93rem]">{row.value}</span>}
+          {row.value !== undefined && <span className="num shrink-0 font-semibold">{row.value}</span>}
         </li>
       ))}
     </ul>
@@ -67,10 +67,10 @@ export function Columns({ series }: { series: { label: string; fen: number }[] }
     <figure>
       <div className="flex h-32 items-end gap-[3px]" role="img" aria-label={tr('Spending over time', '支出走势')}>
         {series.map((s) => (
-          <div key={s.label} className="flex-1 rounded-t-[2px]" style={{ height: `${Math.max(2, (s.fen / top) * 100)}%`, background: 'var(--jade)', opacity: s.fen ? 0.85 : 0.18 }} title={`${s.label} ${yuan(s.fen)}`} />
+          <div key={s.label} className="flex-1 rounded-t-[2px]" style={{ height: `${Math.max(2, (s.fen / top) * 100)}%`, background: 'var(--scope)', opacity: s.fen ? 0.85 : 0.18 }} title={`${s.label} ${yuan(s.fen)}`} />
         ))}
       </div>
-      <figcaption className="num mt-1 flex justify-between font-mono text-[11px] text-ink2">
+      <figcaption className="num mt-1 flex justify-between text-xs text-ink2">
         <span>{series[0]?.label.slice(5)}</span>
         <span>{series[series.length - 1]?.label.slice(5)}</span>
       </figcaption>
@@ -80,7 +80,7 @@ export function Columns({ series }: { series: { label: string; fen: number }[] }
 
 function Ask({ text }: { text: string }) {
   const { send, pending } = useChat()
-  return <button type="button" disabled={!!pending} onClick={() => void send(text)} className="btn btn-line py-1 text-[0.85rem]">{text}</button>
+  return <button type="button" disabled={!!pending} onClick={() => void send(text)} className="btn btn-line py-1 text-cap">{text}</button>
 }
 
 function Question({ card }: { card: Card }) {
@@ -121,7 +121,7 @@ function Question({ card }: { card: Card }) {
     <div>
       <div className="flex flex-wrap gap-2">
         {card.options.map((o: { value: string; label_zh: string; label_en: string }) => (
-          <button key={String(o.value)} type="button" onClick={() => void choose(o.value)} className="btn btn-line py-1.5 text-left text-[0.9rem]">
+          <button key={String(o.value)} type="button" onClick={() => void choose(o.value)} className="btn btn-line py-1.5 text-left text-body">
             {lang === 'zh' ? o.label_zh : o.label_en}
           </button>
         ))}
@@ -129,6 +129,13 @@ function Question({ card }: { card: Card }) {
       {error && <p className="mt-2 text-sm text-cinnabar">{error}</p>}
     </div>
   )
+}
+
+/** Buy a suggested product: the request goes through the chat, so the rules and the PIN apply as always. */
+function BuyButton({ name }: { name: string }) {
+  const { tr } = useLang()
+  const { send, pending } = useChat()
+  return <button type="button" className="btn btn-ink px-4 text-sm" disabled={!!pending} onClick={() => void send(tr(`Buy 5000 of ${name}`, `申购${name}5000元`))}>{tr('Buy ¥5,000', '申购 ¥5,000')}</button>
 }
 
 export function Result({ card }: { card: Card }) {
@@ -141,7 +148,7 @@ export function Result({ card }: { card: Card }) {
       return <Question card={card} />
     case 'lock':
       return (
-        <div className="flex flex-wrap items-center gap-3 border-l-2 border-cinnabar bg-field px-3 py-2.5 text-sm">
+        <div className="flex flex-wrap items-center gap-3 rounded-tile bg-[var(--cinnabar-wash)] px-4 py-3 text-sm">
           <span className="flex-1">{tr('The assistant is paused by a safety lock. Verify your identity to resume.', '助手已被安全锁暂停，完成身份验证即可恢复。')}</span>
           <button className="btn btn-cinnabar py-1.5" onClick={() => navigate('/controls?tab=security')}>{tr('Verify', '去验证')}</button>
         </div>
@@ -150,14 +157,14 @@ export function Result({ card }: { card: Card }) {
       return (
         <div className="flex items-center gap-3 card px-3 py-2.5">
           <SealMark kind="done" size={30} />
-          <div><p className="font-semibold text-jade">{tr('Done', '已办成')} <span className="num font-mono text-ink">{yuan(card.fen)}</span></p>
-            {card.balance_fen !== undefined && <p className="num text-[0.85rem] text-ink2">{tr('Balance after', '交易后余额')} {yuan(card.balance_fen)}</p>}</div>
+          <div><p className="font-semibold text-jade">{tr('Done', '已办成')} <span className="num font-bold text-ink">{yuan(card.fen)}</span></p>
+            {card.balance_fen !== undefined && <p className="num text-cap text-ink2">{tr('Balance after', '交易后余额')} {yuan(card.balance_fen)}</p>}</div>
         </div>
       )
     case 'balances':
       return (
         <Rows items={card.accounts.map((a: { id: string; name: string; number: string; fen: number }) => ({
-          key: a.id, main: <>{a.name} <span className="font-mono text-[0.82rem] text-ink2">{a.number.slice(-4)}</span></>, value: yuan(a.fen),
+          key: a.id, main: <>{a.name} <span className="font-mono text-cap text-ink2">{a.number.slice(-4)}</span></>, value: yuan(a.fen),
         }))} />
       )
     case 'transactions':
@@ -186,10 +193,10 @@ export function Result({ card }: { card: Card }) {
               <SealMark kind="flag" size={28} />
               <div className="min-w-0">
                 <p className="font-semibold leading-snug">{a.merchant ?? category(a.category ?? 'other', lang)}</p>
-                <p className="text-[0.85rem] leading-snug text-ink2">{lang === 'zh' ? a.reason_zh : a.reason_en}</p>
+                <p className="text-cap leading-snug text-ink2">{lang === 'zh' ? a.reason_zh : a.reason_en}</p>
                 {a.code !== 'CATEGORY_SPIKE' && <div className="mt-1.5"><Ask text={tr('Freeze the card it used', '冻结这笔交易用的卡')} /></div>}
               </div>
-              <div className="text-right"><p className="num font-mono">{yuan(a.fen)}</p><p className="font-mono text-xs text-ink2">{a.at.slice(0, 10)}</p></div>
+              <div className="text-right"><p className="num font-semibold">{yuan(a.fen)}</p><p className="text-xs text-ink2">{a.at.slice(0, 10)}</p></div>
             </li>
           ))}
         </ol>
@@ -209,7 +216,7 @@ export function Result({ card }: { card: Card }) {
     case 'cards':
       return (
         <Rows items={card.items.map((c: { id: string; name: string; last4: string; status: string; daily_limit_fen: number }) => ({
-          key: c.id, main: <>{c.name} <span className="font-mono text-[0.82rem] text-ink2">{c.last4}</span></>,
+          key: c.id, main: <>{c.name} <span className="font-mono text-cap text-ink2">{c.last4}</span></>,
           sub: tr(`daily limit ${yuan(c.daily_limit_fen)}`, `日限额 ${yuan(c.daily_limit_fen)}`),
           value: <span className={`font-sans font-semibold ${c.status === 'active' ? 'text-jade' : 'text-cinnabar'}`}>{({ active: tr('Active', '正常'), frozen: tr('Frozen', '已冻结'), lost: tr('Reported lost', '已挂失') } as Record<string, string>)[c.status] ?? c.status}</span>,
         }))} />
@@ -229,7 +236,7 @@ export function Result({ card }: { card: Card }) {
           <Rows items={card.items.map((p: { code: string; name: string; risk_level: number; yield_bp: number; return_1y_bp: number; suitable: boolean }) => ({
             key: p.code, main: p.name,
             sub: `R${p.risk_level} · ${p.yield_bp ? `${tr('7-day', '七日年化')} ${(p.yield_bp / 100).toFixed(2)}%` : `${tr('1 year', '近一年')} ${(p.return_1y_bp / 100).toFixed(2)}%`}`,
-            value: <span className={`font-sans text-sm font-semibold ${p.suitable ? 'text-jade' : 'text-cinnabar'}`}>{p.suitable ? tr('Suitable', '适合') : tr('Above your level', '超出等级')}</span>,
+            value: p.suitable ? <BuyButton name={p.name} /> : <span className="text-sm font-semibold text-cinnabar">{tr('Above your level', '超出等级')}</span>,
           }))} />
           <p className="text-xs text-ink2">{tr('Simulated products. Not investment advice.', '模拟产品，不构成投资建议。')}</p>
         </div>
@@ -239,7 +246,7 @@ export function Result({ card }: { card: Card }) {
         <div className="space-y-1.5">
           <Table head={[card.reading.merchant, yuan(card.reading.total_fen)]} minWidth="18rem">
             {card.reading.items.slice(0, 12).map((item: { name: string; fen: number }, i: number) => (
-              <tr key={i} className="rule-b last:border-b-0"><td className="px-3 py-1.5">{item.name}</td><td className="num px-3 py-1.5 text-right font-mono">{yuan(item.fen)}</td></tr>
+              <tr key={i} className="rule-b last:border-b-0"><td className="px-3 py-1.5">{item.name}</td><td className="num px-3 py-1.5 text-right font-semibold">{yuan(item.fen)}</td></tr>
             ))}
           </Table>
           {card.flags.length > 0 && <p className="border-l-2 border-cinnabar pl-2.5 text-sm text-cinnabar">{tr('Hidden text or instructions were found in this file and ignored.', '文件中发现隐藏文字或指令，已忽略。')}</p>}
@@ -255,13 +262,18 @@ export function Result({ card }: { card: Card }) {
             {card.value !== null && <p className="num cond mt-1 text-[1.8rem] font-bold leading-none">{show(card.value)}</p>}
             {card.rows.length > 0 && (
               <ul className="mt-3 divide-y divide-rule">
-                {card.rows.slice(-8).map(([label, value]: [string, number]) => <li key={label} className="flex justify-between py-1.5 text-sm"><span className="font-mono text-ink2">{label}</span><span className="num font-mono">{show(value)}</span></li>)}
+                {card.rows.slice(-8).map(([label, value]: [string, number]) => <li key={label} className="flex justify-between py-1.5 text-sm"><span className="num text-ink2">{label}</span><span className="num font-semibold">{show(value)}</span></li>)}
               </ul>
+            )}
+            {card.rows.length > 0 && card.rows.every(([label]: [string, number]) => /^\d{4}-\d{2}$/.test(label)) && (
+              <p className="mt-2 text-xs text-ink2">{card.rows.length > 8
+                ? tr('The latest 8 months with any; months with none are left out.', '最近 8 个有记录的月份；没有记录的月份不列出。')
+                : tr('Only months with any are listed.', '只列出有记录的月份。')}</p>
             )}
           </div>
           <details className="agent-detail !mt-0">
             <summary>{tr('The generated code and the sandbox limits', '生成的代码与沙箱限制')}</summary>
-            <pre className="mt-2 max-h-64 overflow-auto rounded-box bg-[#0f1114] p-3 font-mono text-[11px] leading-relaxed text-[#eef6f1]">{card.code}</pre>
+            <pre className="mt-2 max-h-64 overflow-auto rounded-box bg-[#0f1114] p-3 font-code text-xs leading-relaxed text-[#eef6f1]">{card.code}</pre>
             <p>
               {tr(`Ran in ${card.ms} ms in a separate process: ${card.limits.memory_mb} MB memory, ${card.limits.cpu_seconds} s CPU, no files, imports limited to ${card.limits.imports.join(', ')}.`,
                 `在独立进程中运行 ${card.ms} 毫秒：内存 ${card.limits.memory_mb} MB，CPU ${card.limits.cpu_seconds} 秒，不能读写文件，仅允许导入 ${card.limits.imports.join('、')}。`)}

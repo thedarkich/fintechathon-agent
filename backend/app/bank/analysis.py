@@ -50,7 +50,8 @@ def summarize(txns: list[Txn]) -> dict:
     by_merchant: dict[str, int] = defaultdict(int)
     for t in spend:
         by_category[t.category] += -t.amount_fen
-        by_merchant[re.sub(r"\(.*?\)", "", t.counterparty).strip()] += -t.amount_fen
+        if t.kind != "transfer_out":
+            by_merchant[re.sub(r"\(.*?\)", "", t.counterparty).strip()] += -t.amount_fen
     income = sum(t.amount_fen for t in txns if t.status == "posted" and t.amount_fen > 0
                  and t.kind in {"salary", "transfer_in", "refund"})
     total = sum(by_category.values())

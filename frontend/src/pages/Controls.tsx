@@ -34,7 +34,7 @@ function CardsPage() {
   const locked = (d?.locks ?? []).length > 0
 
   return (
-    <main tabIndex={-1} className="page-content">
+    <main tabIndex={-1} className="page-content scope-cards">
       <PageHead title={tr('Cards', '卡片')} />
       <PageTabs label={tr('Cards', '卡片')} value={tab} onChange={setTab}
         options={[['cards', tr('Cards', '银行卡')], ['security', locked ? tr('Security (locked)', '安全（已锁定）') : tr('Security', '安全')]] as const} />
@@ -56,7 +56,7 @@ function CardsPage() {
       {status && (
         <div role="status" className="fixed inset-x-0 bottom-[var(--tabbar-h)] z-40 px-4 pb-4">
           <div className={`card mx-auto flex max-w-xl items-center gap-3 px-4 py-3 ${status.tone === 'err' ? 'text-cinnabar' : ''}`}>
-            <span className="min-w-0 flex-1 text-[0.95rem]">{status.text}</span>
+            <span className="min-w-0 flex-1 text-body">{status.text}</span>
             {status.tone !== 'wait' && <button type="button" className="grid h-10 w-10 place-items-center text-ink2" onClick={() => setStatus(null)} aria-label={lang === 'zh' ? '关闭' : 'Dismiss'}>✕</button>}
           </div>
         </div>
@@ -71,10 +71,10 @@ function CardFace({ card: c }: { card: BankCard }) {
   const off = c.status === 'frozen' || c.status === 'lost'
   const face = off ? 'linear-gradient(135deg, #8a929c, #6b737d)' : c.kind === 'virtual' ? 'linear-gradient(135deg, #2b2357, #5b3fb8)' : 'var(--hero)'
   return (
-    <div className="relative flex h-[76px] w-[120px] shrink-0 flex-col justify-between overflow-hidden rounded-[12px] p-2.5 text-white shadow-[0_6px_16px_var(--shadow)]" style={{ background: face }} aria-hidden>
+    <div className="relative flex h-[76px] w-[120px] shrink-0 flex-col justify-between overflow-hidden rounded-box p-2.5 text-white shadow-[0_6px_16px_var(--shadow)]" style={{ background: face }} aria-hidden>
       <span className="flex items-center justify-between text-[0.62rem] font-bold opacity-90">{tr('Bank Agent', '银行代办')}<span>{c.kind === 'virtual' ? tr('Virtual', '虚拟') : tr('Debit', '借记')}</span></span>
       {c.kind === 'debit' && <span className="h-3.5 w-5 rounded-[3px] bg-[#e9d18c]" />}
-      <span className="font-mono text-[0.72rem] tracking-wider">•••• {c.last4}</span>
+      <span className="font-mono text-xs tracking-wider">•••• {c.last4}</span>
       {off && <span className="absolute inset-0 grid place-items-center bg-black/25"><Lock size={20} /></span>}
     </div>
   )
@@ -98,7 +98,7 @@ function CardTile({ card: c, ask, busy }: { card: BankCard; ask: (t: string) => 
         <CardFace card={c} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
-            <p className="font-bold">{c.name} <span className="font-mono text-[0.9rem] font-normal text-ink2">{c.last4}</span></p>
+            <p className="font-bold">{c.name} <span className="font-mono text-body font-normal text-ink2">{c.last4}</span></p>
             <Badge tone={c.status === 'active' ? 'green' : c.status === 'frozen' || lost ? 'red' : 'grey'}>{state}</Badge>
           </div>
           <p className="mt-1 text-xs text-ink2">{tr(`Daily limit ${yuan(c.daily_limit_fen)}`, `日限额 ${yuan(c.daily_limit_fen)}`)}</p>
@@ -109,9 +109,9 @@ function CardTile({ card: c, ask, busy }: { card: BankCard; ask: (t: string) => 
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {switches.map(([key, on, label, word]) => (
             <button key={key} type="button" disabled={busy} aria-pressed={on}
-              className={`flex min-h-11 flex-col items-center justify-center rounded-[12px] px-2 py-1.5 text-[0.8rem] font-semibold leading-tight ${on ? 'bg-[var(--accent-wash)] text-jade' : 'bg-[var(--field)] text-ink2'}`}
+              className={`flex min-h-11 flex-col items-center justify-center rounded-box px-2 py-1.5 text-cap font-semibold leading-tight ${on ? 'bg-[var(--accent-wash)] text-jade' : 'bg-[var(--field)] text-ink2'}`}
               onClick={() => ask(on ? tr(`Turn off ${word} on card ${id}`, `关闭尾号${id}的卡的${word}`) : tr(`Turn on ${word} on card ${id}`, `开通尾号${id}的卡的${word}`))}>
-              <span>{label}</span><span className="text-[0.72rem] font-bold">{on ? tr('On', '已开') : tr('Off', '已关')}</span>
+              <span>{label}</span><span className="text-xs font-bold">{on ? tr('On', '已开') : tr('Off', '已关')}</span>
             </button>
           ))}
         </div>

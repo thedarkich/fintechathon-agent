@@ -28,24 +28,27 @@ export default function Bills() {
     <div className="flex flex-wrap items-center gap-2">
       <Segmented label={tr('Period', '周期')} value={period} onChange={(k) => { setPeriod(k); setOffset(0) }}
         options={[['month', tr('Month', '月')], ['year', tr('Year', '年')]] as const} />
-      <button type="button" className="btn btn-line w-11 px-0" onClick={() => setOffset(offset - 1)} aria-label={tr('Earlier', '上一期')}>‹</button>
-      <span className="num min-w-[5.5rem] text-center font-bold">{name}</span>
-      <button type="button" className="btn btn-line w-11 px-0" disabled={offset >= 0} onClick={() => setOffset(offset + 1)} aria-label={tr('Later', '下一期')}>›</button>
+      <div className="flex items-center gap-2">
+        <button type="button" className="btn btn-line w-11 px-0" onClick={() => setOffset(offset - 1)} aria-label={tr('Earlier', '上一期')}>‹</button>
+        <span className="num min-w-[5.5rem] text-center font-bold">{name}</span>
+        <button type="button" className="btn btn-line w-11 px-0" disabled={offset >= 0} onClick={() => setOffset(offset + 1)} aria-label={tr('Later', '下一期')}>›</button>
+      </div>
     </div>
   )
 
   return (
-    <main tabIndex={-1} className="page-content">
+    <main tabIndex={-1} className="page-content scope-bills">
       <PageHead title={tr('Spending', '账单')} right={tab === 'overview' ? controls : undefined} />
       <PageTabs label={tr('Spending', '账单')} value={tab} onChange={setTab}
         options={[['overview', tr('Overview', '概览')], ['alerts', flagged.length ? tr(`Worth a look (${flagged.length})`, `需要留意（${flagged.length}）`) : tr('Worth a look', '需要留意')], ['transactions', tr('Transactions', '交易明细')]] as const} />
 
       {tab === 'overview' && (!r ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : <>
-        <div className="grid grid-cols-2 gap-4 max-sm:gap-3 lg:grid-cols-4">
-          <StatTile icon="wallet" tint="blue" label={tr('Spent', '支出') + (r.complete ? '' : tr(' so far', '（截至今天）'))} value={yuan(r.spend_fen)} sub={tr(`${r.count} payments`, `${r.count} 笔`)} />
-          <StatTile icon="trend" tint="green" label={tr('Income', '收入')} value={yuan(r.income_fen)} valueClass="text-jade" />
-          <StatTile icon="bank" tint="violet" label={tr('Left over', '结余')} value={yuan(r.net_fen)} />
-          <StatTile icon="chart" tint="amber" label={period === 'month' ? tr('Vs. last month', '较上月') : tr('Vs. last year', '较去年')}
+        <div className="stat-grid grid grid-cols-2 gap-4 max-sm:gap-3 lg:grid-cols-4">
+          <StatTile icon="wallet" label={tr('Spent', '支出')} value={yuan(r.spend_fen)}
+            sub={(r.complete ? '' : tr('So far · ', '截至今天 · ')) + tr(`${r.count} payments`, `${r.count} 笔`)} />
+          <StatTile icon="trend" label={tr('Income', '收入')} value={yuan(r.income_fen)} valueClass="text-jade" />
+          <StatTile icon="bank" label={tr('Left over', '结余')} value={yuan(r.net_fen)} />
+          <StatTile icon="chart" label={period === 'month' ? tr('Vs. last month', '较上月') : tr('Vs. last year', '较去年')}
             value={change === null ? '—' : `${change > 0 ? '+' : ''}${change}%`} valueClass={change === null ? '' : change > 0 ? 'text-cinnabar' : 'text-jade'}
             sub={change === null ? undefined : change > 0 ? tr('more than before', '比上期多花') : tr('less than before', '比上期少花')} />
         </div>
@@ -79,10 +82,10 @@ export default function Bills() {
           <ol className="space-y-3">
             {flagged.map((a) => (
               <li key={`${a.code}-${a.txn_id ?? a.category}`}>
-                <Notice tone={a.code === 'CATEGORY_SPIKE' ? 'highlight' : 'alert'}
-                  title={<span className="flex flex-wrap items-baseline justify-between gap-x-3"><span>{a.merchant ?? category(a.category ?? 'other', lang)} <span className="ml-1 text-xs font-normal text-ink2">{a.at.slice(5, 16).replace('T', ' ')}</span></span><span className="num text-ink">{yuan(a.fen)}</span></span>}
-                  action={a.code !== 'CATEGORY_SPIKE' && <button type="button" className="btn btn-line bg-[var(--card)] px-4 text-sm text-cinnabar" disabled={!!pending} onClick={() => void send(tr('Freeze the card used for the payment I don’t recognise', '冻结这笔不认识的交易所用的卡'))}>{tr('Freeze card', '冻结卡')}</button>}>
-                  {lang === 'zh' ? a.reason_zh : a.reason_en}
+                <Notice tone={a.code === 'CATEGORY_SPIKE' || a.code === 'OVERSEAS_DECLINED' ? 'highlight' : 'alert'}
+                  title={<span className="flex flex-wrap items-baseline justify-between gap-x-3"><span>{a.merchant ?? category(a.category ?? 'other', lang)} <span className="ml-1 text-xs font-normal text-ink2">{a.code === 'CATEGORY_SPIKE' ? tr(a.at.slice(0, 7), `${a.at.slice(0, 4)}年${Number(a.at.slice(5, 7))}月`) : a.at.slice(5, 16).replace('T', ' ')}</span></span><span className="num text-ink">{yuan(a.fen)}</span></span>}
+                  action={a.code === 'NEW_MERCHANT_LARGE' || a.code === 'NIGHT_LARGE' ? <button type="button" className="btn btn-line bg-[var(--card)] px-4 text-sm text-cinnabar" disabled={!!pending} onClick={() => void send(tr('Freeze the card used for the payment I don’t recognise', '冻结这笔不认识的交易所用的卡'))}>{tr('Freeze card', '冻结卡')}</button> : a.code === 'OVERSEAS_DECLINED' ? <Badge tone="grey">{tr('Blocked, not charged', '已拦截，未扣款')}</Badge> : undefined}>
+                  {lang === 'zh' ? a.reason_zh : a.reason_en}{a.code === 'DUPLICATE_CHARGE' && tr(' Ask the merchant to refund the second charge.', '可以联系商户退还多扣的那一笔。')}
                 </Notice>
               </li>
             ))}
@@ -91,7 +94,7 @@ export default function Bills() {
       )}
 
       {tab === 'transactions' && <Section title={tr('Last 90 days', '近 90 天交易')}
-        aside={<label className="flex w-full items-center gap-2 rounded-box bg-[var(--field)] px-3 py-2 sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm outline-none" aria-label={tr('Search transactions', '搜索交易')} placeholder={tr('Search…', '搜索…')} value={q} onChange={(e) => setQ(e.target.value)} /></label>}>
+        aside={<label className="flex w-full items-center gap-2 rounded-box border border-rule2 bg-card px-3 py-2 sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm outline-none" aria-label={tr('Search transactions', '搜索交易')} placeholder={tr('Search…', '搜索…')} value={q} onChange={(e) => setQ(e.target.value)} /></label>}>
         {!txns.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : !txns.data.items.length ? <p className={EMPTY}>{tr('Nothing found.', '没有找到。')}</p> : <TxnList items={txns.data.items} />}
       </Section>}
     </main>

@@ -32,10 +32,10 @@ export function ChatHistory({ items, active, busy, onPick, onNew, onRemove, onCl
   return (
     <nav aria-label={tr('Chat history', '对话记录')} className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-1.5 p-2">
-        <button ref={first} type="button" onClick={onNew} disabled={busy} className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2 text-left text-[0.93rem] font-semibold hover:bg-paper2 disabled:opacity-50">
+        <button ref={first} type="button" onClick={onNew} disabled={busy} className="flex flex-1 items-center gap-2 rounded-box px-3 py-2 text-left text-body font-semibold hover:bg-paper2 disabled:opacity-50">
           <SquarePen size={17} className="text-[var(--action)]" />{tr('New chat', '新对话')}
         </button>
-        <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-ink2 hover:bg-paper2" aria-label={tr('Hide chat history', '收起对话记录')} title={tr('Hide chat history', '收起对话记录')}>
+        <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-box text-ink2 hover:bg-paper2" aria-label={tr('Hide chat history', '收起对话记录')} title={tr('Hide chat history', '收起对话记录')}>
           <PanelLeftClose size={18} />
         </button>
       </div>
@@ -48,23 +48,23 @@ export function ChatHistory({ items, active, busy, onPick, onNew, onRemove, onCl
             <h2 className="px-3 pb-1 text-xs font-semibold text-ink2">{tr(...g.label)}</h2>
             <ul>
               {g.items.map((item) => confirm === item.id ? (
-                <li key={item.id} className="rounded-xl bg-paper2 px-3 py-2 text-sm">
+                <li key={item.id} className="rounded-box bg-paper2 px-3 py-2 text-sm">
                   <p className="font-semibold">{tr('Remove from this list?', '从列表中移除？')}</p>
                   <p className="mt-0.5 text-xs text-ink2">{tr('The record stays in History.', '记录仍保留在“记录”页。')}</p>
                   <div className="mt-2 flex gap-2">
-                    <button type="button" onClick={() => { setConfirm(null); onRemove(item.id) }} className="rounded-lg bg-cinnabar px-2.5 py-1 text-xs font-semibold text-white">{tr('Remove', '移除')}</button>
-                    <button type="button" onClick={() => setConfirm(null)} className="rounded-lg px-2.5 py-1 text-xs font-semibold hover:bg-field">{tr('Cancel', '取消')}</button>
+                    <button type="button" onClick={() => { setConfirm(null); onRemove(item.id) }} className="rounded-box bg-cinnabar px-2.5 py-1 text-xs font-semibold text-white">{tr('Remove', '移除')}</button>
+                    <button type="button" onClick={() => setConfirm(null)} className="rounded-box px-2.5 py-1 text-xs font-semibold hover:bg-field">{tr('Cancel', '取消')}</button>
                   </div>
                 </li>
               ) : (
                 <li key={item.id} className="group relative">
                   <button type="button" disabled={busy} onClick={() => onPick(item.id)} aria-current={item.id === active ? 'page' : undefined}
-                    className={`flex w-full items-center gap-2 rounded-xl py-2 pl-3 pr-9 text-left text-[0.93rem] disabled:cursor-wait ${item.id === active ? 'bg-paper font-semibold shadow-[0_1px_3px_var(--shadow)]' : 'hover:bg-paper2'}`}>
+                    className={`flex w-full items-center gap-2 rounded-box py-2 pl-3 pr-9 text-left text-body disabled:cursor-wait ${item.id === active ? 'bg-paper font-semibold shadow-[0_1px_3px_var(--shadow)]' : 'hover:bg-paper2'}`}>
                     <span className="truncate">{item.title || tr('Untitled chat', '未命名对话')}</span>
                     {item.escalated && <Icon name="users" size={13} className="shrink-0 text-ink2" />}
                   </button>
                   <button type="button" onClick={() => setConfirm(item.id)} aria-label={tr(`Remove “${item.title}” from the list`, `从列表移除“${item.title}”`)} title={tr('Remove from list', '从列表移除')}
-                    className="absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-ink2 hover:bg-field hover:text-cinnabar focus-visible:opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
+                    className="absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-box text-ink2 hover:bg-field hover:text-cinnabar focus-visible:opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
                     <Trash2 size={14} />
                   </button>
                 </li>

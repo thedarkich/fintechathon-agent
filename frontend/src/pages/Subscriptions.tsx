@@ -17,14 +17,14 @@ export default function Subscriptions() {
   const group = (g: string) => (g === 'music' ? tr('music', '音乐') : tr('video', '视频'))
 
   return (
-    <main tabIndex={-1} className="page-content">
+    <main tabIndex={-1} className="page-content scope-subs">
       <PageHead title={tr('Subscriptions', '自动续费')}
         right={<button type="button" className="btn btn-ink px-5" disabled={!!pending} onClick={() => ask(tr('What am I paying for every month?', '我有哪些自动续费'))}>{tr('Ask the assistant', '让助手看看')}</button>} />
       {!subs.data ? <div className="h-64 animate-pulse rounded-box bg-paper2" /> : <>
-        <div className="grid gap-4 max-sm:gap-3 sm:grid-cols-3">
-          <StatTile icon="wallet" tint="blue" label={tr('Each month, about', '每月约')} value={yuan(subs.data.monthly_fen)} />
-          <StatTile icon="bell" tint="violet" label={tr('Renewing automatically', '正在自动扣费')} value={active.length} sub={tr('services', '个服务')} />
-          <StatTile icon="flag" tint={overlaps.length ? 'red' : 'green'} label={tr('Paid for twice', '重复订阅')} value={overlaps.length}
+        <div className="stat-grid grid gap-4 max-sm:gap-3 sm:grid-cols-3">
+          <StatTile icon="wallet" label={tr('Each month, about', '每月约')} value={yuan(subs.data.monthly_fen)} />
+          <StatTile icon="bell" label={tr('Renewing automatically', '正在自动扣费')} value={active.length} sub={tr('services', '个服务')} />
+          <StatTile icon="flag" tint={overlaps.length ? 'red' : 'scope'} label={tr('Paid for twice', '重复订阅')} value={overlaps.length}
             sub={overlaps.length ? tr('kinds of service', '类服务重复') : tr('nothing doubled', '没有重复')} valueClass={overlaps.length ? 'text-cinnabar' : ''} />
         </div>
 
@@ -46,13 +46,13 @@ export default function Subscriptions() {
           {!active.length ? <p className={EMPTY}>{tr('No active subscriptions.', '没有正在扣费的订阅。')}</p> : (
             <ul className={LIST}>
               {active.map((s) => (
-                <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5">
+                <li key={s.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-4 py-3.5 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold">{s.merchant}{s.new && <Badge tone="amber" className="ml-2">{tr('new', '近期开通')}</Badge>}</p>
                     <p className="text-xs text-ink2">{s.cycle === 'monthly' ? tr('monthly', '每月') : tr('yearly', '每年')} · {tr(`next ${s.next_charge_on}`, `下次 ${s.next_charge_on}`)}{s.remind_days_before ? tr(` · reminder ${s.remind_days_before} days before`, ` · 提前 ${s.remind_days_before} 天提醒`) : ''}</p>
                   </div>
                   <span className="num font-bold">{yuan(s.fen)}</span>
-                  <span className="inline-flex gap-2">
+                  <span className="col-span-2 inline-flex justify-end gap-2 sm:col-span-1">
                     <button type="button" className="btn btn-line px-4 text-sm" disabled={!!pending} onClick={() => ask(tr(`Remind me 3 days before ${s.merchant} renews`, `${s.merchant}续费前3天提醒我`))}>{tr('Remind', '提醒')}</button>
                     <button type="button" className="btn btn-cinnabar px-4 text-sm" disabled={!!pending} onClick={() => ask(tr(`Cancel ${s.merchant}`, `取消${s.merchant}`))}>{tr('Cancel', '取消')}</button>
                   </span>

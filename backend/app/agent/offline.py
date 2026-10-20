@@ -69,6 +69,11 @@ AMOUNT = re.compile(
     re.IGNORECASE)
 
 
+def unclear_amount(text: str) -> bool:
+    """'-100' or '200.555': not an amount to guess at; ask for it instead."""
+    return bool(re.search(r"(?<![0-9A-Za-z])[-−]\s*\d", text) or re.search(r"\d\.\d{3,}", text))
+
+
 def amounts(text: str) -> list[float]:
     found = []
     cleaned = re.sub(r"1\d{10}", " ", text)  # phone numbers are not amounts
@@ -436,7 +441,9 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         days = next((int(m) for m in re.findall(r"(\d+)\s*(?:天|days?)", lowered)), 3)
         return one("subscription_remind", {"merchant": sub, "days_before": min(max(days, 1), 30)})
     if has(text, "订阅", "自动续费", "自动扣费", "自动扣款", "代扣", "会员", "subscription", "membership", "recurring",
-           "direct debit", "auto-renew", "paying twice", "pay twice", "paying for two", "paying for the same"):
+           "direct debit", "auto-renew", "paying twice", "pay twice", "paying for two", "paying for the same",
+           "paying for every month", "pay for every month", "pay every month", "paying every month", "monthly charges",
+           "每月扣", "每个月扣", "每月都扣", "每个月都扣"):
         if has(text, "取消", "退订", "不要", "cancel", "unsubscribe", "stop") and sub is None:
             # a service the customer names but doesn't have ('取消Netflix会员') is refused by the bank's records
             named = re.search(r"(?:取消|退订|不要)掉?\s*(?:那个|这个)?\s*([A-Za-z0-9一-龥]{2,12}?)\s*的?(?:会员|订阅|自动续费|连续包月)", text) \
@@ -503,7 +510,8 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
             return one("wealth_products")
     if has(text, "能买", "可以买", "有什么理财", "有哪些理财", "what can i buy", "what can i invest", "which products", "what products"):
         return one("wealth_products")
-    if has(text, "推荐", "买什么", "适合", "recommend", "suggest", "what should i invest", "where should i put"):
+    if has(text, "推荐", "买什么", "适合", "recommend", "suggest", "what should i invest", "where should i put") \
+            or (money and has(text, "what should i buy", "what to buy", "what to do with")):
         horizon = 12
         if has(text, "三年", "3年", "3 years", "three years", "长期", "long term"):
             horizon = 36
@@ -549,8 +557,17 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     if (colloquial or has(text, "转", "汇", "打钱", "打款", "付给", "还钱", "交房租", "付房租", "交租", "缴房租",
                           "transfer", "send", "pay ", "wire")) \
             and not has(text, "转人工"):
+        # '给妈妈转200，再给爸爸转300': one step per clause that names both a person and an amount
+        clauses = [c for c in re.split(r"[，,；;。]|再|然后|并且|另外|和(?=给)|\band then\b|\bthen\b", text) if c.strip()]
+        pairs = [(payee_from(c), amounts(c)) for c in clauses]
+        pairs = [(p, a[0]) for p, a in pairs if p and len(a) == 1]
+        if len(pairs) >= 2 and len({p for p, _ in pairs}) == len(pairs) and not when_from(text, today)[0]:
+            return PlanOut(steps=[step(i + 1, "transfer", {"payee": p, "amount_yuan": a}) for i, (p, a) in enumerate(pairs)])
         payee = payee_from(text) or ("房东" if has(text, "房租", "交租", "rent") else None)
         amount = money[0] if money else None
+        # '转-100' or '转200.555': ask for the amount rather than send ¥100 or ¥200.55
+        if unclear_amount(text):
+            amount = None
         if payee is None:
             return ask("请问要转给谁？", "Who should I send it to?")
         memo = None

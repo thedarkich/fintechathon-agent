@@ -38,7 +38,7 @@ export default function Send() {
   const { tr } = useLang()
   const [tab, setTab] = useTab(['send', 'transfers', 'payees', 'scheduled'] as const, 'send')
   return (
-    <main tabIndex={-1} className="page-content">
+    <main tabIndex={-1} className="page-content scope-send">
       <PageHead title={tr('Transfers', '转账')} />
       <PageTabs label={tr('Transfers', '转账')} value={tab} onChange={setTab}
         options={[['send', tr('Send', '转账')], ['transfers', tr('Where my money is', '转账记录')], ['payees', tr('Payees', '收款人')], ['scheduled', tr('Scheduled & split', '预约与 AA')]] as const} />
@@ -183,7 +183,7 @@ function SendForm() {
               <div className="mt-1 flex items-baseline gap-2 border-b-2 border-rule2 focus-within:border-[var(--action)]">
                 <span className="text-2xl font-bold text-ink2">¥</span>
                 <input id="send-amount" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" placeholder="0" autoComplete="off"
-                  className="num min-w-0 flex-1 bg-transparent py-2 text-[2.4rem] font-extrabold tracking-[-0.02em] outline-none focus-visible:outline-none" />
+                  className="num min-w-0 flex-1 bg-transparent py-2 text-[2.5rem] font-extrabold tracking-[-0.02em] outline-none focus-visible:outline-none" />
               </div>
               {checking && <p className="mt-1.5 text-sm text-ink2">{tr(`From ${checking.name}: ${yuan(checking.fen)}`, `从${checking.name}付款，余额 ${yuan(checking.fen)}`)}</p>}
             </div>
@@ -212,10 +212,24 @@ function SendForm() {
           const rows = payeeId ? history : (transfers.data?.items ?? []).slice(0, 6)
           if (!transfers.data) return <div className="h-40 animate-pulse rounded-box bg-paper2" aria-hidden />
           if (!rows.length) return <p className="py-6 text-center text-sm text-ink2">{payeeId ? tr('No transfers to them yet.', '还没有给 TA 转过账。') : tr('No transfers yet.', '还没有转账。')}</p>
+          if (!payeeId) return (
+            <ol className="divide-y divide-[var(--rule)]">
+              {rows.map((t) => (
+                <li key={t.id} className="flex items-center gap-3 py-3">
+                  <Avatar name={t.payee} masked={t.payee.startsWith('*')} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">{t.payee}{t.memo && <span className="font-normal text-ink2"> · {t.memo}</span>}</span>
+                    <span className={`block text-xs ${t.status === 'arrived' ? 'text-jade' : t.status === 'returned' ? 'text-cinnabar' : 'text-ink2'}`}>{t.status_label} · {stamp(t.created_at)}</span>
+                  </span>
+                  <span className="num shrink-0 font-bold">{yuan(t.fen)}</span>
+                </li>
+              ))}
+            </ol>
+          )
           return (
             <ol className="space-y-2.5">
               {rows.map((t) => (
-                <li key={t.id} className="ml-auto w-fit min-w-[11rem] max-w-[85%] rounded-[18px] rounded-br-md bg-[var(--field)] px-4 py-2.5">
+                <li key={t.id} className="ml-auto w-fit min-w-[11rem] max-w-[85%] rounded-tile rounded-br-md bg-[var(--field)] px-4 py-2.5">
                   {!payeeId && <p className="text-xs font-semibold text-ink2">{t.payee}</p>}
                   <p className="num text-lg font-extrabold">{yuan(t.fen)}</p>
                   {t.memo && <p className="text-sm">{t.memo}</p>}
@@ -244,7 +258,7 @@ function Payees() {
               <span className="font-semibold">{lang === 'zh' ? p.name : p.name_en}</span>
               {(lang === 'zh' ? p.note : p.note_en) && <span className="text-sm text-ink2">{lang === 'zh' ? p.note : p.note_en}</span>}
               {now - new Date(p.created_at).getTime() < 86_400_000 && <Badge tone="amber">{tr('Added today', '今天新加')}</Badge>}
-              <span className="ml-auto font-mono text-[0.8rem] text-ink2">{lang === 'zh' ? p.bank : p.bank_en} {p.account_tail}</span>
+              <span className="ml-auto font-mono text-cap text-ink2">{lang === 'zh' ? p.bank : p.bank_en} {p.account_tail}</span>
             </li>
           ))}
         </ul>
@@ -266,7 +280,7 @@ function Scheduled() {
               <li key={s.id} className={ROW}>
                 <SealMark kind={s.status === 'done' ? 'done' : s.status === 'cancelled' ? 'cancelled' : s.status === 'waiting_approval' ? 'pending' : 'scheduled'} size={24} />
                 <span className="font-semibold">{lang === 'zh' ? s.payee : s.payee_en}</span>
-                <span className="font-mono text-[0.8rem] text-ink2">{stamp(s.run_at)}{s.repeat === 'monthly' ? tr(', monthly', '，每月') : ''}</span>
+                <span className="font-mono text-cap text-ink2">{stamp(s.run_at)}{s.repeat === 'monthly' ? tr(', monthly', '，每月') : ''}</span>
                 <strong className="num ml-auto">{yuan(s.fen)}</strong>
                 {(s.status === 'scheduled' || s.status === 'waiting_approval') && (
                   <button type="button" className="btn btn-line px-3 text-sm" disabled={!!pending}
@@ -282,7 +296,7 @@ function Scheduled() {
         {!scheduled.data?.collections.length ? <p className={EMPTY}>{tr('No split bills.', '暂无 AA 收款。')}</p> : (
           <ul className={LIST}>
             {scheduled.data.collections.map((c) => (
-              <li key={c.id} className="px-4 py-3 text-[0.95rem]">
+              <li key={c.id} className="px-4 py-3 text-body">
                 <p className="flex justify-between gap-3"><span className="font-semibold">{c.title}</span><span className="num font-bold">{yuan(c.total_fen)}</span></p>
                 <p className="mt-1 flex flex-wrap gap-1.5">{c.participants.map((p) => (
                   <Badge key={p.name} tone={p.status === 'paid' ? 'green' : 'grey'}>{lang === 'zh' ? p.name : p.name_en} {p.status === 'paid' ? tr('paid', '已付') : tr('not yet', '未付')}</Badge>

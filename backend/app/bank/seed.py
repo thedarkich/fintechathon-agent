@@ -303,6 +303,43 @@ def seed_customer(session: Session, user: UserAccount, now: datetime) -> None:
     from app.bank.analysis import refresh_subscriptions
 
     refresh_subscriptions(session, user.id, today)
+    seed_transfers(session, user, today, txns, payees)
+
+
+def remind_now(session: Session, user: UserAccount, now: datetime) -> None:
+    """A new bank has its reminders from the first screen, not only after the scheduler's next round.
+    Called after the account's opening is recorded, so the audit log reads in order."""
+    from app.agent import scheduler
+    from app.agent.core import Ctx
+
+    scheduler.reminders(Ctx(session=session, user=user, now=now, lang="zh"))
+
+
+def seed_transfers(session: Session, user: UserAccount, today: date, txns: list, payees: dict) -> None:
+    """What a customer would see under Transfers: the last few transfers with their stages, and last month's
+    split utility bill. (No scheduled transfer: the evals and the demo's clock jumps assume there is none.)"""
+    from app.bank import transfers as tf
+
+    by_id = {p.id: p for p in payees.values()}
+    sent = sorted((t for t in txns if t.kind == "transfer_out" and t.status == "posted" and t.payee_id in by_id), key=lambda t: t.at)
+    for t in sent[-4:]:
+        payee, when = by_id[t.payee_id], clock.parse(t.at)
+        row = Transfer(user_id=user.id, payee_id=payee.id, payee_name=payee.name, payee_name_en=payee.name_en or payee.name,
+                       bank=payee.bank, account_tail=payee.account_no[-4:], source_id=t.account_id, amount_fen=-t.amount_fen,
+                       memo=t.memo, route=tf.route_for(payee.bank), created_at=t.at, arrive_at=t.at, finished_at=t.at,
+                       debit_txn_id=t.id)
+        tf._event(row, "accepted", when, *tf.ARRIVALS["instant"])
+        tf._event(row, "clearing", when, *tf.ROUTES[row.route])
+        tf._event(row, "arrived", when)
+        session.add(row)
+    shares = sorted((t for t in txns if t.kind == "transfer_in" and t.payee_id == payees["roommate"].id), key=lambda t: t.at)
+    if shares:
+        last = shares[-1]
+        roommate = payees["roommate"]
+        session.add(Collection(user_id=user.id, title=f"{clock.parse(last.at).astimezone(CST).month}月水电网费",
+                               total_fen=last.amount_fen * 2, status="closed", created_at=at(clock.parse(last.at).astimezone(CST).date(), 9),
+                               participants=[{"payee_id": roommate.id, "name": roommate.name, "name_en": roommate.name_en or roommate.name,
+                                              "share_fen": last.amount_fen, "status": "paid"}]))
 
 
 def has_bank(session: Session, user_id: str) -> bool:

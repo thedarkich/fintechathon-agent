@@ -20,7 +20,7 @@ export function Requests() {
   const shown = search ? rows.filter((p) => p.request.toLowerCase().includes(search.toLowerCase())) : rows
   return (
     <Section title={tr('What you asked for', '你办过的事')}
-      aside={<label className="flex w-full items-center gap-2 rounded-box bg-[var(--field)] px-3 py-2 sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm" aria-label={tr('Search', '搜索')} placeholder={tr('Search…', '搜索…')} value={search} onChange={(e) => setSearch(e.target.value)} /></label>}>
+      aside={<label className="flex w-full items-center gap-2 rounded-box border border-rule2 bg-card px-3 py-2 sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm" aria-label={tr('Search', '搜索')} placeholder={tr('Search…', '搜索…')} value={search} onChange={(e) => setSearch(e.target.value)} /></label>}>
       <RequestList rows={shown} loading={plans.isLoading} selected={selected} onSelect={setSelected} />
       {selected && <RequestModal planId={selected} row={rows.find((r) => r.id === selected)} onClose={() => setSelected(null)} />}
     </Section>
@@ -78,7 +78,7 @@ function RequestModal({ planId, row, onClose }: { planId: string; row?: PlanRow;
   }, [onClose])
   return (
     <div className="fixed inset-0 z-40 flex justify-center bg-[rgba(0,0,0,0.55)] sm:items-center sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={dialog} role="dialog" aria-modal="true" aria-label={tr('What happened', '办理详情')} tabIndex={-1} className="flex h-full w-full flex-col overflow-hidden bg-field outline-none sm:h-auto sm:max-h-[92dvh] sm:max-w-5xl sm:rounded-box sm:border sm:border-rule2">
+      <div ref={dialog} role="dialog" aria-modal="true" aria-label={tr('What happened', '办理详情')} tabIndex={-1} className="flex h-full w-full flex-col overflow-hidden bg-card outline-none sm:h-auto sm:max-h-[92dvh] sm:max-w-5xl sm:rounded-box sm:border sm:border-rule2">
         <div className="flex items-start justify-between gap-3 border-b border-rule px-4 py-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold" title={row?.request}>“{row?.request ?? ''}”</p>

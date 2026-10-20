@@ -22,7 +22,7 @@ from sqlmodel import Session
 from app import clock
 from app.agent import audit
 from app.api.security import SESSION_COOKIE, hash_private, problem, session_digest, session_user_id
-from app.bank.seed import seed_customer
+from app.bank.seed import remind_now, seed_customer
 from app.models import RateBucket, UserAccount, UserSession
 
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -178,6 +178,7 @@ async def register(request: Request, response: Response, body: Registration):
             raise problem(409, "This email already has an account. Sign in instead.", "该邮箱已注册，请直接登录。") from None
         seed_customer(session, user, clock.now(session, user.id))
         audit.append(session, user.id, "account_opened", {"seeded": True})
+        remind_now(session, user, clock.now(session, user.id))
         session.commit()
         result = view(user)
     start_session(request, response, result.id)
@@ -199,6 +200,7 @@ async def demo_start(request: Request, response: Response, body: DemoStart):
         session.flush()
         seed_customer(session, user, clock.now(session, user.id))
         audit.append(session, user.id, "account_opened", {"seeded": True, "demo": True})
+        remind_now(session, user, clock.now(session, user.id))
         session.commit()
         result = view(user)
     start_session(request, response, result.id)

@@ -73,7 +73,7 @@ export function DemoDock() {
         <p className="mb-2 mt-1 text-xs text-ink2">{tr('Move time forward to see scheduled transfers, renewals and reminders happen.', '让时间前进，就能看到预约转账、续费和提醒的发生。')}</p>
         <div className="grid grid-cols-4 gap-1.5">
           {steps.map(([d, h, label]) => (
-            <button key={label} type="button" className="btn btn-line px-1 py-1.5 text-sm" disabled={busy} onClick={() => void run(() => api.advance(d, h, lang), tr('Time moved forward.', '时间已前进。'))}>{label}</button>
+            <button key={label} type="button" className="btn btn-line whitespace-nowrap px-1 py-1.5 text-sm" disabled={busy} onClick={() => void run(() => api.advance(d, h, lang), tr('Time moved forward.', '时间已前进。'))}>{label}</button>
           ))}
         </div>
 
