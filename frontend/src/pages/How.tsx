@@ -101,7 +101,7 @@ export default function How() {
       <section className="lp-section">
         <h2>{tr('Tested, not just promised', '经过测试，不只是承诺')}</h2>
         <div className="lp-grid">
-          {[['224', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['69', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['142', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
+          {[['224', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['69', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['158', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
             <article key={n} className="lp-point"><p className="lp-stat">{n}</p><p className="mt-2">{text}</p></article>
           ))}
         </div>
