@@ -29,7 +29,7 @@ backend/app/
   agent/actions the action catalogue: queries, payments, cards, subscriptions, wealth, security, control (stop a plan or a scheduled transfer)
   bank/         seed (demo customer), ledger, transfers (how a transfer clears), analysis, categories
   api/          accounts, agent (chat, plans, verification), bank pages, demo tools, operator console
-frontend/src/   pages (Landing, How, Auth, Assistant, Accounts with the Transfers section, Bills, Wealth, Controls, Ledger = History, Operator, TeamAccess), components (PlanView = the confirm card, Decision, Requests, Verify, Results, Seal, SiteChrome)
+frontend/src/   pages (Landing, How, Auth, Home, Assistant, Send with the Transfers section, Bills, Wealth, Controls, Subscriptions, Ledger = History, Operator, TeamAccess), components (PlanView = the confirm card, Decision, Requests, Verify, Results, Seal, SiteChrome)
 deploy/         docker-compose.yml, Caddyfile, runtime.env.example
 docs/SPEC.md    the design contract
 ```

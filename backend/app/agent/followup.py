@@ -22,7 +22,7 @@ from datetime import date
 
 from sqlmodel import Session, select
 
-from app.agent import offline
+from app.agent import offline, screening
 from app.agent.offline import (
     CATEGORY_WORDS,
     NEXT_DAY_ARRIVAL,
@@ -57,7 +57,7 @@ AMEND = re.compile(r"改成|改为|换成|变成|改到|不对|应该是|不是|
 AGAIN = re.compile(r"再来一笔|再来一次|再转一次|再转一笔|同样再|一样的再|照样再|\bagain\b|\banother one\b|\bone more\b|再|又|另外|\banother\b|\bmore\b", re.I)
 SAME = re.compile(r"也|一样|同样|照样|\bsame\b|\btoo\b|\bas well\b|\balso\b", re.I)
 PRONOUN = re.compile(r"她|他|\bTA\b|\bher\b|\bhim\b|\bthem\b", re.I)
-RECALL = re.compile(r"刚才.{0,6}(多少|给谁|谁|什么)|上一笔|what did i (just )?(send|say|ask)|how much did i (just )?send|who did i (just )?send", re.I)
+RECALL = re.compile(r"(?:刚才|上一笔).{0,6}(多少|给谁|谁|什么)|what did i (just )?(send|say|ask)|how much did i (just )?send|who did i (just )?send", re.I)
 MOST = re.compile(r"最多|最大|最高|花得最多|biggest|largest|most", re.I)
 DETAILS = re.compile(r"明细|列一下|列出|清单|每一笔|details|list (them|it|those)|each payment", re.I)
 TRANSFER_WORDS = ("转", "打", "汇", "send", "transfer", "pay")
@@ -117,6 +117,7 @@ class Followup:
     plan: PlanOut | None = None          # the completed request
     stop: Plan | None = None             # an open request this message replaces or stops
     note: tuple[str, str] | None = None  # a reply instead of a plan (zh, en)
+    flags: list[str] | None = None       # risk flags carried over: a change never sheds the request's flags
 
 
 def latest(session: Session, conversation_id: str) -> Plan | None:
@@ -145,17 +146,31 @@ def resolve(session: Session, user_id: str, conversation_id: str, text: str, tod
     t = text.strip()
     today = today or date.today()
     on_its_own = alone(t, today)
-    # an answer to the assistant's own question ('转钱' → '转给谁？' → '妈妈') joins the request it asked about
     reply = last_reply(session, conversation_id)
-    if reply is not None and reply.plan_id is None and (reply.summary or "").startswith("[asked]") and not on_its_own.steps:
+    asked = reply is not None and (reply.summary or "").startswith("[asked]")
+    # '算了' when the assistant has just asked something: nothing to do
+    if asked and STOP.fullmatch(t):
+        return Followup(note=("好的，那就先不办了。", "OK, I'll leave it."))
+    # an answer to the assistant's own question ('转钱' → '转给谁？' → '妈妈') joins the request it asked about
+    if asked and reply.plan_id is None and not on_its_own.steps:
         before = previous_words(session, conversation_id)
         if before:
-            joined = alone(f"{before}，{t}", today)
+            joined_text = f"{before}，{t}"
+            joined = alone(joined_text, today)
             if joined.steps:
-                return Followup(plan=joined)
+                return Followup(plan=joined, flags=screening.screen(joined_text))  # the whole request is screened
     prior = latest(session, conversation_id)
     if prior is None or not prior.steps:
         return None
+    result = follow_on(session, user_id, conversation_id, prior, t, on_its_own, today)
+    if result is not None and result.plan is not None:
+        result.flags = sorted(set(prior.flags or []))
+    return result
+
+
+def follow_on(session: Session, user_id: str, conversation_id: str, prior: Plan, t: str, on_its_own: PlanOut,
+              today: date) -> Followup | None:
+    """The message as a follow-up to the conversation's latest request."""
     first = prior.steps[0]
     action, args = first["action"], dict(first.get("args") or {})
     is_open = prior.status in ("awaiting_approval", "clarifying")
@@ -169,19 +184,19 @@ def resolve(session: Session, user_id: str, conversation_id: str, text: str, tod
         if is_open:
             return Followup(stop=prior, note=("好的，这一笔已取消，什么都没有办。", "Done: that's cancelled, and nothing was carried out."))
         return None
-    if RECALL.search(t):
-        return recall(prior, action, args, t)
+    if RECALL.search(t) and not re.search(r"撤销|撤回|取消|退回|undo|cancel|stop|reverse", t, re.I):
+        return recall(prior, action, args, t)  # '撤销上一笔转账' is a request of its own, never a recap
     if action in TRANSFER:
         names = tuple(n for p in session.exec(select(Payee).where(Payee.user_id == user_id)) for n in (p.name, p.name_en) if n)
         return transfer(prior, action, args, t, is_open, on_its_own, names)
     if action in SPENDING:
-        return spending(action, args, t, on_its_own, today)
+        return spending(action, args, t, on_its_own, today, prior.request)
     if action in CARD:
         return card(action, args, t, on_its_own)
     if action in PICKS:
         return product(first, t, previous_words(session, conversation_id))
     if action in SUBS:
-        return subscription(session, user_id, t, today)
+        return subscription(session, user_id, t, today, shown_subscriptions(session, conversation_id))
     if action in ORDERS and any(s["action"] == "merchant_order" for s in prior.steps):
         return orders(prior, t, is_open, today)
     return None
@@ -210,6 +225,7 @@ def transfer(prior: Plan, action: str, args: dict, t: str, is_open: bool, on_its
     if on_its_own.steps and on_its_own.steps[0].action not in TRANSFER:
         return None  # '把借记卡日限额改成5000' is a request of its own, not a change to the transfer
     base = {k: v for k, v in args.items() if k != "phone"} | {"payee": payee}
+    schedule = action == "schedule_transfer"
     lowered = t.lower()
     money = amounts(t)
     named = last_person(t, names)
@@ -223,10 +239,16 @@ def transfer(prior: Plan, action: str, args: dict, t: str, is_open: bool, on_its
     # '再来一笔', '同样再转一次', '再转100', '再给她转50', 'send her another 50': the same person again
     if (AGAIN.search(t) or (PRONOUN.search(t) and transfer_verb)) and not other and len(money) <= 1:
         if money or re.search(r"再来|再转一|同样|一样|照样|again|another one|one more", t, re.I):
+            if schedule:  # another standing order, or one payment now? Ask rather than guess
+                return Followup(note=(f"上一笔是预约转账。要现在再转一笔，请说“现在给{payee}转”加金额；要再设一个预约，请把时间也说出来。",
+                                      f"That was a scheduled transfer. To send one now, say “send {payee}” and the amount; "
+                                      "for another schedule, say when as well."))
             return Followup(plan=one("transfer", {**base, "amount_yuan": money[0] if money else args.get("amount_yuan")}))
     # '爸爸也一样', '也给爸爸转300', 'same for Dad': someone else, the same amount unless a new one is said
     if SAME.search(t) and other and not AMEND.search(t):
-        return Followup(plan=one("transfer", {"payee": named, "amount_yuan": money[-1] if money else args.get("amount_yuan")}))
+        same = {k: v for k, v in base.items() if k in ("when", "repeat")} if schedule else {}  # a schedule stays a schedule
+        return Followup(plan=one(action if schedule else "transfer",
+                                 {**same, "payee": named, "amount_yuan": money[-1] if money else args.get("amount_yuan")}))
     # a change to the open request: '300吧', '金额改成250', '不是妈妈，是爸爸', '换成爸爸', '改成2小时后到账', '备注生活费'
     cue = AMEND.search(t) or arrival or memo
     if not cue and not bare(t, AMOUNT_WORDS, CN_NUMBER):
@@ -242,14 +264,38 @@ def transfer(prior: Plan, action: str, args: dict, t: str, is_open: bool, on_its
         changes["memo"] = memo.group(1)
     if not changes:
         return None
+    # a change to a request that already went through would be a second payment, not a correction
+    if not is_open and prior.status not in ("cancelled", "failed", "rejected", "rolled_back"):
+        return Followup(note=("这笔已经办好了，不能再改。要再转一笔，请直接说，比如“给妈妈再转300”；要撤回还没到账的转账，可以说“撤销刚才那笔转账”。",
+                              "That one has already gone through, so it can't be changed. To send another, just say so, e.g. "
+                              "“send Mom another 300”; to stop a transfer that hasn't arrived yet, say “cancel that transfer”."))
+    # one change to a request with several payments: which one is meant isn't clear
+    payments = [s for s in prior.steps if s["action"] in TRANSFER]
+    if len(payments) > 1:
+        return Followup(note=(f"这个请求里有 {len(payments)} 笔转账，我不确定要改哪一笔。请先说“算了”，再把要转的重新说一遍。",
+                              f"That request has {len(payments)} transfers, and I'm not sure which one to change. "
+                              "Say “never mind”, then say what to send again."))
     return Followup(plan=one("transfer" if action == "phone_transfer" else action, base | changes), stop=prior if is_open else None)
 
 
 OWN_TIME = ("最近", "近", "本周", "这周", "上周", "今天", "昨天", "recent", "lately", "week", "today", "yesterday")  # a time of its own
 
 
-def spending(action: str, args: dict, t: str, on_its_own: PlanOut, today: date) -> Followup | None:
+PERIODS = ((("上上个月", "上上月", "two months ago", "month before last"), ("month", -2)),
+           (("上个月", "上月", "last month"), ("month", -1)),
+           (("这个月", "本月", "this month"), ("month", 0)),
+           (("去年", "last year"), ("year", -1)),
+           (("今年", "this year"), ("year", 0)))
+
+
+def spending(action: str, args: dict, t: str, on_its_own: PlanOut, today: date, said: str = "") -> Followup | None:
     period, offset = args.get("period", "month"), args.get("offset", -1 if action == "report" else 0)
+    if action == "transactions":  # '上个月的交易明细' → '餐饮呢': that list's month
+        if args.get("start"):
+            start = date.fromisoformat(str(args["start"])[:10])
+            period, offset = "month", (start.year - today.year) * 12 + start.month - today.month
+        else:  # a window of days: the month is in the words it was asked with
+            period, offset = next((value for words_, value in PERIODS if has(said, *words_)), ("month", 0))
     if period not in ("month", "year"):
         period, offset = "month", 0
     category = args.get("category")
@@ -271,12 +317,7 @@ def spending(action: str, args: dict, t: str, on_its_own: PlanOut, today: date) 
     if not bare(t, "|".join(re.escape(w) for w in sorted(words, key=len, reverse=True))):
         return None  # '本月账单总结', 'What were my expenses on shopping last month?' are questions of their own
     changed = False
-    for words_, value in ((("去年同期", "same time last year", "same month last year"), ("month", offset - 12)),
-                          (("上上个月", "上上月", "two months ago", "month before last"), ("month", -2)),
-                          (("上个月", "上月", "last month"), ("month", -1)),
-                          (("这个月", "本月", "this month"), ("month", 0)),
-                          (("去年", "last year"), ("year", -1)),
-                          (("今年", "this year"), ("year", 0))):
+    for words_, value in ((("去年同期", "same time last year", "same month last year"), ("month", offset - 12)), *PERIODS):
         if has(t, *words_):
             (period, offset), changed = value, True
             break
@@ -351,7 +392,18 @@ def active_subscriptions(session: Session, user_id: str) -> list[Subscription]:
                              .order_by(Subscription.next_charge_on)).all())  # the order the list was shown in
 
 
-def subscription(session: Session, user_id: str, t: str, today: date) -> Followup | None:
+def shown_subscriptions(session: Session, conversation_id: str) -> list[str]:
+    """The services the conversation's last subscription list showed, in its order ('取消第二个' counts on it,
+    not on a list that changed since)."""
+    for plan in session.exec(select(Plan).where(Plan.conversation_id == conversation_id).order_by(Plan.created_at.desc())):
+        for step in plan.steps:
+            items = (step.get("result") or {}).get("items") if step["action"] == "subscriptions" else None
+            if items:
+                return [i["merchant"] for i in items if i.get("status", "active") == "active"]
+    return []
+
+
+def subscription(session: Session, user_id: str, t: str, today: date, shown: list[str] | None = None) -> Followup | None:
     cancel = has(t, "取消", "退订", "不要", "cancel", "stop", "unsubscribe")
     # '把重复的取消': which ones are doubled, from the bank's own records
     if cancel and has(t, "重复", "duplicate", "twice", "two of") and bare(t, r"把|重复|取消|掉|duplicates?|cancel|the|one|twice|two of|我|me"):
@@ -369,14 +421,14 @@ def subscription(session: Session, user_id: str, t: str, today: date) -> Followu
     n = ordinal(t)
     if n is None or not bare(t, ORDINAL_WORDS, r"取消|退订|不要|cancel|stop|unsubscribe|提醒|remind|我|me|前|before|\d+\s*(?:天|days?)"):
         return None
-    chosen = pick(active_subscriptions(session, user_id), n)
-    if chosen is None:
+    merchant = pick(shown or [s.merchant for s in active_subscriptions(session, user_id)], n)
+    if merchant is None:
         return None
     if cancel:
-        return Followup(plan=one("subscription_cancel", {"merchant": chosen.merchant}))
+        return Followup(plan=one("subscription_cancel", {"merchant": merchant}))
     if has(t, "提醒", "remind"):
         days = next((int(m) for m in re.findall(r"(\d+)\s*(?:天|days?)", t)), 3)
-        return Followup(plan=one("subscription_remind", {"merchant": chosen.merchant, "days_before": min(max(days, 1), 30)}))
+        return Followup(plan=one("subscription_remind", {"merchant": merchant, "days_before": min(max(days, 1), 30)}))
     return None
 
 
@@ -392,10 +444,12 @@ def orders(prior: Plan, t: str, is_open: bool, today: date) -> Followup | None:
     money = amounts(t)
     changed = False
     if money and re.search(r"预算|改成|改为|预留|budget|make it|set aside", t, re.I) and bare(t, r"预算|改成|改为|预留|budget|make it|set aside|to", AMOUNT_WORDS, CN_NUMBER):
-        if amounts(text):
-            text = re.sub(r"\d+(?:\.\d+)?\s*(?:万|千)?", f"{money[-1]:g}", text, count=1)
-        else:
-            text = f"{text}，预留{money[-1]:g}"
+        value = f"{int(money[-1])}" if float(money[-1]).is_integer() else f"{money[-1]}"  # never '1e+06'
+        # the number said with 预留 / 预算 / budget, not the first number in the request ('提前2天' is a day count)
+        text, found = re.subn(r"((?:预留|预算|留出?|set aside|budget(?: of)?)\s*¥?\s*)\d+(?:\.\d+)?\s*(?:万|千)?", rf"\g<1>{value}", text,
+                              count=1, flags=re.I)
+        if not found:
+            text = f"{text}，预留{value}元"
         changed = True
     if re.search(r"只要蛋糕|不要花|只订蛋糕|only the cake|no flowers", t, re.I):
         text, changed = re.sub(r"(?:鲜)?花(?:和|、|跟)?", "", text).replace("flowers and ", ""), True

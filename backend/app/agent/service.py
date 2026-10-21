@@ -204,14 +204,26 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
             return conversation, out, plan
         pending.status = "cancelled"
         session.add(pending)
+        if followup.STOP.fullmatch(clean):  # '算了' instead of an answer: the question and its request are dropped
+            out.append(add_message(session, ctx, conversation, "assistant", ctx.t(
+                "好的，这一笔已取消，什么都没有办。", "Done: that's cancelled, and nothing was carried out.")))
+            session.commit()
+            return conversation, out, pending
 
     # a follow-up ('再转100', '改成300', '餐饮呢', '取消第一个'): fixed code completes it from the request before.
     # Settled by code before any model call: a list's contents ('第二个') never need to reach the model.
-    follow = None if attachment else followup.resolve(session, user.id, conversation.id, clean, ctx.today)
-    if follow is not None and follow.stop is not None and follow.stop.status in ("awaiting_approval", "clarifying"):
-        ctx.plan = follow.stop
-        executor.cancel(ctx, follow.stop, rollback=False)  # the card it replaces can no longer be confirmed
+    follow = None
+    if not attachment:
+        try:
+            follow = followup.resolve(session, user.id, conversation.id, clean, ctx.today)
+        except Exception as exc:  # the follow-up layer only helps: if it fails, the planner reads the message alone
+            audit.append(session, user.id, "followup_error", {"error": type(exc).__name__})
+    replaces = follow.stop if follow is not None and follow.stop is not None and \
+        follow.stop.status in ("awaiting_approval", "clarifying") else None
     if follow is not None and follow.note:
+        if replaces is not None:
+            ctx.plan = replaces
+            executor.cancel(ctx, replaces, rollback=False)
         out.append(add_message(session, ctx, conversation, "assistant", ctx.t(*follow.note)))
         session.commit()
         return conversation, out, follow.stop
@@ -221,6 +233,7 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
     proposed: PlanOut | None = None
     if follow is not None and follow.plan is not None:
         proposed, source = follow.plan, "followup"
+        flags = sorted({*flags, *(follow.flags or [])})  # a change never sheds the request's risk flags
     # the planner learns only that a receipt is attached (its id), never what it says
     planner_text = clean + (f"\n[Attached receipt id: {attachment.id}]" if attachment else "")
     if planner.online and proposed is None:
@@ -236,6 +249,13 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
     if proposed is None:
         proposed = offline.plan(clean, ctx.today, suspicious=bool(flags), attachment=attachment.id if attachment else None)
     errors = validate(proposed, planner_text)
+    if errors and source == "followup":
+        # a follow-up built by code that doesn't validate: the planner reads the message on its own instead (this is
+        # no sign of a misbehaving model, so it doesn't count towards the lock)
+        audit.append(session, user.id, "followup_invalid", {"errors": errors})
+        replaces, source = None, "offline"
+        proposed = offline.plan(clean, ctx.today, suspicious=bool(flags))
+        errors = validate(proposed, planner_text)
     audit.append(session, user.id, "plan_proposed", {"source": source, "model": versions.get("planner"),
                                                      "plan": proposed.model_dump(), "errors": errors})
     if errors:
@@ -272,6 +292,11 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
     session.add(plan)
     session.flush()
     executor.prepare(ctx, plan)
+    if replaces is not None and plan.status in ("awaiting_approval", "clarifying", "done", "scheduled"):
+        # the card it replaces can no longer be confirmed; only now, so a refused replacement keeps the original
+        ctx.plan = replaces
+        executor.cancel(ctx, replaces, rollback=False)
+        ctx.plan = plan
     out.append(reply_for_plan(session, ctx, conversation, plan))
     session.commit()
     return conversation, out, plan

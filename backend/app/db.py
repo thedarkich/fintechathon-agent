@@ -23,7 +23,15 @@ def make_engine(database: Path):
 
     SQLModel.metadata.create_all(engine)
     add_missing_columns(engine)
+    rename_own_bank(engine)
     return engine
+
+
+def rename_own_bank(engine) -> None:
+    """The demo bank was renamed 演示银行 → 中联银行. Payees and transfers saved before keep routing as same-bank."""
+    with engine.begin() as conn:
+        for table in ("payee", "transfer"):
+            conn.exec_driver_sql(f"UPDATE \"{table}\" SET bank = '中联银行' WHERE bank = '演示银行'")
 
 
 def add_missing_columns(engine) -> None:

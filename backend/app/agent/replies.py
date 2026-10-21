@@ -38,10 +38,16 @@ def approval_card(ctx: Ctx, plan: Plan) -> dict:
             "needs": "verify" if plan.tier == "red" else "confirm", "secrets": secrets, "steps": steps}
 
 
-def planned(step: dict) -> str:
+PICKED = {"subscription_cancel", "subscription_remind", "wealth_subscribe"}  # follow-ups can fill these from a list
+
+
+def planned(step: dict, plan: Plan | None = None) -> str:
     """A step for the planner's memory, as it was planned: the action and the arguments taken from the customer's
     words ("妈妈", 200). Never what they resolved to in the bank's records (names, notes, accounts, merchants), so
-    no account data and no outside text reaches the model through the history."""
+    no account data and no outside text reaches the model through the history. A follow-up that picked from a list
+    ('取消第一个') is remembered by what the customer said, since its arguments came from the list."""
+    if plan is not None and plan.source == "followup" and step["action"] in PICKED:
+        return f"{step['action']} (said {json.dumps(plan.request, ensure_ascii=False)})"
     args = {k: v for k, v in (step.get("args") or {}).items() if v not in (None, "", [], {})}
     return f"{step['action']} {json.dumps(args, ensure_ascii=False, sort_keys=True)}" if args else step["action"]
 
@@ -64,7 +70,7 @@ def compose(ctx: Ctx, plan: Plan) -> tuple[str, list[dict], str]:
                 card = action.card(ctx, resolved, step.get("result") or {})
                 if card:
                     cards.append(card)
-            summary.append(f"[done] {planned(step)}")
+            summary.append(f"[done] {planned(step, plan)}")
         elif status == "failed":
             error = step.get("error") or {}
             text = error.get("zh") if ctx.lang == "zh" else error.get("en")
@@ -78,7 +84,7 @@ def compose(ctx: Ctx, plan: Plan) -> tuple[str, list[dict], str]:
             when = step["run_at_resolved"][:16].replace("T", " ")
             lines.append(ctx.t(f"已安排：{when} 执行“{action.describe(ctx, resolved)}”。执行前会再检查一次额度和安全规则。",
                                f"Scheduled for {when}: {action.describe(ctx, resolved)}. Limits and safety rules are checked again before it runs."))
-            summary.append(f"[scheduled {when}] {planned(step)}")
+            summary.append(f"[scheduled {when}] {planned(step, plan)}")
         elif status == "compensated":
             lines.append(ctx.t(f"已撤销：{action.describe(ctx, resolved)}", f"Undone: {action.describe(ctx, resolved)}"))
             summary.append(f"[undone] {step['action']}")
@@ -95,7 +101,7 @@ def compose(ctx: Ctx, plan: Plan) -> tuple[str, list[dict], str]:
         lines.append(plan.ask["zh"] if ctx.lang == "zh" else plan.ask["en"])
         cards.append({"type": "question", "plan_id": plan.id, "field": plan.ask["field"], "options": plan.ask["options"]})
         asked = next((s for s in steps if s["id"] == plan.ask.get("step_id")), None)
-        summary.append(f"[asked] {plan.ask['field']}" + (f" for {planned(asked)}" if asked else ""))
+        summary.append(f"[asked] {plan.ask['field']}" + (f" for {planned(asked, plan)}" if asked else ""))
     elif plan.status == "awaiting_approval":
         card = approval_card(ctx, plan)
         cards.append(card)
@@ -104,7 +110,7 @@ def compose(ctx: Ctx, plan: Plan) -> tuple[str, list[dict], str]:
             lines.append(ctx.t("这笔要验证身份，请核对：", "This one needs your PIN and a code. Please check:"))
         else:
             lines.append(ctx.t("请核对：", "Please check:"))
-        summary.append("[awaiting approval] " + "; ".join(planned(s) for s in steps if s.get("status") == "pending"))
+        summary.append("[awaiting approval] " + "; ".join(planned(s, plan) for s in steps if s.get("status") == "pending"))
     elif plan.status == "rolled_back":
         lines.append(ctx.t("计划未能全部完成，已撤销可以安全撤销的步骤。", "The plan couldn't finish, so I undid the steps that can be safely undone."))
     elif plan.status == "cancelled":

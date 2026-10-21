@@ -69,6 +69,17 @@ const ALARM_LABEL = /^(风险提示|Warning)$/
 const NAME_LABEL = /^(户名核验|Name check)$/
 // account numbers: checked less often, so they fold under "More details"
 const MORE_LABEL = /^(收款账户|付款账户|Account|From)$/
+const PAYEE_LABEL = /^(收款人|To)$/
+
+/** A step's own warnings: a name that doesn't match its account, and the warning for what the payment is for. */
+function alarmsOf(s: PlanStep) {
+  const rows = s.details ?? []
+  return {
+    mismatch: rows.find((d) => NAME_LABEL.test(d.label) && ALARM.test(d.value)),
+    warning: rows.find((d) => ALARM_LABEL.test(d.label)),
+    scam: s.signal_codes.includes('S_SCAM_PURPOSE'),
+  }
+}
 
 /** One step's state as a small symbol: done, waiting for you, scheduled, failed or not run. */
 function StepIcon({ s }: { s: PlanStep }) {
@@ -95,10 +106,6 @@ function title(p: Plan, tr: (en: string, zh: string) => string) {
   }
 }
 
-/**
- * The confirmation card: what will happen in plain label–value rows, why it needs a yes, and the buttons.
- * How the request was checked (AI, rules, you) is one tap away rather than always on screen.
- */
 /**
  * The confirmation card: what will happen in plain label–value rows, why it needs a yes, and the buttons.
  * The rows to check come first; account numbers fold under "More details". A name that doesn't match and the
@@ -129,11 +136,9 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
   const needsPurpose = pending.some((s) => s.purpose_needed)
   const seal = sealFor(p)
   const rows = single?.details ?? []
-  const mismatch = rows.find((d) => NAME_LABEL.test(d.label) && ALARM.test(d.value))
-  const warning = rows.find((d) => ALARM_LABEL.test(d.label))
+  const { mismatch, warning, scam } = single ? alarmsOf(single) : { mismatch: undefined, warning: undefined, scam: false }
   const main = rows.filter((d) => d !== mismatch && d !== warning && !MORE_LABEL.test(d.label))
   const more = rows.filter((d) => MORE_LABEL.test(d.label))
-  const scam = !!single?.signal_codes.includes('S_SCAM_PURPOSE')
 
   async function act(task: () => Promise<Parameters<typeof apply>[0]>) {
     setBusy(true)
@@ -183,15 +188,21 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
           )}
         </> : (
           <ol className="space-y-2.5 py-1">
-            {p.steps.map((s) => (
-              <li key={s.id} className="flex gap-2.5 text-body leading-snug">
-                <StepIcon s={s} />
-                <span className={`min-w-0 flex-1 ${s.status === 'cancelled' || s.status === 'skipped' ? 'text-ink2 line-through' : ''}`}>
-                  {s.text}
-                  {s.status === 'waiting' && s.run_at && <span className="block text-xs text-ink2">{tr(`runs ${stamp(s.run_at)}, after the rules check it again`, `${stamp(s.run_at)} 执行，执行前会再检查一次`)}</span>}
-                </span>
-              </li>
-            ))}
+            {p.steps.map((s) => {
+              // each step keeps its own warnings on a card with several steps
+              const own = s.status === 'pending' ? alarmsOf(s) : null
+              return (
+                <li key={s.id} className="flex gap-2.5 text-body leading-snug">
+                  <StepIcon s={s} />
+                  <span className={`min-w-0 flex-1 ${s.status === 'cancelled' || s.status === 'skipped' ? 'text-ink2 line-through' : ''}`}>
+                    {s.text}
+                    {s.status === 'waiting' && s.run_at && <span className="block text-xs text-ink2">{tr(`runs ${stamp(s.run_at)}, after the rules check it again`, `${stamp(s.run_at)} 执行，执行前会再检查一次`)}</span>}
+                    {own?.mismatch && <Notice tone="alert" className="mt-2" title={own.mismatch.label}>{own.mismatch.value}</Notice>}
+                    {own?.warning && <Notice tone={own.scam ? 'alert' : 'highlight'} className="mt-2" title={own.warning.label}>{own.warning.value}</Notice>}
+                  </span>
+                </li>
+              )
+            })}
             {total > 0 && p.steps.length > 1 && <li className="flex items-center justify-between border-t border-rule pt-2.5"><span className="text-ink2">{tr('Total', '合计')}</span><span className="num text-[1.5rem] font-semibold">{yuan(total)}</span></li>}
           </ol>
         )}
@@ -208,7 +219,11 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
 
         {asking.map((s) => (
           <fieldset key={s.id} className="tile mt-3 p-4 max-sm:p-3">
-            <legend className="float-left w-full font-semibold">{tr('What is this payment for?', '这笔钱是做什么用的？')}</legend>
+            <legend className="float-left w-full font-semibold">{(() => {
+              // with several payments on one card, say which one the question is about
+              const to = p.steps.length > 1 ? s.details?.find((d) => PAYEE_LABEL.test(d.label))?.value : undefined
+              return to ? tr(`What is the payment to ${to} for?`, `给${to}的这笔钱是做什么用的？`) : tr('What is this payment for?', '这笔钱是做什么用的？')
+            })()}</legend>
             <p className="mb-3 text-xs text-ink2">{tr('Your answer decides the warning you see, and some answers hold the money until tomorrow. Only you can answer this, not the assistant.', '你的回答决定看到哪条提醒，有的回答会让钱次日才到账。只能由你本人选择，助手不会替你回答。')}</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {s.purpose_options!.map((o) => (

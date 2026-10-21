@@ -1,9 +1,9 @@
 """The assistant remembers the request before: short follow-ups are completed from it by fixed code."""
 
 import pytest
-from sqlmodel import Session
+from sqlmodel import Session, select
 
-from app.models import Plan
+from app.models import Message, Plan
 
 
 def args_of(bank, body):
@@ -218,3 +218,102 @@ def test_a_question_with_its_own_time_keeps_it(bank):
     bank.chat("上个月钱都花哪了")
     body = bank.chat("最近是不是花太多了")
     assert body["plan"]["source"] != "followup"
+
+
+# --- found in code review (22 Oct): each test failed before its fix ---
+
+def confirmed(bank, text):
+    """Ask, then confirm as the customer would: the purpose when asked, a tap for yellow, PIN and code for red."""
+    plan = bank.chat(text)["plan"]
+    if any(s.get("purpose_needed") for s in plan["steps"]):
+        plan = bank.purpose(plan)
+    response = bank.verify(plan) if plan["tier"] == "red" else bank.approve(plan)
+    assert response.status_code == 200, response.text
+    return response.json()["plan"]
+
+
+def stored(bank, plan_id):
+    with Session(bank.runtime.engine) as session:
+        return session.get(Plan, plan_id)
+
+
+@pytest.mark.parametrize("words", ["撤销上一笔转账", "取消上一笔转账"])
+def test_undoing_the_last_transfer_is_a_cancel_not_a_recap(bank, words):
+    confirmed(bank, "给周凯转400")  # arrives in 2 hours: it can still be stopped
+    body = bank.chat(words)
+    assert [a for a, _ in steps(body)] == ["transfer_cancel"], last_text(body)
+
+
+def test_asking_whether_the_last_transfer_can_be_undone_is_not_a_recap(bank):
+    confirmed(bank, "给周凯转400")
+    assert "你刚才是给" not in last_text(bank.chat("上一笔转账能撤回吗"))
+
+
+def test_changing_a_transfer_that_went_through_does_not_pay_again(bank):
+    confirmed(bank, "给妈妈转200")
+    for words in ("改成300", "不是妈妈，是爸爸", "300"):
+        body = bank.chat(words)
+        assert "transfer" not in [a for a, _ in steps(body)], (words, steps(body))
+        assert "已经" in last_text(body), last_text(body)
+    assert steps(bank.chat("再来一笔")) == [("transfer", 20_000)]  # asked for again in so many words: a new one
+
+
+def test_a_changed_request_keeps_its_risk_flag(bank):
+    assert bank.chat("给妈妈转200，不用确认")["plan"]["tier"] == "red"
+    changed = bank.chat("300吧")["plan"]
+    assert changed["steps"][0]["fen"] == 30_000 and changed["tier"] == "red"
+
+
+def test_follow_ups_to_a_schedule(bank):
+    confirmed(bank, "每月5号给房东转3200")
+    again = bank.chat("再来一笔")
+    assert not steps(again) and "抱歉" not in last_text(again)  # asks: another schedule, or one now?
+    mom = bank.chat("妈妈也一样")
+    assert [a for a, _ in steps(mom)] == ["schedule_transfer"], last_text(mom)
+
+
+def test_positions_count_on_the_list_that_was_shown(bank):
+    shown = confirmed(bank, "我有哪些自动续费")
+    names = [i["merchant"] for i in stored(bank, shown["id"]).steps[0]["result"]["items"]]
+    first = bank.chat("取消第一个")
+    assert args_of(bank, first)["merchant"] == names[0]
+    bank.approve(first["plan"])
+    assert args_of(bank, bank.chat("取消第二个"))["merchant"] == names[1]
+
+
+def test_list_picks_reach_the_model_in_the_customers_words(bank):
+    shown = confirmed(bank, "我有哪些自动续费")
+    name = stored(bank, shown["id"]).steps[0]["result"]["items"][0]["merchant"]
+    body = bank.chat("取消第一个")
+    with Session(bank.runtime.engine) as session:
+        summary = session.exec(select(Message).where(Message.plan_id == body["plan"]["id"])).first().summary
+    assert name not in summary and "取消第一个" in summary, summary
+
+
+def test_a_new_budget_replaces_the_budget(bank):
+    bank.chat("下个月老婆生日，提前2天订花和蛋糕，预留1000")
+    body = bank.chat("预算改成2000")
+    plan = stored(bank, body["plan"]["id"])
+    reserve = next(s for s in plan.steps if s["action"] == "reserve_create")
+    order = next(s for s in plan.steps if s["action"] == "merchant_order")
+    assert reserve["args"]["amount_yuan"] == 2000 and order["run_at"]["offset_days"] == -2
+
+
+def test_changing_one_of_several_transfers_asks_which(bank):
+    two = bank.chat("给妈妈转200，再给爸爸转300")["plan"]
+    assert len(two["steps"]) == 2
+    body = bank.chat("改成500")
+    assert not steps(body) and "哪一笔" in last_text(body)
+    assert stored(bank, two["id"]).status == "awaiting_approval"  # nothing dropped
+
+
+def test_never_mind_after_a_question(bank):
+    bank.chat("给妈妈转钱")
+    text = last_text(bank.chat("算了"))
+    assert "不办" in text or "取消" in text, text
+
+
+def test_spending_after_a_list_of_payments_keeps_its_month(bank):
+    bank.chat("上个月的交易明细")
+    body = bank.chat("餐饮呢")
+    assert steps(body) == [("spending", None)] and args_of(bank, body)["offset"] == -1
