@@ -48,10 +48,13 @@ def summarize(txns: list[Txn]) -> dict:
     spend = [t for t in txns if is_spend(t)]
     by_category: dict[str, int] = defaultdict(int)
     by_merchant: dict[str, int] = defaultdict(int)
+    merchant_category: dict[str, str] = {}
     for t in spend:
         by_category[t.category] += -t.amount_fen
         if t.kind != "transfer_out":
-            by_merchant[re.sub(r"\(.*?\)", "", t.counterparty).strip()] += -t.amount_fen
+            name = re.sub(r"\(.*?\)", "", t.counterparty).strip()
+            by_merchant[name] += -t.amount_fen
+            merchant_category.setdefault(name, t.category)
     income = sum(t.amount_fen for t in txns if t.status == "posted" and t.amount_fen > 0
                  and t.kind in {"salary", "transfer_in", "refund"})
     total = sum(by_category.values())
@@ -65,7 +68,7 @@ def summarize(txns: list[Txn]) -> dict:
             for c, v in sorted(by_category.items(), key=lambda kv: -kv[1])
         ],
         "top_merchants": [
-            {"merchant": m, "fen": v}
+            {"merchant": m, "fen": v, "category": merchant_category[m]}
             for m, v in sorted(by_merchant.items(), key=lambda kv: -kv[1])[:5]
         ],
         "largest": [

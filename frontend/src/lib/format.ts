@@ -57,4 +57,16 @@ export const CATEGORY: Record<string, [string, string]> = {
   internal: ['内部划转', 'Internal moves'], other: ['其他', 'Other'],
 }
 
+/**
+ * One colour per spending category, the same in every chart: the eight most common take the eight slots of a
+ * palette validated for colour-blind separation (in this order), five more were checked against them, and
+ * income, investments, internal moves and other share a neutral grey. Every category also has its own icon
+ * and its text label, so colour is never the only way to tell categories apart.
+ */
+const CATEGORY_SLOT: Record<string, number> = {
+  housing: 1, dining: 2, groceries: 3, shopping: 4, health: 5, travel: 6, utilities: 7, transport: 8,
+  family: 9, transfer: 10, digital: 11, entertainment: 12, gifts: 13,
+}
+export const categoryColor = (code?: string | null) => (code && CATEGORY_SLOT[code] ? `var(--cat-${CATEGORY_SLOT[code]})` : 'var(--cat-other)')
+
 export const category = (code: string, lang: 'zh' | 'en') => (CATEGORY[code] ?? CATEGORY.other)[lang === 'zh' ? 0 : 1]

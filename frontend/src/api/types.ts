@@ -152,7 +152,7 @@ export interface Report {
   count: number
   previous_spend_fen: number
   categories: { category: string; fen: number; share: number }[]
-  top_merchants: { merchant: string; fen: number }[]
+  top_merchants: { merchant: string; fen: number; category?: string }[]
   largest: { id: string; at: string; merchant: string; fen: number; category: string }[]
   series: { label: string; fen: number }[]
 }

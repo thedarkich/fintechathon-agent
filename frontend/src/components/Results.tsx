@@ -4,7 +4,8 @@ import { api, errorText } from '../api/client'
 import type { Card } from '../api/types'
 import { useLang } from '../i18n'
 import { useChat } from '../lib/chat'
-import { category, stamp, yuan } from '../lib/format'
+import { category, categoryColor, stamp, yuan } from '../lib/format'
+import { CategoryIcon } from './Icon'
 import { ConfirmCard } from './PlanView'
 import { SealMark } from './Seal'
 
@@ -24,7 +25,7 @@ export function Table({ head, children, minWidth = '30rem' }: { head: ReactNode[
   )
 }
 
-type Row = { key: string; main: ReactNode; sub?: ReactNode; value?: ReactNode; muted?: boolean }
+type Row = { key: string; lead?: ReactNode; main: ReactNode; sub?: ReactNode; value?: ReactNode; muted?: boolean }
 
 /** A list of rows as on the app's pages: what it is, a grey detail line, the amount on the right. */
 function Rows({ items }: { items: Row[] }) {
@@ -32,6 +33,7 @@ function Rows({ items }: { items: Row[] }) {
     <ul className="divide-y divide-[var(--rule)] card">
       {items.map((row) => (
         <li key={row.key} className={`flex items-center gap-3 px-3 py-2.5 ${row.muted ? 'text-ink2' : ''}`}>
+          {row.lead}
           <div className="min-w-0 flex-1">
             <p className="truncate text-body">{row.main}</p>
             {row.sub && <p className="text-xs text-ink2">{row.sub}</p>}
@@ -43,17 +45,20 @@ function Rows({ items }: { items: Row[] }) {
   )
 }
 
-export function Bars({ rows }: { rows: { label: string; fen: number; hint?: string }[] }) {
+export function Bars({ rows }: { rows: { label: string; fen: number; hint?: string; cat?: string }[] }) {
   const top = Math.max(1, ...rows.map((r) => r.fen))
   return (
     <ul className="space-y-2.5">
       {rows.map((row) => (
         <li key={row.label}>
           <div className="flex items-baseline justify-between gap-3 text-sm">
-            <span className="truncate">{row.label}{row.hint && <span className="ml-1.5 text-xs text-ink2">{row.hint}</span>}</span>
+            <span className="flex min-w-0 items-center gap-2">
+              {row.cat && <CategoryIcon code={row.cat} />}
+              <span className="truncate">{row.label}{row.hint && <span className="ml-1.5 text-xs text-ink2">{row.hint}</span>}</span>
+            </span>
             <span className="num shrink-0 font-semibold">{yuan(row.fen)}</span>
           </div>
-          <div className="budget-track"><span style={{ width: `${Math.max(2, (row.fen / top) * 100)}%` }} /></div>
+          <div className="budget-track"><span style={{ width: `${Math.max(2, (row.fen / top) * 100)}%`, ...(row.cat ? { background: categoryColor(row.cat) } : {}) }} /></div>
         </li>
       ))}
     </ul>
@@ -170,19 +175,19 @@ export function Result({ card }: { card: Card }) {
     case 'transactions':
       return (
         <Rows items={card.items.map((x: { id: string; at: string; merchant: string; fen: number; status: string; category: string }) => ({
-          key: x.id, muted: x.status === 'declined',
+          key: x.id, muted: x.status === 'declined', lead: <CategoryIcon code={x.category} size="1rem" badge />,
           main: <>{x.merchant}{x.status === 'declined' && <span className="ml-1.5 text-xs text-cinnabar">{tr('declined', '已拒绝')}</span>}</>,
           sub: `${category(x.category, lang)} · ${stamp(x.at)}`,
           value: <span className={x.fen > 0 ? 'text-jade' : ''}>{x.fen > 0 ? '+' : ''}{yuan(x.fen)}</span>,
         }))} />
       )
     case 'spending':
-      return <div className="card p-4"><Bars rows={card.categories.slice(0, 8).map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%` }))} /></div>
+      return <div className="card p-4"><Bars rows={card.categories.slice(0, 8).map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%`, cat: c.category }))} /></div>
     case 'report':
       return (
         <div className="card p-4">
           <Columns series={card.series} />
-          <div className="mt-4"><Bars rows={card.categories.slice(0, 6).map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%` }))} /></div>
+          <div className="mt-4"><Bars rows={card.categories.slice(0, 6).map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%`, cat: c.category }))} /></div>
         </div>
       )
     case 'anomalies':

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLang } from '../i18n'
 import { Badge, EMPTY, LIST, Notice, PageHead, PageTabs, Section, Segmented, StatTile, useTab } from '../components/bits'
-import { Icon } from '../components/Icon'
+import { CategoryIcon, Icon } from '../components/Icon'
 import { Bars, Columns } from '../components/Results'
 import { useChat } from '../lib/chat'
 import { category, stamp, yuan } from '../lib/format'
@@ -62,13 +62,13 @@ export default function Bills() {
 
         <div className="mt-8 grid items-start gap-8 lg:grid-cols-2">
           <Section title={tr('Where it went', '花在哪了')}>
-            <div className="card p-5"><Bars rows={r.categories.slice(0, 8).map((c) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%` }))} /></div>
+            <div className="card p-5"><Bars rows={r.categories.slice(0, 8).map((c) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%`, cat: c.category }))} /></div>
           </Section>
           <Section title={tr('Recent', '最近交易')} aside={<button type="button" className="min-h-10 px-1 text-sm font-semibold text-[var(--action)]" onClick={() => setTab('transactions')}>{tr('All', '全部')}</button>}>
             {!txns.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : <TxnList items={txns.data.items.slice(0, 7)} />}
           </Section>
           <Section title={tr('Top merchants', '花得最多的商户')}>
-            <div className="card p-5"><Bars rows={r.top_merchants.map((m) => ({ label: m.merchant, fen: m.fen }))} /></div>
+            <div className="card p-5"><Bars rows={r.top_merchants.map((m) => ({ label: m.merchant, fen: m.fen, hint: m.category ? category(m.category, lang) : undefined, cat: m.category ?? 'other' }))} /></div>
           </Section>
           <Section title={period === 'month' ? tr('Day by day', '每日支出') : tr('Month by month', '每月支出')}>
             <div className="card p-5"><Columns series={r.series} /></div>
@@ -109,6 +109,7 @@ function TxnList({ items }: { items: Txn[] }) {
     <ul className={LIST}>
       {items.map((x) => (
         <li key={x.id} className={`flex items-center gap-3 px-4 py-3 ${x.status === 'declined' ? 'text-ink2' : ''}`}>
+          <CategoryIcon code={x.category} size="1rem" badge />
           <div className="min-w-0 flex-1">
             <p className="truncate font-semibold">{x.merchant}{x.status === 'declined' && <Badge tone="red" className="ml-2">{tr('declined', '已拒绝')}</Badge>}</p>
             <p className="text-xs text-ink2">{category(x.category, lang)} · {stamp(x.at)}</p>

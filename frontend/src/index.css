@@ -413,3 +413,15 @@ html, body { background: var(--bg); }
   .notice { flex-wrap: wrap; }
   .notice-action { flex-basis: 100%; padding-left: 40px; }
 }
+
+/* Category colours for charts: a palette validated for colour-blind separation, stepped for each theme. */
+:root {
+  --cat-1: #2a78d6; --cat-2: #eb6834; --cat-3: #1baf7a; --cat-4: #eda100;
+  --cat-5: #e87ba4; --cat-6: #008300; --cat-7: #6250d6; --cat-8: #e34948; --cat-other: #a3a9b2;
+  --cat-9: #884466; --cat-10: #003377; --cat-11: #cc0099; --cat-12: #555511; --cat-13: #661100;
+}
+:root[data-theme="dark"] {
+  --cat-1: #3987e5; --cat-2: #d95926; --cat-3: #199e70; --cat-4: #c98500;
+  --cat-5: #d55181; --cat-6: #008300; --cat-7: #9085e9; --cat-8: #e66767; --cat-other: #5d6b7a;
+  --cat-9: #dd99ff; --cat-10: #6644ff; --cat-11: #ff11bb; --cat-12: #aabb44; --cat-13: #ccaa88;
+}
