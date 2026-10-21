@@ -275,7 +275,7 @@ export default function Assistant() {
           )}
           {uploadError && <p role="alert" className="mb-2 text-xs font-semibold text-cinnabar">{uploadError}</p>}
           <div className="flex items-end gap-2 rounded-tile border border-rule2 bg-card p-1.5 shadow-[0_6px_24px_var(--shadow)] focus-within:border-[var(--action)]">
-            <input ref={fileRef} type="file" accept=".pdf,.png,.jpg,.jpeg" className="sr-only" onChange={(e) => void attach(e.target.files?.[0])} />
+            <input ref={fileRef} type="file" accept=".pdf,.png,.jpg,.jpeg" className="sr-only" aria-label={tr('Attach a receipt', '添加小票')} onChange={(e) => void attach(e.target.files?.[0])} />
             <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-box text-ink2 hover:bg-paper2" aria-label={tr('Attach a receipt', '添加小票')} title={tr('Attach a receipt photo or PDF', '添加小票照片或 PDF')}>
               <Paperclip size={18} className={uploading ? 'step-live' : ''} />
             </button>
@@ -286,7 +286,7 @@ export default function Assistant() {
             )}
             <textarea ref={box} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1} maxLength={2000}
               placeholder={hint ? tr(`e.g. ${hint}`, `例如：${hint}`) : tr('What do you need?', '说说你要办的事…')}
-              aria-label={tr('Message', '消息')} className="max-h-32 min-h-[40px] min-w-0 flex-1 resize-none bg-transparent px-1 py-2 text-body outline-none focus-visible:outline-none" />
+              autoComplete="off" aria-label={tr('Message', '消息')} className="max-h-32 min-h-[40px] min-w-0 flex-1 resize-none bg-transparent px-1 py-2 text-body outline-none focus-visible:outline-none" />
             <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-box bg-[var(--action)] text-[var(--action-ink)] disabled:opacity-40" disabled={(!text.trim() && !attachment) || !!pending} aria-label={tr('Send', '发送')}><SendHorizontal size={18} /></button>
           </div>
         </form>

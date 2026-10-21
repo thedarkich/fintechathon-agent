@@ -20,7 +20,7 @@ export function Requests() {
   const shown = search ? rows.filter((p) => p.request.toLowerCase().includes(search.toLowerCase())) : rows
   return (
     <Section title={tr('What you asked for', '你办过的事')}
-      aside={<label className="flex w-full items-center gap-2 rounded-box border border-rule2 bg-card px-3 py-2 sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm" aria-label={tr('Search', '搜索')} placeholder={tr('Search…', '搜索…')} value={search} onChange={(e) => setSearch(e.target.value)} /></label>}>
+      aside={<label className="flex w-full items-center gap-2 rounded-box border border-rule2 bg-card px-3 py-2 focus-within:border-[var(--action)] focus-within:shadow-[0_0_0_1px_var(--action)] sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input autoComplete="off" className="min-w-0 w-full bg-transparent text-sm" aria-label={tr('Search', '搜索')} placeholder={tr('Search…', '搜索…')} value={search} onChange={(e) => setSearch(e.target.value)} /></label>}>
       <RequestList rows={shown} loading={plans.isLoading} selected={selected} onSelect={setSelected} />
       {selected && <RequestModal planId={selected} row={rows.find((r) => r.id === selected)} onClose={() => setSelected(null)} />}
     </Section>

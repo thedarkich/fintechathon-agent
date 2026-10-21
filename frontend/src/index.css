@@ -438,3 +438,13 @@ html, body { background: var(--bg); }
 
 /* large text: Home's sizes are in rem, so they grow with the rest; the to-do buttons get full-size targets */
 :root[data-text="large"] .todo-action { min-height: 44px; }
+
+/* Phones: fields are 16px, so iPhones don't zoom the page when one is focused (ui-ux-pro-max: readable-font-size) */
+@media (max-width: 767px) {
+  .field, .auth-field input, input.text-body, input.text-sm, textarea.text-body, textarea.text-sm { font-size: 16px; }
+}
+/* the page's main region takes focus after a page change (for keyboards and screen readers); it needs no ring */
+main[tabindex="-1"]:focus { outline: none; }
+
+/* scrolling inside a dialog or sheet stops at its edge instead of moving the page behind it */
+[role=dialog], [role=dialog] .overflow-y-auto, [role=dialog] .overflow-auto { overscroll-behavior: contain; }

@@ -248,3 +248,6 @@ html { scroll-padding-top: calc(var(--header-h) + 16px); }
 .terminal-checks { color: var(--ink); }
 /* the sign-in pages' panels are cards like the rest */
 .auth-card, .auth-flow { border-radius: 20px; }
+
+/* Phones: sign-in fields are 16px so iPhones do not zoom on focus (after the rules above, which set 14px) */
+@media (max-width: 767px) { .auth-field input { font-size: 16px; } }

@@ -40,4 +40,5 @@ npm run build      # dist/ is served by the backend
 - The header is pinned (`--header-h`); on phones the app's menu is a bottom tab bar (`components/TabBar.tsx`, `--tabbar-h`). Anything sticky uses those two variables.
 - The logo is `BrandMark` (`components/Seal.tsx`); `public/logo.svg` is the same drawing, used for the favicon. The PNG icons in `public/` are rendered from it.
 - No CDNs or external fonts: phones in mainland China must load everything from our own server.
+- The font is MiSans by Xiaomi, bundled from the npm package `misans` (the package itself is Apache-2.0). Xiaomi publishes MiSans for free commercial use under its own MiSans licence; read that licence before shipping this to real customers.
 - Hash routes (`/#/assistant`) are kept for WeChat's in-app browser.

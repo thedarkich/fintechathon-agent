@@ -156,7 +156,7 @@ function SendForm() {
                 </div>
               ) : (
                 <div>
-                  <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={tr('Search payees', '搜索收款人')} aria-label={tr('Search payees', '搜索收款人')}
+                  <input value={filter} onChange={(e) => setFilter(e.target.value)} autoComplete="off" placeholder={tr('Search payees', '搜索收款人')} aria-label={tr('Search payees', '搜索收款人')}
                     className="field" />
                   <ul className="mt-2 max-h-80 divide-y divide-[var(--rule)] overflow-y-auto">
                     {shown.map((p) => {
@@ -187,7 +187,7 @@ function SendForm() {
               </div>
               {checking && <p className="mt-1.5 text-sm text-ink2">{tr(`From ${checking.name}: ${yuan(checking.fen)}`, `从${checking.name}付款，余额 ${yuan(checking.fen)}`)}</p>}
             </div>
-            <input value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={40} placeholder={tr('Note (optional)', '备注（可选）')} aria-label={tr('Note', '备注')}
+            <input value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={40} autoComplete="off" placeholder={tr('Note (optional)', '备注（可选）')} aria-label={tr('Note', '备注')}
               className="field" />
             <div>
               <p className="mb-1.5 text-sm text-ink2">{tr('When should it arrive?', '什么时候到账？')}</p>

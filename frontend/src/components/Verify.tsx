@@ -129,7 +129,7 @@ export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPas
             ) : (
               <div>
                 <label className="auth-field !mb-0" htmlFor="verify-code">{tr(`Code sent to ${challenge.phone}`, `验证码已发送至 ${challenge.phone}`)}
-                  <input id="verify-code" className="num text-center !text-xl tracking-[0.6em]" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+                  <input id="verify-code" className="num text-center !text-xl tracking-[0.6em]" inputMode="numeric" autoComplete="one-time-code" spellCheck={false} maxLength={6}
                     value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
                 </label>
                 {latest && (

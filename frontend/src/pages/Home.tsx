@@ -102,7 +102,7 @@ export default function Home() {
 
       <form onSubmit={submit} className="home-ask">
         <Icon name="chat" size={19} className="text-[var(--action)]" />
-        <input value={ask} onChange={(e) => setAsk(e.target.value)} maxLength={2000} aria-label={tr('Ask the assistant', '问问助手')}
+        <input value={ask} onChange={(e) => setAsk(e.target.value)} maxLength={2000} autoComplete="off" aria-label={tr('Ask the assistant', '问问助手')}
           placeholder={tr('Ask the assistant, e.g. where did my money go?', '问问助手，比如“上个月钱花哪了”')}
           className="min-w-0 flex-1 bg-transparent py-2.5 text-body outline-none focus-visible:outline-none" />
         <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-box bg-[var(--action)] text-[var(--action-ink)] disabled:bg-paper2 disabled:text-ink2" disabled={!ask.trim() || !!pending} aria-label={tr('Ask', '发送')}>

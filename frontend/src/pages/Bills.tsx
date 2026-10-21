@@ -96,7 +96,7 @@ export default function Bills() {
       )}
 
       {tab === 'transactions' && <Section title={tr('Last 90 days', '近 90 天交易')}
-        aside={<label className="flex w-full items-center gap-2 rounded-box border border-rule2 bg-card px-3 py-2 sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm outline-none" aria-label={tr('Search transactions', '搜索交易')} placeholder={tr('Search…', '搜索…')} value={q} onChange={(e) => setQ(e.target.value)} /></label>}>
+        aside={<label className="flex w-full items-center gap-2 rounded-box border border-rule2 bg-card px-3 py-2 focus-within:border-[var(--action)] focus-within:shadow-[0_0_0_1px_var(--action)] sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm outline-none" autoComplete="off" aria-label={tr('Search transactions', '搜索交易')} placeholder={tr('Search…', '搜索…')} value={q} onChange={(e) => setQ(e.target.value)} /></label>}>
         {!txns.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : !txns.data.items.length ? <p className={EMPTY}>{tr('Nothing found.', '没有找到。')}</p> : <TxnList items={txns.data.items} />}
       </Section>}
     </main>

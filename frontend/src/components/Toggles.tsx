@@ -6,7 +6,8 @@ import { useTheme } from '../lib/theme'
 /** 中文 / EN, both always visible so nobody has to guess that the page comes in two languages. */
 export function LangSwitch({ size = 'md' }: { size?: 'md' | 'lg' }) {
   const { lang, setLang } = useLang()
-  const pad = size === 'lg' ? 'px-3 py-1.5' : 'px-2 py-1'
+  // at least 28px tall: pointer targets stay above the 24px minimum (WCAG 2.2 target size)
+  const pad = size === 'lg' ? 'px-3 py-1.5' : 'min-h-7 px-2 py-1'
   return (
     <div role="group" aria-label="语言 Language" className="flex shrink-0 rounded-box bg-[var(--field)] p-0.5 text-sm font-semibold leading-none">
       {(
