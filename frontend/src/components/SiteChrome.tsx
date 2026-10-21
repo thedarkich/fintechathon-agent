@@ -41,10 +41,9 @@ export function useWorkspaceLinks(): [string, string][] {
 }
 
 /** The signed-in person's name; opens what belongs to the account: the bank's time, how it stays safe, sign out. */
-function AccountMenu({ status }: { status?: string }) {
+function AccountMenu({ status, signOut, busy }: { status?: string; signOut: () => Promise<void>; busy: boolean }) {
   const { tr } = useLang()
   const { user } = useAuth()
-  const { signOut, busy } = useSignOut()
   const menu = useRef<HTMLDetailsElement>(null)
   const { pathname } = useLocation()
   useEffect(() => { if (menu.current) menu.current.open = false }, [pathname])
@@ -79,7 +78,7 @@ function AccountMenu({ status }: { status?: string }) {
 export function SiteHeader({ workspace = false, status, extra }: { workspace?: boolean; status?: string; extra?: ReactNode }) {
   const { tr, t } = useLang()
   const { user } = useAuth()
-  const { error } = useSignOut()
+  const { signOut, busy, error } = useSignOut()
   const workspaceLinks = useWorkspaceLinks()
   const nav = useRef<HTMLElement>(null)
   const { pathname } = useLocation()
@@ -118,7 +117,7 @@ export function SiteHeader({ workspace = false, status, extra }: { workspace?: b
         <TextSizeSwitch /><LangSwitch /><ThemeSwitch />
         {workspace ? <>
           {extra}
-          {signedIn && <AccountMenu status={status} />}
+          {signedIn && <AccountMenu status={status} signOut={signOut} busy={busy} />}
         </> : /^\/(login|signup|team-token)$/.test(pathname) ? null : signedIn
           ? <Link className="site-pill" to={home}><span className="pill-long">{tr('Open the app', '进入银行')}</span><span className="pill-short">{tr('Open', '进入')}</span></Link>
           : <Link className="site-pill" to="/login">{tr('Sign in', '登录')}</Link>}

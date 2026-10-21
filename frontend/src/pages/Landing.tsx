@@ -79,10 +79,12 @@ export default function LandingPage() {
   const [params] = useSearchParams()
   useEffect(() => {
     document.title = tr(`${t.brand_en} · Say it once. We do it.`, `${t.brand} · 你说一句，我来办`)
-    const section = params.get('section')
+  }, [tr, t])
+  const section = params.get('section')
+  useEffect(() => {
     if (section) document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' })
     else window.scrollTo(0, 0)
-  }, [params, tr, t])
+  }, [section])
 
   const start = demo.busy ? tr('Opening your bank…', '正在开通…') : signedIn ? tr('Open the app', '进入银行') : tr('Open the demo bank', '打开演示银行')
   const steps: [string, string][] = [

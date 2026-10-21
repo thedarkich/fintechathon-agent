@@ -3,10 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { AuditEntry } from '../api/types'
 import { useLang } from '../i18n'
-import { Badge, PageHead, PageTabs, Section, Segmented, useTab } from '../components/bits'
+import { Badge, LoadError, PageHead, PageTabs, Section, Segmented, useTab } from '../components/bits'
 import { Requests } from '../components/Requests'
 import { SealMark, type MarkKind } from '../components/Seal'
-import { clock, shortAddr, timeAgo } from '../lib/format'
+import { shortAddr, stamp, timeAgo } from '../lib/format'
 
 type Kind = 'all' | 'requests' | 'decisions' | 'actions' | 'security'
 
@@ -157,14 +157,14 @@ export default function Ledger() {
       <Segmented label={t.ledger_title} value={kind} onChange={setKind}
         options={[['all', tr('All', '全部')], ['requests', tr('Requests & plans', '请求与计划')], ['decisions', tr('Decisions', '判定与确认')], ['actions', tr('Actions', '执行')], ['security', tr('Security', '安全')]] as const} />
 
-      {entries.isLoading ? <div className="mt-3 h-64 animate-pulse rounded-box bg-paper2" aria-hidden /> : rows.length === 0 ? <p className="mt-6 text-ink2">{t.ledger_empty}</p> : <>
+      {entries.isLoading ? <div className="mt-3 h-64 animate-pulse rounded-box bg-paper2" aria-hidden /> : entries.isError && !entries.data ? <LoadError retry={() => void entries.refetch()} /> : rows.length === 0 ? <p className="mt-6 text-ink2">{t.ledger_empty}</p> : <>
         {/* desktop: a ruled ledger page */}
         <div className="mt-3 hidden overflow-x-auto card md:block">
           <table className="w-full min-w-[760px] border-collapse text-left text-body">
             <thead>
               <tr className="rule-b bg-paper text-cap font-semibold text-ink2">
                 <th className="w-[4.5rem] px-3 py-2 font-normal">#</th>
-                <th className="w-[6.5rem] px-3 py-2 font-normal">{t.col_time}</th>
+                <th className="w-[8rem] px-3 py-2 font-normal">{t.col_time}</th>
                 <th className="w-[12rem] px-3 py-2 font-normal">{t.col_event}</th>
                 <th className="px-3 py-2 font-normal">{t.col_detail}</th>
                 <th className="w-[9rem] px-3 py-2 font-normal">{t.col_hash}</th>
@@ -176,7 +176,7 @@ export default function Ledger() {
                 return (
                   <tr key={e.seq} className={`rule-b align-top last:border-b-0 ${fresh.has(e.seq) ? 'row-new' : ''}`}>
                     <td className="num px-3 py-2.5 font-mono text-cap text-ink2">{e.seq}</td>
-                    <td className="num px-3 py-2.5 font-mono text-cap text-ink2" title={e.at}>{clock(e.at)}</td>
+                    <td className="num whitespace-nowrap px-3 py-2.5 font-mono text-cap text-ink2" title={e.at}>{stamp(e.at)}</td>
                     <td className="px-3 py-2"><span className="flex items-center gap-2"><SealMark kind={meta.mark} size={26} /><span className="font-semibold" style={{ color: markInk(meta.mark) }}>{lang === 'zh' ? meta.zh : meta.en}</span></span></td>
                     <td className="max-w-[28rem] break-words px-3 py-2.5 text-body">{detail(e, lang)}</td>
                     <td className="px-3 py-2.5 font-mono text-cap text-ink2" title={e.hash}>{shortAddr(e.hash, 6, 4)}</td>

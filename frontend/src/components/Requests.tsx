@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { PlanRow } from '../api/types'
 import { useLang } from '../i18n'
 import { usePlans } from '../lib/bank'
+import { useModal } from '../lib/modal'
 import { clock, stamp, yuan } from '../lib/format'
-import { Section } from './bits'
+import { LoadError, Section } from './bits'
 import { Icon } from './Icon'
 import { ConfirmCard, markColor, markFor, statusLabel } from './PlanView'
 import { SealMark } from './Seal'
@@ -63,26 +64,14 @@ function RequestModal({ planId, row, onClose }: { planId: string; row?: PlanRow;
   const { tr } = useLang()
   const trail = useQuery({ queryKey: ['audit', 'plan', planId], queryFn: () => api.audit(200, planId) })
   const dialog = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const before = document.activeElement as HTMLElement | null
-    const overflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    dialog.current?.focus()
-    const onKey = (e: globalThis.KeyboardEvent) => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', onKey)
-    return () => {
-      document.body.style.overflow = overflow
-      window.removeEventListener('keydown', onKey)
-      before?.focus?.({ preventScroll: true })
-    }
-  }, [onClose])
+  useModal(dialog, onClose)
   return (
     <div className="fixed inset-0 z-40 flex justify-center bg-black/50 sm:items-center sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div ref={dialog} role="dialog" aria-modal="true" aria-label={tr('What happened', '办理详情')} tabIndex={-1} className="flex h-full w-full flex-col overflow-hidden bg-card outline-none sm:h-auto sm:max-h-[92dvh] sm:max-w-5xl sm:rounded-box sm:border sm:border-rule2">
         <div className="flex items-start justify-between gap-3 border-b border-rule px-4 py-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold" title={row?.request}>“{row?.request ?? ''}”</p>
-            <p className="text-xs text-ink2">{row ? clock(row.created_at) : ''}</p>
+            <p className="text-xs text-ink2">{row ? stamp(row.created_at) : ''}</p>
           </div>
           <button type="button" onClick={onClose} className="shrink-0 rounded-box px-2 py-1 text-lg text-ink2 hover:bg-paper2" aria-label={tr('Close', '关闭')}>✕</button>
         </div>
@@ -91,7 +80,7 @@ function RequestModal({ planId, row, onClose }: { planId: string; row?: PlanRow;
           <div className="min-w-0">
             <h3 className="cond text-lg font-semibold">{tr('Every step, as recorded', '每一步的记录')}</h3>
             <p className="mb-2 text-xs text-ink2">{tr('Technical record from the audit log, oldest first.', '审计日志中的技术记录，按时间先后排列。')}</p>
-            {!trail.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : (
+            {!trail.data ? (trail.isError ? <LoadError retry={() => void trail.refetch()} /> : <div className="h-40 animate-pulse rounded-box bg-paper2" />) : (
               <ol className="divide-y divide-rule ruled">
                 {trail.data.items.slice().reverse().map((e) => (
                   <li key={e.seq} className="px-3 py-2 text-sm">

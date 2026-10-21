@@ -20,6 +20,9 @@ export function usePlan(planId: string | null) {
     queryKey: ['plan', planId, lang],
     queryFn: () => api.plan(planId!, lang),
     enabled: !!planId,
+    // switching language keeps showing the same plan until its other-language text arrives: no flash to a skeleton,
+    // and an open verification dialog stays open with what was typed
+    placeholderData: (previous, query) => (query?.queryKey[1] === planId ? previous : undefined),
     refetchInterval: (query) => (query.state.data?.status === 'scheduled' ? 10_000 : false),
   })
 }

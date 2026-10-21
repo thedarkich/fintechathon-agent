@@ -5,7 +5,7 @@ import { Lock } from 'lucide-react'
 import { api, errorText } from '../api/client'
 import type { BankCard } from '../api/types'
 import { useLang } from '../i18n'
-import { Badge, EMPTY, LIST, Notice, PageHead, PageTabs, Section, useTab } from '../components/bits'
+import { Badge, EMPTY, LIST, LoadError, Notice, PageHead, PageTabs, Section, useTab } from '../components/bits'
 import { usePhone } from '../components/Verify'
 import { useAuth } from '../lib/auth'
 import { useOverview } from '../lib/bank'
@@ -38,7 +38,7 @@ function CardsPage() {
       <PageHead title={tr('Cards', '卡片')} />
       <PageTabs label={tr('Cards', '卡片')} value={tab} onChange={setTab}
         options={[['cards', tr('Cards', '银行卡')], ['security', locked ? tr('Security (locked)', '安全（已锁定）') : tr('Security', '安全')]] as const} />
-      {!d ? <div className="h-64 animate-pulse rounded-box bg-paper2" /> : <>
+      {!d ? (overview.isError ? <LoadError retry={() => void overview.refetch()} /> : <div className="h-64 animate-pulse rounded-box bg-paper2" />) : <>
         {tab === 'cards' && <Section title={tr('Your cards', '你的银行卡')}
           aside={<button type="button" className="btn btn-line px-4 text-sm" disabled={!!pending} onClick={() => ask(tr('Apply for a virtual card for online shopping', '申请一张网购用的虚拟卡'))}>{tr('New virtual card', '申请虚拟卡')}</button>}>
           <p className="mb-4 max-w-2xl text-sm text-ink2">{tr('Tap a switch to turn it on or off. Making a card safer needs your OK; making it riskier also needs your PIN and a code.', '点开关即可开启或关闭。让卡更安全只需确认；让卡风险更高还需要交易密码和验证码。')}</p>
@@ -136,19 +136,23 @@ function LockPanel() {
   const [code, setCode] = useState('')
   const [challenge, setChallenge] = useState<string | null>(null)
   const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
   const phone = usePhone(!!challenge)
   const locks = overview.data?.locks ?? []
   const sendCode = async () => {
-    setMessage('')
-    try { setChallenge((await api.unlockSms()).challenge_id) } catch (err) { setMessage(errorText(err, lang)) }
+    if (busy) return
+    setMessage(''); setBusy(true)
+    try { setChallenge((await api.unlockSms()).challenge_id) } catch (err) { setMessage(errorText(err, lang)) } finally { setBusy(false) }
   }
   const submit = async (e: FormEvent) => {
     e.preventDefault()
+    if (busy || !challenge) return
+    setBusy(true)
     try {
-      await api.unlock(pin, challenge!, code, lang)
+      await api.unlock(pin, challenge, code, lang)
       setMessage(tr('Unlocked.', '已解除。')); setPin(''); setCode(''); setChallenge(null)
       void qc.invalidateQueries()
-    } catch (err) { setMessage(errorText(err, lang)) }
+    } catch (err) { setMessage(errorText(err, lang)) } finally { setBusy(false) }
   }
   return (
     <Section id="security" title={tr('Safety lock', '安全锁')}
@@ -156,7 +160,7 @@ function LockPanel() {
       <div className="card space-y-3 p-5 max-sm:p-4">
         {locks.length === 0 ? <p className="text-sm text-ink2">{tr('Turns on by itself after repeated failed checks or attempts to get around the rules.', '多次验证失败或试图绕过规则时会自动开启。')}</p> : (
           <>
-            {locks.map((l) => <Notice key={l.reason} tone="alert">{l.text}</Notice>)}
+            {locks.map((l, i) => <Notice key={`${l.scope}-${l.reason}-${i}`} tone="alert">{l.text}</Notice>)}
             {locks.some((l) => l.scope !== 'red') && (
               <form onSubmit={submit} className="grid gap-2">
                 <input className="field num tracking-[0.4em]" type="password" inputMode="numeric" maxLength={6} placeholder={tr('Transaction PIN', '交易密码')} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} aria-label={tr('Transaction PIN', '交易密码')} />
@@ -166,10 +170,10 @@ function LockPanel() {
                     <button type="button" className="min-h-10 px-2 font-semibold text-[var(--action)]" onClick={() => setPin(user.demo_pin ?? '')}>{tr('Fill it in', '填入')}</button>
                   </p>
                 )}
-                {!challenge ? <button type="button" className="btn btn-line" onClick={() => void sendCode()}>{tr('Send a code to my phone', '发送验证码到我的手机')}</button> : <>
+                {!challenge ? <button type="button" className="btn btn-line" disabled={busy} onClick={() => void sendCode()}>{busy ? tr('Sending…', '发送中…') : tr('Send a code to my phone', '发送验证码到我的手机')}</button> : <>
                   <input className="field num tracking-[0.4em]" inputMode="numeric" maxLength={6} placeholder={tr('SMS code', '短信验证码')} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} aria-label={tr('SMS code', '短信验证码')} />
                   {phone.data?.items[0] && <p className="tile px-3 py-2 text-xs">{lang === 'zh' ? phone.data.items[0].text : phone.data.items[0].text_en}</p>}
-                  <button className="btn btn-ink" disabled={pin.length !== 6 || code.length !== 6}>{tr('Verify and unlock', '验证并解除')}</button>
+                  <button className="btn btn-ink" disabled={busy || pin.length !== 6 || code.length !== 6}>{busy ? tr('Checking…', '验证中…') : tr('Verify and unlock', '验证并解除')}</button>
                 </>}
               </form>
             )}
@@ -186,7 +190,10 @@ function PasskeyPanel({ setStatus }: { setStatus: (s: Status) => void }) {
   const { tr, lang } = useLang()
   const qc = useQueryClient()
   const keys = useQuery({ queryKey: ['passkeys'], queryFn: api.passkeys })
+  const [adding, setAdding] = useState(false)
   async function add() {
+    if (adding) return
+    setAdding(true)
     setStatus({ tone: 'wait', text: tr('Follow your device’s prompt…', '请按设备提示操作…') })
     try {
       const credential = await createPasskey(await api.passkeyRegisterOptions())
@@ -196,12 +203,14 @@ function PasskeyPanel({ setStatus }: { setStatus: (s: Status) => void }) {
       void qc.invalidateQueries({ queryKey: ['overview'] })
     } catch (err) {
       setStatus({ tone: 'err', text: err instanceof DOMException ? tr('Passkey setup was cancelled.', '已取消添加通行密钥。') : errorText(err, lang) })
+    } finally {
+      setAdding(false)
     }
   }
   return (
     <Section title={tr('Passkeys', '通行密钥')}
-      aside={<button type="button" className="btn btn-line px-4 text-sm" disabled={!passkeysSupported()} onClick={() => void add()}>{tr('Add', '添加')}</button>}>
-      {keys.data?.items.length
+      aside={<button type="button" className="btn btn-line px-4 text-sm" disabled={adding || !passkeysSupported()} onClick={() => void add()}>{adding ? tr('Adding…', '添加中…') : tr('Add', '添加')}</button>}>
+      {keys.isError && !keys.data ? <LoadError retry={() => void keys.refetch()} /> : keys.data?.items.length
         ? <ul className={LIST}>{keys.data.items.map((k) => <li key={k.id} className="flex justify-between px-4 py-3 text-sm"><span>{k.label || tr('Device', '设备')}</span><span className="font-mono text-xs text-ink2">{k.created_at.slice(0, 10)}</span></li>)}</ul>
         : <p className={EMPTY}>{passkeysSupported() ? tr('Use face or fingerprint unlock instead of an SMS code.', '用面容或指纹代替短信验证码。') : tr('Needs HTTPS and a supported browser.', '需要 HTTPS 和支持的浏览器。')}</p>}
     </Section>

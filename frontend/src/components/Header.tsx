@@ -17,8 +17,8 @@ export function Header({ compact = false, extra }: { compact?: boolean; extra?: 
   const { tr, lang } = useLang()
   const { user } = useAuth()
   const loc = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [loc.pathname])
   useEffect(() => {
-    window.scrollTo(0, 0)
     const page = PAGE_TITLES[loc.pathname.slice(1)]
     document.title = tr('Central Union Bank', '中联银行') + (page ? ' · ' + tr(page[0], page[1]) : '')
   }, [loc.pathname, tr])
@@ -29,10 +29,11 @@ export function Header({ compact = false, extra }: { compact?: boolean; extra?: 
     let frame = 0
     let tries = 0
     const land = () => {
-      // a page whose code is still loading shows no <main> yet: try again for up to about a second
-      const main = document.querySelector<HTMLElement>('main.page-content, main[tabindex="-1"]')
+      // a page whose code is still loading shows no <main> yet, or only the old page's, hidden: try again for up to
+      // about three seconds
+      const main = [...document.querySelectorAll<HTMLElement>('main.page-content, main[tabindex="-1"]')].find((m) => m.getClientRects().length > 0)
       if (main) { if (!main.contains(document.activeElement)) main.focus({ preventScroll: true }); return }
-      if (++tries < 60) frame = requestAnimationFrame(land)
+      if (++tries < 180) frame = requestAnimationFrame(land)
     }
     frame = requestAnimationFrame(land)
     return () => cancelAnimationFrame(frame)

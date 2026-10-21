@@ -25,11 +25,14 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
   const [busy, setBusy] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [message, setMessage] = useState('')
+  // a new form when switching between sign-in and sign-up; switching language keeps what was typed
   useEffect(() => {
     setName(''); setEmail(''); setPassword(''); setConfirm(''); setPin(''); setErrors({}); setMessage(''); setVisible(false)
-    document.title = (register ? tr('Create account', '创建账户') : tr('Sign in', '登录')) + ' · ' + tr('Central Union Bank', '中联银行')
     window.scrollTo(0, 0)
-  }, [register, location.pathname, tr])
+  }, [register, location.pathname])
+  useEffect(() => {
+    document.title = (register ? tr('Create account', '创建账户') : tr('Sign in', '登录')) + ' · ' + tr('Central Union Bank', '中联银行')
+  }, [register, tr])
   if (user) return <Navigate to={landingFor(user, next)} replace />
   if (getAdminToken() && !user && !loading) return <Navigate to="/operator" replace />
   async function submit(event: FormEvent) {
@@ -53,7 +56,8 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
         403: tr('Refresh this page and try again.', '请刷新页面后重试。'),
         409: tr('This email already has an account. Sign in instead.', '该邮箱已注册，请直接登录。'),
         422: result.message_en ? tr(result.message_en, result.message_zh ?? result.message_en) : tr('Check your name, email, password and PIN.', '请检查姓名、邮箱、密码和交易密码。'),
-        429: tr('Too many attempts. Please retry in 15 minutes.', '尝试过于频繁，请在 15 分钟后重试。'),
+        429: register ? tr('Too many sign-ups from this device or network. Please try again later (within an hour).', '此设备或网络注册过于频繁，请稍后再试（一小时内恢复）。')
+          : tr('Too many attempts. Please retry in 15 minutes.', '尝试过于频繁，请在 15 分钟后重试。'),
         503: tr('Accounts are temporarily unavailable.', '账户服务暂不可用。'),
       }
       setMessage(messages[response.status] ?? tr('Unable to sign in. Please retry.', '暂时无法登录，请重试。'))

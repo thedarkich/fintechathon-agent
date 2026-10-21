@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLang } from '../i18n'
-import { Badge, EMPTY, LIST, Notice, PageHead, Section, StatTile } from '../components/bits'
+import { Badge, EMPTY, LIST, LoadError, Notice, PageHead, Section, StatTile } from '../components/bits'
 import { useChat } from '../lib/chat'
 import { yuan } from '../lib/format'
 
@@ -20,7 +20,7 @@ export default function Subscriptions() {
     <main tabIndex={-1} className="page-content scope-subs">
       <PageHead title={tr('Subscriptions', '自动续费')}
         right={<button type="button" className="btn btn-ink px-5" disabled={!!pending} onClick={() => ask(tr('What am I paying for every month?', '我有哪些自动续费'))}>{tr('Ask the assistant', '让助手看看')}</button>} />
-      {!subs.data ? <div className="h-64 animate-pulse rounded-box bg-paper2" /> : <>
+      {!subs.data ? (subs.isError ? <LoadError retry={() => void subs.refetch()} /> : <div className="h-64 animate-pulse rounded-box bg-paper2" />) : <>
         <div className="stat-grid grid gap-4 max-sm:gap-3 sm:grid-cols-3">
           <StatTile icon="wallet" label={tr('Each month, about', '每月约')} value={yuan(subs.data.monthly_fen)} />
           <StatTile icon="bell" label={tr('Renewing automatically', '正在自动扣费')} value={active.length} sub={tr('services', '个服务')} />

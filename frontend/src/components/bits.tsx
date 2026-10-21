@@ -16,6 +16,17 @@ export function SignedInGate({ children }: { children: ReactNode }) {
   return <Navigate to={'/login?next=' + encodeURIComponent(location.pathname)} replace />
 }
 
+/** A section whose data didn't arrive: say so and offer to try again, instead of a skeleton that never ends. */
+export function LoadError({ retry, className = '' }: { retry: () => void; className?: string }) {
+  const { tr } = useLang()
+  return (
+    <p role="alert" className={`flex flex-wrap items-center gap-x-3 py-6 text-ink2 ${className}`}>
+      {tr('This could not be loaded.', '暂时无法加载。')}
+      <button type="button" className="min-h-10 font-semibold text-[var(--action)]" onClick={retry}>{tr('Retry', '重试')}</button>
+    </p>
+  )
+}
+
 /** The operator console: an operator account or the server's admin token. */
 export function OperatorGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()

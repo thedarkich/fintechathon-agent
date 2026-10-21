@@ -18,7 +18,8 @@ export default function How() {
     if (outcome !== 'error') navigate(outcome === 'ok' ? '/assistant' : '/signup')
   }
   const [view, setView] = useState<'request' | 'rules' | 'result'>('request')
-  useEffect(() => { document.title = tr(`${t.brand_en} · How it stays safe`, `${t.brand} · 安全原理`); window.scrollTo(0, 0) }, [tr, t])
+  useEffect(() => { document.title = tr(`${t.brand_en} · How it stays safe`, `${t.brand} · 安全原理`) }, [tr, t])
+  useEffect(() => { window.scrollTo(0, 0) }, [])
   const plan = JSON.stringify({ steps: [{ id: 's1', action: 'transfer', args: { payee: '房东', amount_yuan: 3200, memo: '房租' } }] }, null, 2)
   const levels: ['green' | 'yellow' | 'red', string, string][] = [
     ['green', tr('Questions: balance, spending, reports, unusual transactions, investment returns', '查询：余额、消费、报告、异常交易、理财收益'), tr('Answered right away', '马上回答')],
@@ -71,7 +72,7 @@ export default function How() {
         <div className="lp-pills lp-calc-tabs" role="group" aria-label={tr('Stage', '阶段')}>
           {(['request', 'rules', 'result'] as const).map((v, i) => <button key={v} aria-pressed={view === v} onClick={() => setView(v)}>{i + 1}. {v === 'request' ? tr('What the AI proposed', 'AI 提出的计划') : v === 'rules' ? tr('What the rules checked', '规则检查') : tr('What happened', '结果')}</button>)}
         </div>
-        <div className="terminal-card mx-auto mt-6 max-w-3xl"><div className="terminal-bar"><div className="terminal-lights"><i /><i /><i /></div><span>{view}</span><span className="terminal-badge">{tr('EXAMPLE', '示例')}</span></div>
+        <div className="terminal-card mx-auto mt-6 max-w-3xl"><div className="terminal-bar"><div className="terminal-lights"><i /><i /><i /></div><span>{view === 'request' ? tr('request', '请求') : view === 'rules' ? tr('rules', '规则') : tr('result', '结果')}</span><span className="terminal-badge">{tr('EXAMPLE', '示例')}</span></div>
           <div className="terminal-body" aria-live="polite">
             {view === 'request' ? <>
               <p className="terminal-comment">{tr('The AI may only return this shape. Any extra field, unknown action or bad value is rejected.', 'AI 只能返回这种格式，多出的字段、未知操作或错误的值都会被拒绝。')}</p>
@@ -101,7 +102,7 @@ export default function How() {
       <section className="lp-section">
         <h2>{tr('Tested, not just promised', '经过测试，不只是承诺')}</h2>
         <div className="lp-grid">
-          {[['224', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['69', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['158', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
+          {[['224', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['69', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['159', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
             <article key={n} className="lp-point"><p className="lp-stat">{n}</p><p className="mt-2">{text}</p></article>
           ))}
         </div>

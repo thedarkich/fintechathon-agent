@@ -50,6 +50,18 @@ export function DemoDock() {
       setBusy(false)
     }
   }
+  async function startChat() {
+    setBusy(true)
+    setStatus(null)
+    try {
+      await newConversation()
+      setStatus({ ok: true, text: tr('New chat started.', '已开始新对话。') })
+    } catch (err) {
+      setStatus({ ok: false, text: errorText(err, lang) })
+    } finally {
+      setBusy(false)
+    }
+  }
   const days = clock.data ? Math.round((clock.data.offset_seconds / 86400) * 10) / 10 : 0
   const here = typeof window !== 'undefined' ? window.location.origin + '/' : ''
   const steps = [[0, 1, tr('+1 hour', '+1 小时')], [1, 0, tr('+1 day', '+1 天')], [7, 0, tr('+7 days', '+7 天')], [30, 0, tr('+30 days', '+30 天')]] as const
@@ -78,7 +90,7 @@ export function DemoDock() {
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-1.5 border-t border-rule pt-4">
-          <button type="button" className="btn btn-line py-1.5 text-sm" disabled={busy} onClick={() => void newConversation()}>{tr('Start a new chat', '开始新对话')}</button>
+          <button type="button" className="btn btn-line py-1.5 text-sm" disabled={busy} onClick={() => void startChat()}>{tr('Start a new chat', '开始新对话')}</button>
           <button type="button" className="btn btn-line py-1.5 text-sm text-cinnabar" disabled={busy}
             onClick={() => window.confirm(tr('Reset your demo bank to its starting data? Your history is kept.', '把演示银行恢复到初始数据？你的记录会保留。')) && void run(api.reset, tr('Demo bank reset.', '演示银行已重置。'))}>{tr('Reset the bank', '重置银行')}</button>
         </div>

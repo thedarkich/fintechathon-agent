@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Fingerprint, MessageSquareText, ShieldCheck } from 'lucide-react'
 import { api, errorText } from '../api/client'
@@ -6,6 +6,7 @@ import type { Plan } from '../api/types'
 import { useLang } from '../i18n'
 import { useAuth } from '../lib/auth'
 import { useChat } from '../lib/chat'
+import { useModal } from '../lib/modal'
 import { assertPasskey, passkeysSupported } from '../lib/passkey'
 
 /** The simulated phone's SMS inbox. A real bank sends these to the customer's phone. */
@@ -34,19 +35,7 @@ export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPas
   const needs = plan.steps.some((s) => s.action === 'password_change' && s.status === 'pending') ? 'new_password'
     : plan.steps.some((s) => s.action === 'pin_change' && s.status === 'pending') ? 'new_pin' : null
 
-  useEffect(() => {
-    const before = document.activeElement as HTMLElement | null
-    const overflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    dialog.current?.querySelector<HTMLInputElement>('input')?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', onKey)
-    return () => {
-      document.body.style.overflow = overflow
-      window.removeEventListener('keydown', onKey)
-      before?.focus?.({ preventScroll: true })
-    }
-  }, [onClose])
+  useModal(dialog, onClose, (el) => el.querySelector<HTMLInputElement>('input')?.focus())
 
   async function sendCode() {
     setError('')

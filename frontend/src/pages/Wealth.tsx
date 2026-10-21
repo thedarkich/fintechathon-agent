@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLang } from '../i18n'
-import { Badge, EMPTY, IconDot, LIST, PageHead, RatingPills, Section, StatTile } from '../components/bits'
+import { Badge, EMPTY, IconDot, LIST, LoadError, PageHead, RatingPills, Section, StatTile } from '../components/bits'
 import { useChat } from '../lib/chat'
 import { yuan } from '../lib/format'
 
@@ -26,7 +26,7 @@ export default function Wealth() {
     <main tabIndex={-1} className="page-content scope-wealth">
       <PageHead title={tr('Invest', '理财')}
         right={<button type="button" className="btn btn-ink px-5" disabled={!!pending} onClick={() => ask(tr('Recommend a low-risk product', '推荐一个稳健的理财'))}>{tr('Get a suggestion', '让助手推荐')}</button>} />
-      {!d ? <div className="h-64 animate-pulse rounded-box bg-paper2" /> : <>
+      {!d ? (wealth.isError ? <LoadError retry={() => void wealth.refetch()} /> : <div className="h-64 animate-pulse rounded-box bg-paper2" />) : <>
         <div className="stat-grid grid gap-4 max-sm:gap-3 sm:grid-cols-3">
           <StatTile icon="wallet" label={tr('Market value', '持仓市值')} value={yuan(d.holdings.value_fen)} sub={tr(`${d.holdings.items.length} holdings`, `${d.holdings.items.length} 只产品`)} />
           <StatTile icon="trend" label={tr('Total gain', '累计收益')} value={`${d.holdings.gain_fen > 0 ? '+' : ''}${yuan(d.holdings.gain_fen)}`} valueClass="text-jade" />
