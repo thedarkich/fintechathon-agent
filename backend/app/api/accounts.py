@@ -12,7 +12,7 @@ import time
 import unicodedata
 from typing import Literal
 
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import delete, select, text
 from sqlalchemy.dialects.sqlite import insert
@@ -21,7 +21,14 @@ from sqlmodel import Session
 
 from app import clock
 from app.agent import audit
-from app.api.security import SESSION_COOKIE, hash_private, problem, session_digest, session_user_id
+from app.api.security import (
+    SESSION_COOKIE,
+    hash_private,
+    problem,
+    refuse_other_sites,
+    session_digest,
+    session_user_id,
+)
 from app.bank.seed import remind_now, seed_customer
 from app.models import RateBucket, UserAccount, UserSession
 
@@ -134,6 +141,23 @@ def throttle(request: Request, limits):
             raise
 
 
+def client_ip(request: Request) -> str:
+    """The visitor's address. Behind the proxy it is the last X-Forwarded-For entry, the one the proxy appends;
+    otherwise the connection's own address, so a client-supplied header is never trusted."""
+    if request.app.state.runtime.settings.behind_proxy:
+        forwarded = request.headers.get("x-forwarded-for", "").split(",")[-1].strip()
+        if forwarded:
+            return forwarded
+    return request.client.host if request.client else ""
+
+
+def ip_limits(request: Request, scope: str, seconds: int, limit: int):
+    """A per-address limit next to the per-device one, which a script could dodge by changing its device id.
+    Generous: many people can share one address (a venue, a campus)."""
+    ip = client_ip(request)
+    return [(scope, ip, seconds, limit)] if ip else []
+
+
 def device_limits(request: Request, scope: str, seconds: int, limit: int):
     device = request.headers.get("x-device-id", "")
     return [(scope, device, seconds, limit)] if 0 < len(device) <= 64 else []
@@ -161,9 +185,10 @@ def start_session(request: Request, response: Response, user_id: str):
                         secure=settings.public_base_url.startswith("https://"))
 
 
-@router.post("/register", status_code=201, response_model=AccountResponse)
+@router.post("/register", status_code=201, response_model=AccountResponse, dependencies=[Depends(refuse_other_sites)])
 async def register(request: Request, response: Response, body: Registration):
-    throttle(request, [("register-global", "global", 60, 20), *device_limits(request, "register-device", 3600, 10)])
+    throttle(request, [("register-global", "global", 60, 20), *device_limits(request, "register-device", 3600, 10),
+                       *ip_limits(request, "register-ip", 3600, 30)])
     email, name = normalize_email(body.email), clean_name(body.name)
     if weak_pin(body.pin):
         raise problem(422, "Choose a PIN that is not repeated or sequential digits.", "交易密码不能是重复或连续数字。")
@@ -185,12 +210,13 @@ async def register(request: Request, response: Response, body: Registration):
     return {"user": result}
 
 
-@router.post("/demo/start", status_code=201, response_model=AccountResponse)
+@router.post("/demo/start", status_code=201, response_model=AccountResponse, dependencies=[Depends(refuse_other_sites)])
 async def demo_start(request: Request, response: Response, body: DemoStart):
     """One click into a fresh simulated bank: no email or password to invent, the same rules as everyone."""
     if not request.app.state.runtime.settings.demo_tools_enabled:
         raise problem(403, "Demo accounts are turned off here. Create an account instead.", "这里没有开放演示账户，请注册账户。")
-    throttle(request, [("demo-global", "global", 3600, 300), *device_limits(request, "demo-device", 3600, 20)])
+    throttle(request, [("demo-global", "global", 3600, 300), *device_limits(request, "demo-device", 3600, 20),
+                       *ip_limits(request, "demo-ip", 3600, 120)])
     password_hash, pin_hash = await asyncio.gather(asyncio.to_thread(hash_password, secrets.token_urlsafe(24)),
                                                    asyncio.to_thread(hash_password, DEMO_PIN))
     with Session(request.app.state.runtime.engine) as session:
@@ -207,11 +233,11 @@ async def demo_start(request: Request, response: Response, body: DemoStart):
     return {"user": result}
 
 
-@router.post("/login", response_model=AccountResponse)
+@router.post("/login", response_model=AccountResponse, dependencies=[Depends(refuse_other_sites)])
 async def login(request: Request, response: Response, body: Credentials):
     email = normalize_email(body.email)
     throttle(request, [("login-global", "global", 60, 120), ("login-email", email, LOGIN_WINDOW, 10),
-                       *device_limits(request, "login-device", LOGIN_WINDOW, 30)])
+                       *device_limits(request, "login-device", LOGIN_WINDOW, 30), *ip_limits(request, "login-ip", LOGIN_WINDOW, 60)])
     with Session(request.app.state.runtime.engine) as session:
         user = session.execute(select(UserAccount).where(UserAccount.email == email)).scalar_one_or_none()
         stored = user.password_hash if user else UNKNOWN_ACCOUNT
@@ -222,7 +248,7 @@ async def login(request: Request, response: Response, body: Credentials):
     return {"user": result}
 
 
-@router.post("/logout")
+@router.post("/logout", dependencies=[Depends(refuse_other_sites)])
 async def logout(request: Request, response: Response):
     end_session(request)
     settings = request.app.state.runtime.settings

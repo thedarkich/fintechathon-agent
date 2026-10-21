@@ -1,0 +1,53 @@
+# Security best-practices review
+
+Method: the `security-best-practices` skill (`.claude/skills/security-best-practices`), using its references for the stack found in the repo: `python-fastapi-web-server-security.md` (backend: FastAPI 0.142.2, Starlette 1.7.0, Uvicorn 0.54.0, Pydantic 2.13.5, SQLModel), `javascript-general-web-frontend-security.md` and `javascript-typescript-react-web-frontend-security.md` (frontend: React 18 + Vite, HashRouter). Reviewed 22 October 2026 on `main`.
+
+## Executive summary
+
+No critical or high findings. The design already follows most of the specs: authentication is a router-level dependency on every app router, passwords and PINs use scrypt with a salt, session tokens are random and stored only as SHA-256 hashes, the session cookie is `HttpOnly` and `SameSite=Strict` (and `Secure` when the public URL is https), cookie-authenticated writes must carry a same-site `Origin`, request bodies are capped at 6 MB with a timeout and an in-flight limit, the generated-code sandbox runs as a separate isolated process with a hard timeout, uploads are type-checked, stored under random ids and served only to their owner with a path-containment check, the SQL is all ORM or parameterised, there is no `debug`, no `--reload`, no CORS, `proxy_headers=False`, ids are UUID4, and the frontend has no HTML-injection sinks, no `eval`, no third-party scripts and no service worker. Dependencies are current (Starlette is past every advisory the reference lists).
+
+Two medium findings are worth fixing before the competition; the rest are low or informational.
+
+**Status (22 October): all five findings are fixed**, each with a test in `backend/tests/test_security.py` (SBP-2 is frontend-only and was checked in the browser). With the policy in place, a browser walk through every page, the chat, the PIN dialog and dark mode recorded no CSP violations.
+
+## Medium
+
+### SBP-1 · No Content-Security-Policy restricting scripts (REACT-CSP-001, JS-CSP-001)
+- Location: `deploy/Caddyfile:9` sets only `Content-Security-Policy "frame-ancestors 'none'"`; `backend/app/api/security.py:97-103` (`RequestBoundary.secured_send`) sets `nosniff` and `Referrer-Policy` but no CSP; `frontend/index.html:8-15` has one inline script (theme before first paint).
+- Impact: if any script injection ever slipped in, nothing in the browser would stop it from running or from calling the API with the customer's session.
+- Fix: send a CSP from the app for HTML responses (so local runs and Docker both get it): `default-src 'self'; script-src 'self' 'sha256-…'` (the hash of the one inline script), `style-src 'self' 'unsafe-inline'` (React style attributes), `img-src 'self' blob: data:` (receipt previews), `font-src 'self'`, `connect-src 'self'`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`.
+- False-positive note: none; verified that no CSP header is sent today.
+- **Fixed:** `page_policy()` in `backend/app/api/security.py` builds the policy (the inline script's SHA-256 hash is read from the built `index.html`) and `RequestBoundary` sends it on every non-API response.
+
+### SBP-2 · The operator token is kept in `localStorage` (REACT-AUTH-001, JS-STORAGE-001)
+- Location: `frontend/src/api/client.ts:55-78` (`setAdminToken` → `localStorage.setItem('ba_admin_token', token)`).
+- Impact: the server's `ADMIN_TOKEN` (full operator console) persists in the browser indefinitely and is readable by any script on the origin.
+- Fix: keep it in `sessionStorage` (gone when the tab closes) with the in-memory fallback, and clear any old `localStorage` copy.
+- **Fixed:** `frontend/src/api/client.ts` keeps the token in `sessionStorage` (this tab only) and removes any copy an older version left in `localStorage`.
+
+## Low
+
+### SBP-3 · Public POST routes don't check `Origin` (FASTAPI-CSRF-001, defence in depth)
+- Location: `backend/app/api/accounts.py:164` `/api/register`, `:188` `/api/demo/start`, `:210` `/api/login`, `:225` `/api/logout`.
+- Evidence: a request with `Origin: https://evil.example` gets 201 / 401 / 200 like a same-site one.
+- Impact: today browsers can't exploit it (a cross-site JSON request needs a CORS preflight the server never grants; a `text/plain` form post gets 422), so this is login-CSRF hardening only.
+- Fix: reject these routes when an `Origin` header is present and is not this site (scripts and the evaluation runner, which send a matching `Origin` or none, keep working).
+- **Fixed:** `refuse_other_sites` in `backend/app/api/security.py` is a dependency of the four routes; a browser request from another site gets 403 `CROSS_SITE`.
+
+### SBP-4 · API docs are public (FASTAPI-OPENAPI-001)
+- Location: `backend/app/main.py:37-38` (`docs_url="/api/docs"`, `openapi_url="/api/openapi.json"`).
+- Impact: information disclosure amplifier. Kept on purpose for the competition (judges and the "automated evaluation" section of the README drive the API); every route still requires a session or the operator token.
+- Fix (when real customers are involved): disable or put behind the operator token; document the choice.
+- **Fixed:** the docs are served only when `DEMO_TOOLS_ENABLED` is on, the switch already documented as off for real customers (`docs_switch` in `backend/app/main.py`).
+
+### SBP-5 · Per-device rate limits key on a client-chosen header
+- Location: `backend/app/api/accounts.py:137-139` (`device_limits` reads `X-Device-Id`).
+- Impact: a script can rotate the header to get past the per-device limit; the per-email and global limits still apply, so brute force stays bounded.
+- Fix: none needed for the demo; with real customers, key on the client IP from the trusted proxy as well.
+- **Fixed:** `client_ip()` / `ip_limits()` in `backend/app/api/accounts.py` add a generous per-address limit (sign-in 60 per 15 minutes, sign-up 30 and demo 120 per hour). The address comes from the proxy's `X-Forwarded-For` only when `BEHIND_PROXY` is set, which `deploy/docker-compose.yml` does; otherwise from the connection, so a client-supplied header is never trusted.
+
+## Informational
+
+- Request models ignore unknown fields instead of rejecting them (`extra` not set to `forbid`, e.g. `backend/app/api/agent.py:23` `ChatIn`). No mass-assignment risk because every handler reads named fields only; the planner's own plan schema is strict.
+- `deploy/Caddyfile:10` sends `Strict-Transport-Security "max-age=86400"`: short, so a rollback stays possible.
+- Host restriction is in the app too (`host_boundary` in `backend/app/main.py` accepts only localhost and the public host); TLS comes from Caddy. Verify both on the real host.

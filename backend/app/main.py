@@ -47,6 +47,15 @@ def create_app(settings=None, *, runtime=None):
             return JSONResponse({"message_en": "Unrecognized host.", "message_zh": "未知主机。"}, status_code=400)
         return await call_next(request)
 
+    @app.middleware("http")
+    async def docs_switch(request, call_next):
+        # security best practice: a deployment for real customers (demo tools off) doesn't publish the API docs
+        current = getattr(app.state, "runtime", None)
+        if request.url.path in {"/api/docs", "/api/docs/oauth2-redirect", "/api/openapi.json"} and current \
+                and not current.settings.demo_tools_enabled:
+            return JSONResponse({"message_en": "Not found.", "message_zh": "未找到。"}, status_code=404)
+        return await call_next(request)
+
     @app.exception_handler(StarletteHTTPException)
     async def http_error(request, exc):
         body = exc.detail if isinstance(exc.detail, dict) and "message_en" in exc.detail else {

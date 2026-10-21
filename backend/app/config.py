@@ -38,5 +38,8 @@ class Settings(BaseSettings):
 
     # The demo panel can move a customer's clock and reset their bank.
     demo_tools_enabled: bool = True
+    # Set when the app runs behind the Caddy proxy (deploy/docker-compose.yml): the visitor's address is then the last
+    # X-Forwarded-For entry, which the proxy itself appends. Never set it when the app can be reached directly.
+    behind_proxy: bool = False
     scheduler_interval_seconds: int = Field(default=15, ge=1, le=300)
     sandbox_enabled: bool = True

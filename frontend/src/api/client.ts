@@ -51,19 +51,25 @@ export const errorText = (error: unknown, lang: Lang) =>
       : error instanceof AuthError ? (lang === 'zh' ? '登录已失效，请重新登录。' : 'Your session ended. Sign in again.')
         : lang === 'zh' ? '暂时无法连接，请检查网络后重试。' : "Can't reach the bank right now. Check your connection and try again."
 
-// The operator console also accepts the server's admin token, kept in this browser only.
+// The operator console also accepts the server's admin token. It is kept for this tab only (sessionStorage), never
+// in localStorage: security best practice, a long-lived secret must not outlive the tab where a script could read it.
 const ADMIN_KEY = 'ba_admin_token'
 let memoryToken: string | null = null
+try {
+  localStorage.removeItem(ADMIN_KEY) // a copy left by an older version
+} catch {
+  /* storage unavailable */
+}
 export function getAdminToken(): string | null {
   try {
-    return localStorage.getItem(ADMIN_KEY) ?? memoryToken
+    return sessionStorage.getItem(ADMIN_KEY) ?? memoryToken
   } catch {
     return memoryToken
   }
 }
 export function setAdminToken(token: string) {
   try {
-    localStorage.setItem(ADMIN_KEY, token)
+    sessionStorage.setItem(ADMIN_KEY, token)
   } catch {
     /* storage unavailable: token lives for this page only */
   }
@@ -71,7 +77,7 @@ export function setAdminToken(token: string) {
 }
 export function clearAdminToken() {
   try {
-    localStorage.removeItem(ADMIN_KEY)
+    sessionStorage.removeItem(ADMIN_KEY)
   } catch {
     /* ignore */
   }

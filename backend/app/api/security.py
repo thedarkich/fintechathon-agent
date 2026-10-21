@@ -1,7 +1,10 @@
 import asyncio
+import base64
 import hashlib
 import hmac
+import re
 import time
+from pathlib import Path
 from urllib.parse import urlparse
 
 from fastapi import HTTPException, Request
@@ -56,6 +59,35 @@ def same_origin(request: Request):
     return origin.scheme in {"http", "https"} and origin.netloc in allowed - {""}
 
 
+def refuse_other_sites(request: Request):
+    """Public account routes (sign-in, sign-up, demo, sign-out): a browser posting from another site's page is refused.
+    Security best practice (login CSRF); scripts that send no Origin header are unaffected."""
+    if request.headers.get("origin") is not None and not same_origin(request):
+        raise problem(403, "Cross-site request refused.", "已拒绝跨站请求。", "CROSS_SITE")
+
+
+def page_policy(static_dir: Path) -> str:
+    """Content-Security-Policy for the app shell (security best practice: script injection can't run). Only this
+    site's files run, plus the inline scripts index.html ships, allowed by their SHA-256 hashes."""
+    hashes = []
+    index = static_dir / "index.html"
+    if index.is_file():
+        for body in re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", index.read_text(encoding="utf-8"), re.S):
+            hashes.append("'sha256-" + base64.b64encode(hashlib.sha256(body.encode()).digest()).decode() + "'")
+    return "; ".join([
+        "default-src 'self'",
+        "script-src " + " ".join(["'self'", *hashes]),
+        "style-src 'self' 'unsafe-inline'",  # React sets style attributes
+        "img-src 'self' data: blob:",  # receipt previews are blob: URLs
+        "font-src 'self' data:",
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+    ])
+
+
 def require_user(request: Request) -> str:
     user_id = session_user_id(request)
     if user_id is None:
@@ -89,6 +121,15 @@ class RequestBoundary:
         self.body_timeout = body_timeout
         self.max_inflight = max_inflight
         self.inflight = 0
+        self.policy = (None, "")  # (index.html modification time, policy), rebuilt when the page is rebuilt
+
+    def page_policy(self, scope) -> str:
+        static_dir = scope["app"].state.runtime.settings.static_dir
+        index = static_dir / "index.html"
+        stamp = index.stat().st_mtime if index.is_file() else None
+        if self.policy[0] != stamp or not self.policy[1]:
+            self.policy = (stamp, page_policy(static_dir))
+        return self.policy[1]
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -101,6 +142,8 @@ class RequestBoundary:
                 )
                 if scope["path"].startswith("/api/"):
                     message["headers"].append((b"cache-control", b"no-store"))
+                elif "app" in scope and hasattr(scope["app"].state, "runtime"):
+                    message["headers"].append((b"content-security-policy", self.page_policy(scope).encode()))
             await send(message)
 
         async def reject(status, en, zh):
