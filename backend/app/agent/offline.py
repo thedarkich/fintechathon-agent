@@ -17,7 +17,7 @@ WEEKDAY_ZH = {"一": 0, "二": 1, "三": 2, "四": 3, "五": 4, "六": 5, "日":
 WEEKDAY_EN = {"monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3, "friday": 4, "saturday": 5, "sunday": 6}
 
 RELATION_WORDS = ["老婆", "媳妇", "妻子", "爱人", "太太", "老公", "妈妈", "老妈", "爸爸", "老爸", "我爸", "我妈", "房东", "室友",
-                  "wife", "husband", "mom", "mum", "mother", "dad", "father", "landlord", "roommate"]
+                  "wife", "husband", "partner", "spouse", "mom", "mum", "mother", "dad", "father", "landlord", "roommate"]
 SUB_NAMES = ["爱奇艺", "腾讯视频", "网易云音乐", "网易云", "qq音乐", "百度网盘", "健身", "wps", "京东plus", "中国移动",
              "宽带", "iqiyi", "tencent video", "netease", "qq music", "baidu", "gym", "jd plus"]
 CATEGORY_WORDS = [

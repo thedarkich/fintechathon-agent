@@ -198,7 +198,7 @@ def reminders(ctx: Ctx) -> None:
         upcoming = clock.next_birthday(payee.birthday, ctx.today)
         days = (upcoming - ctx.today).days
         if payee.relationship in ("spouse", "mother", "father") and days <= 40:
-            who = {"spouse": ("爱人", "your partner"), "mother": ("妈妈", "your mom"), "father": ("爸爸", "your dad")}[payee.relationship]
+            who = {"spouse": ("爱人", "my partner"), "mother": ("妈妈", "my mom"), "father": ("爸爸", "my dad")}[payee.relationship]
             executor.notify(ctx, f"birthday:{payee.id}:{upcoming}", "birthday", f"{payee.name}的生日快到了",
                             f"{payee.name_en or payee.name}'s birthday is coming up",
                             f"{upcoming}（{days} 天后）。要我当月预留 ¥1,000，并提前两天订好鲜花和蛋糕吗？",

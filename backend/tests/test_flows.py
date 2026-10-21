@@ -343,6 +343,12 @@ def test_stop_and_undo_the_birthday_plan_in_words(bank):
     assert not [a for a in bank.get("/api/bank/overview").json()["accounts"] if a["kind"] == "reserve" and a["fen"]]
 
 
+def test_the_birthday_reminder_wording_plans_in_english(bank):
+    # the Home reminder's button sends this sentence; "partner" is the spouse
+    plan = plan_of(bank.chat("It's my partner's birthday soon: set aside 1000 and order flowers and a cake two days before", lang="en"))
+    assert [s["action"] for s in plan["steps"]] == ["contact_lookup", "reserve_create", "merchant_order", "merchant_order"], plan
+
+
 def test_a_birthday_date_the_customer_says_wins(bank):
     plan = plan_of(bank.chat("下周三是我爸生日，帮我订个蛋糕"))
     order = next(s for s in plan["steps"] if s["action"] == "merchant_order")

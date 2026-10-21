@@ -12,7 +12,7 @@ from app.models import BankAccount, Card, Holding, Payee, Subscription, WealthPr
 RELATIONSHIP_WORDS = {
     "mother": ["妈妈", "妈", "老妈", "母亲", "mom", "mum", "mother", "mama"],
     "father": ["爸爸", "爸", "老爸", "父亲", "dad", "father", "papa"],
-    "spouse": ["老婆", "媳妇", "妻子", "爱人", "太太", "wife", "spouse", "husband", "老公", "丈夫"],
+    "spouse": ["老婆", "媳妇", "妻子", "爱人", "太太", "wife", "spouse", "husband", "partner", "老公", "丈夫"],
     "landlord": ["房东", "landlord"],
     "roommate": ["室友", "roommate", "flatmate"],
 }
