@@ -62,8 +62,8 @@ def send_sms(session: Session, user: UserAccount, *, plan_id: str | None, purpos
     session.add(challenge)
     session.add(SmsMessage(
         user_id=user.id,
-        text=f"【演示银行】验证码 {code}，用于：{summary_zh}。5 分钟内有效。请勿告诉任何人，银行工作人员不会向您索要验证码。",
-        text_en=f"[Demo Bank] Code {code} for: {summary_en}. Valid for 5 minutes. Never share it; bank staff will never ask for it.",
+        text=f"【中联银行】验证码 {code}，用于：{summary_zh}。5 分钟内有效。请勿告诉任何人，银行工作人员不会向您索要验证码。",
+        text_en=f"[Central Union Bank] Code {code} for: {summary_en}. Valid for 5 minutes. Never share it; bank staff will never ask for it.",
     ))
     audit.append(session, user.id, "challenge_sent", {"kind": "sms", "purpose": purpose,
                                                       "phone": user.phone[:3] + "****" + user.phone[-4:]}, plan_id)
@@ -100,7 +100,7 @@ def passkey_registration_options(session: Session, user: UserAccount, settings) 
     _, rp_id = origin_and_rp(settings)
     existing = session.exec(select(Passkey).where(Passkey.user_id == user.id)).all()
     options = webauthn.generate_registration_options(
-        rp_id=rp_id, rp_name="Demo Bank AI", user_name=user.email, user_id=user.id.encode(),
+        rp_id=rp_id, rp_name="Central Union Bank", user_name=user.email, user_id=user.id.encode(),
         user_display_name=user.name,
         authenticator_selection=AuthenticatorSelectionCriteria(
             resident_key=ResidentKeyRequirement.PREFERRED, user_verification=UserVerificationRequirement.REQUIRED),

@@ -38,6 +38,6 @@ npm run build      # dist/ is served by the backend
 - Colours come from the CSS variables in `src/index.css` (`bg-field`, `text-ink2`, `border-rule`, `text-cinnabar`, `text-jade`), so light and dark both work.
 - The look: a white page with grey rounded surfaces (`.ruled`, `bg-[var(--field)]`) and no borders; one green (`--action`) for actions and the active tab; the bright `--cta` only for the main action on a green surface; pill tabs with `Segmented` (`components/bits.tsx`). Text on green is solid white so it stays readable.
 - The header is pinned (`--header-h`); on phones the app's menu is a bottom tab bar (`components/TabBar.tsx`, `--tabbar-h`). Anything sticky uses those two variables.
-- The logo is a placeholder in `BrandSeal` (`components/Seal.tsx`); the final logo replaces that one function.
+- The logo is `BrandMark` (`components/Seal.tsx`); `public/logo.svg` is the same drawing, used for the favicon. The PNG icons in `public/` are rendered from it.
 - No CDNs or external fonts: phones in mainland China must load everything from our own server.
 - Hash routes (`/#/assistant`) are kept for WeChat's in-app browser.

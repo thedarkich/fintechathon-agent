@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
-const sans = ['Manrope', '"PingFang SC"', '"Noto Sans SC"', '"Microsoft YaHei"', 'sans-serif']
+// MiSans draws Chinese, Latin and figures as one design; bundled from npm (misans), never a CDN
+const sans = ['"MiSans VF"', '"PingFang SC"', '"Microsoft YaHei"', 'sans-serif']
 
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
@@ -27,10 +28,17 @@ export default {
         mono: sans,
         code: ['"Geist Mono Variable"', 'ui-monospace', 'SF Mono', 'monospace'],
       },
-      // the type scale: xs 12 · cap 13 · sm 14 · body 15 · lg 18 (section) · page titles 30
+      // the type scale: xs 12 · cap 13 · sm 14 · body 15 · lg 17 (card titles) · xl 20 (sections) · 3xl 28 (pages)
       fontSize: {
-        cap: ['0.8125rem', { lineHeight: '1.45' }],
-        body: ['0.9375rem', { lineHeight: '1.55' }],
+        xs: ['0.75rem', { lineHeight: '1.5' }],
+        cap: ['0.8125rem', { lineHeight: '1.5' }],
+        sm: ['0.875rem', { lineHeight: '1.55' }],
+        body: ['0.9375rem', { lineHeight: '1.6' }],
+        base: ['1rem', { lineHeight: '1.6' }],
+        lg: ['1.0625rem', { lineHeight: '1.45' }],
+        xl: ['1.25rem', { lineHeight: '1.35' }],
+        '2xl': ['1.5rem', { lineHeight: '1.3' }],
+        '3xl': ['1.75rem', { lineHeight: '1.25' }],
       },
       // the radius scale: box 12 (controls, insets) · tile 16 (inner panels) · panel 20 (cards)
       borderRadius: { box: '12px', tile: '16px', panel: '20px' },

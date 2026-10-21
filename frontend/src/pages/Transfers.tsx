@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Undo2 } from 'lucide-react'
+import { Check, ChevronDown, Undo2 } from 'lucide-react'
 import { api, errorText } from '../api/client'
 import type { Transfer, TransferStatus } from '../api/types'
 import { useLang } from '../i18n'
@@ -79,7 +79,7 @@ function TransferRow({ t, demo, open, onDone }: { t: Transfer; demo: boolean; op
           <p className="truncate font-semibold">{t.payee} <span className="font-mono text-cap font-normal text-ink2">{t.bank} {t.account_tail}</span></p>
           <p className={`text-cap ${t.status === 'returned' ? 'font-semibold text-cinnabar' : waiting ? 'text-ink' : 'text-ink2'}`}>{status}</p>
         </div>
-        <strong className="num shrink-0 font-bold">{yuan(t.fen)}</strong>
+        <strong className="num shrink-0 font-semibold">{yuan(t.fen)}</strong>
       </div>
       {(t.cancellable || (demo && waiting)) && (
         <div className="mt-2 flex flex-wrap gap-2 pl-[38px]">
@@ -91,7 +91,7 @@ function TransferRow({ t, demo, open, onDone }: { t: Transfer; demo: boolean; op
         </div>
       )}
       <details className="mt-2 pl-[38px]" open={open}>
-        <summary className="inline-flex min-h-10 cursor-pointer items-center text-cap text-ink2">{tr('Stages', '进度')}</summary>
+        <summary className="fold inline-flex min-h-10 cursor-pointer items-center gap-1 text-cap text-ink2 hover:text-ink">{tr('Stages', '进度')}<ChevronDown size={14} aria-hidden /></summary>
         <div className="mt-2"><Stages t={t} /></div>
         <p className="mt-2 text-cap text-ink2">{t.route_label} · {t.arrival_label}{t.memo ? ` · ${tr('note', '备注')} ${t.memo}` : ''}</p>
       </details>

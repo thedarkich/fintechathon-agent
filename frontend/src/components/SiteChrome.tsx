@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { clearAdminToken, getAdminToken } from '../api/client'
 import { isOperator, useAuth } from '../lib/auth'
 import { useLang } from '../i18n'
-import { BrandSeal } from './Seal'
+import { BrandMark } from './Seal'
 import { LangSwitch, TextSizeSwitch, ThemeSwitch } from './Toggles'
 
 /** Signing out from the header or from the phone's More sheet. */
@@ -110,7 +110,7 @@ export function SiteHeader({ workspace = false, status, extra }: { workspace?: b
 
   return <header className={`site-header ${workspace ? 'is-workspace' : 'is-public'} ${scrolled ? 'is-scrolled' : ''}`}>
     <div className="site-header-inner">
-      <Link to={workspace && user ? '/home' : '/'} className="site-brand" aria-label={tr('Bank Agent home', '银行代办首页')}><BrandSeal size={36} /><span>{tr(t.brand_en, t.brand)}</span></Link>
+      <Link to={workspace && user ? '/home' : '/'} className="site-brand" aria-label={tr('Central Union Bank home', '中联银行首页')}><BrandMark size={34} /><span>{tr(t.brand_en, t.brand)}</span></Link>
       <nav ref={nav} className="site-mainnav" aria-label={tr('Main navigation', '主导航')}>
         {links.map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => isActive && (workspace || to === '/how') ? 'is-active' : ''}>{label}</NavLink>)}
       </nav>

@@ -53,7 +53,7 @@ export default function Wealth() {
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-ink2"><Risk level={h.risk_level} />{tr(`since ${h.since}`, `${h.since} 起`)}</p>
                   </div>
                   <div className="text-left sm:text-right">
-                    <p className="num font-bold">{yuan(h.value_fen)}</p>
+                    <p className="num font-semibold">{yuan(h.value_fen)}</p>
                     <p className="num text-xs font-semibold text-jade">{h.return_pct > 0 ? '+' : ''}{yuan(h.gain_fen)} ({h.return_pct > 0 ? '+' : ''}{h.return_pct}%)</p>
                   </div>
                   <button type="button" className="btn btn-line px-4 text-sm" disabled={!!pending} onClick={() => ask(tr(`Redeem 1000 from ${h.name}`, `赎回${h.name}1000元`))}>{tr('Redeem', '赎回')}</button>
@@ -72,7 +72,7 @@ export default function Wealth() {
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-ink2">{(KIND[p.kind] ?? [p.kind, p.kind])[lang === 'zh' ? 0 : 1]}<Risk level={p.risk_level} />{tr(`redeem T+${p.redeem_days}`, `赎回 T+${p.redeem_days}`)}</p>
                 </div>
                 <div className="text-left sm:text-right">
-                  <p className="num text-lg font-extrabold">{p.yield_bp ? pct(p.yield_bp) : pct(p.return_1y_bp)}</p>
+                  <p className="num text-lg font-semibold">{p.yield_bp ? pct(p.yield_bp) : pct(p.return_1y_bp)}</p>
                   <p className="text-xs text-ink2">{p.yield_bp ? tr('7-day annualised', '七日年化') : tr(`1 year · max drawdown ${pct(p.max_drawdown_bp)}`, `近一年 · 最大回撤 ${pct(p.max_drawdown_bp)}`)}</p>
                 </div>
                 {p.suitable

@@ -31,8 +31,8 @@ from app.bank.ledger import BankError
 from app.clock import CST
 from app.models import BankAccount, Payee, PayeeMessage, SmsMessage, Transfer, Txn, UserAccount
 
-OWN_BANK = "演示银行"
-BANK_EN = {"演示银行": "Demo Bank", "中国工商银行": "ICBC", "中国农业银行": "Agricultural Bank of China",
+OWN_BANK = "中联银行"
+BANK_EN = {"中联银行": "Central Union Bank", "中国工商银行": "ICBC", "中国农业银行": "Agricultural Bank of China",
            "中国银行": "Bank of China", "中国建设银行": "China Construction Bank", "交通银行": "Bank of Communications",
            "招商银行": "China Merchants Bank", "浦发银行": "SPD Bank", "某村镇银行": "a rural bank"}
 ROUTES = {"internal": ("行内转账", "same-bank transfer"), "ibps": ("超级网银跨行实时转账", "interbank online system, real time")}

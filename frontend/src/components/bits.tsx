@@ -24,7 +24,7 @@ export function OperatorGate({ children }: { children: ReactNode }) {
   if (loading) return <div className="session-state" role="status">{tr('Checking your session…', '正在检查登录状态…')}</div>
   return (
     <div className="mx-auto mt-16 max-w-md px-4 text-center">
-      <p className="cond text-2xl font-bold">{tr('This page is for bank operators.', '此页面仅供银行工作人员使用。')}</p>
+      <p className="cond text-2xl font-semibold">{tr('This page is for bank operators.', '此页面仅供银行工作人员使用。')}</p>
       <p className="mt-2 text-sm text-ink2">{tr('Operators read conversations that were handed over, reply, cancel plans and lift safety locks. They can never approve a step for a customer.', '工作人员可以查看转人工的会话、回复、取消计划和解除安全锁，但不能替客户确认任何操作。')}</p>
       <Link className="btn btn-ink mt-4 inline-block" to={'/team-token' + (getAdminToken() ? '' : '?next=/operator')}>{tr('Use an operator token', '使用工作人员令牌')}</Link>
     </div>
@@ -76,7 +76,7 @@ export function StatTile({ icon, tint = 'scope', label, value, sub, delta, share
       <div className="flex items-center gap-3">
         {icon && <IconDot icon={icon} tint={tint} size={40} />}
         <span className="stat-label min-w-0 flex-1 leading-snug">{label}</span>
-        {delta && <span className={`text-sm font-bold ${delta.good ? 'text-jade' : 'text-cinnabar'}`}>{delta.text}</span>}
+        {delta && <span className={`text-sm font-semibold ${delta.good ? 'text-jade' : 'text-cinnabar'}`}>{delta.text}</span>}
       </div>
       <p className={`stat-value num mt-3 ${valueClass}`}>{value}</p>
       {sub && <p className="mt-1 text-sm text-ink2">{sub}</p>}
@@ -139,13 +139,9 @@ export function AskButton({ label, hint, className = 'btn btn-line py-1.5 text-s
   return <Link to={`/assistant?hint=${encodeURIComponent(hint)}`} className={className}>{label}</Link>
 }
 
-/** One service: a white tile with a pastel icon circle, its name and a short line; a link, or a button when it needs to do something first. */
-export function ServiceTile({ icon, tint = 'green', label, sub, to, onClick, disabled, className = '' }: {
-  icon: IconName; tint?: Tint; label: string; sub?: string; to?: string; onClick?: () => void; disabled?: boolean; className?: string
-}) {
-  const inner = <><span className={`service-icon tint-${tint}`}><Icon name={icon} size={24} /></span><span className="min-w-0">{label}{sub && <small>{sub}</small>}</span></>
-  return to ? <Link to={to} className={`service-tile ${className}`}>{inner}</Link>
-    : <button type="button" className={`service-tile ${className}`} onClick={onClick} disabled={disabled}>{inner}</button>
+/** One service, as on a bank app's home screen: a pastel icon square with its name underneath. */
+export function ServiceTile({ icon, tint = 'green', label, to }: { icon: IconName; tint?: Tint; label: string; to: string }) {
+  return <Link to={to} className="service-tile"><span className={`service-icon tint-${tint}`}><Icon name={icon} size={24} /></span><span className="service-label">{label}</span></Link>
 }
 
 /** Pill tabs: a pale track with the chosen option in solid green. */
@@ -191,7 +187,7 @@ export function Panel({ title, note, right, children, id }: { title: string; not
   return (
     <section className="card overflow-hidden" id={id}>
       <div className="panel-heading"><div>
-        <h2 className="cond text-xl font-bold leading-tight">{title}</h2>
+        <h2 className="cond text-xl font-semibold leading-tight">{title}</h2>
         {note && <p className="text-sm text-ink2">{note}</p>}
       </div>{right}</div>
       {children}

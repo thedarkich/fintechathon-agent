@@ -47,13 +47,12 @@ body {
   margin: 0;
   min-height: 100dvh;
   background: var(--paper);
-  font-family: Manrope, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
-  font-size: 16px;
-  line-height: 1.55;
+  font-family: 'MiSans VF', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.6;
   font-feature-settings: 'tnum' 1;
 }
 
-/* Geist has no width axis; tighten letter-spacing to keep headings crisp. */
 .cond {
   letter-spacing: -0.02em;
 }
@@ -92,8 +91,6 @@ p, li { text-wrap: pretty; }
   border-top: 1px solid var(--rule);
 }
 
-.guilloche { background: var(--field); }
-
 input,
 textarea,
 select,
@@ -128,7 +125,7 @@ button {
   min-height: 40px;
   border-radius: 12px;
   padding: 0.625rem 1.25rem;
-  font-weight: 700;
+  font-weight: 500;
   border: 1px solid transparent;
   transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease, filter 120ms ease;
 }
@@ -175,7 +172,7 @@ button {
 .tint-violet { background: var(--violet-wash); color: var(--violet); }
 .tint-amber { background: var(--amber-wash); color: var(--amber); }
 .tint-red { background: var(--cinnabar-wash); color: var(--cinnabar); }
-.stat-value { font-size: clamp(1.6rem, 2.6vw, 2.25rem); font-weight: 800; letter-spacing: -0.025em; line-height: 1.1; }
+.stat-value { font-size: clamp(1.6rem, 2.6vw, 2.125rem); font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; }
 .stat-label { font-size: 0.85rem; color: var(--ink-2); }
 .bar-thick { width: 100%; height: 10px; border-radius: 999px; background: var(--paper-2); overflow: hidden; }
 .bar-thick > span { display: block; height: 100%; border-radius: inherit; background: var(--action); }
@@ -185,8 +182,8 @@ button {
 .pills.is-amber > i.on { background: var(--amber-pill); }
 .pills.is-red > i.on { background: var(--cinnabar); }
 .notice { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: 16px; }
-.notice-icon { display: inline-grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; font-weight: 800; }
-.notice-title { font-weight: 700; line-height: 1.35; }
+.notice-icon { display: inline-grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; font-weight: 600; }
+.notice-title { font-weight: 600; line-height: 1.4; }
 .notice-body { margin-top: 2px; font-size: 0.9rem; line-height: 1.5; }
 .notice-alert { background: var(--cinnabar-wash); }
 .notice-alert .notice-icon { background: var(--cinnabar); color: #fff; }
@@ -197,7 +194,7 @@ button {
 .notice-info { background: var(--accent-wash); }
 .notice-info .notice-icon { background: var(--action); color: var(--action-ink); }
 :root[data-theme="dark"] .notice-alert .notice-icon, :root[data-theme="dark"] .notice-highlight .notice-icon { color: #111827; }
-.badge { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; border-radius: 999px; padding: 3px 10px; font-size: 0.78rem; font-weight: 700; line-height: 1.35; }
+.badge { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; border-radius: 999px; padding: 3px 10px; font-size: 0.75rem; font-weight: 500; line-height: 1.4; }
 .badge-green { background: var(--accent-wash); color: var(--jade); }
 .badge-amber { background: var(--amber-wash); color: var(--amber-ink); }
 .badge-red { background: var(--cinnabar-wash); color: var(--cinnabar); }
@@ -266,16 +263,15 @@ button {
 .workspace { min-height: 100dvh; }
 .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--jade); flex-shrink: 0; }
 .page-content { width: min(1200px, calc(100% - 48px)); margin: 0 auto; padding: 36px 0 72px; }
-.page-content h1 { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
 .page-content h1 + p { margin-top: 8px; }
-.eyebrow { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.eyebrow { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--ink-2); }
 .panel-heading { padding: 20px 24px; display: flex; justify-content: space-between; gap: 12px; align-items: center; border-bottom: 1px solid var(--rule); }
 .panel-heading h2 { font-size: 16px; font-weight: 600; }
 .panel-heading p { color: var(--ink-2); font-size: 13px; margin-top: 4px; }
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .metric-card { border-radius: var(--radius); background: var(--card); box-shadow: var(--card-shadow); padding: 22px; min-width: 0; }
 .metric-card dt, .metric-label { color: var(--ink-2); font-size: 13px; display: flex; justify-content: space-between; gap: 8px; }
-.metric-card dd { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin-top: 12px; line-height: 1.1; }
+.metric-card dd { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; margin-top: 12px; line-height: 1.1; }
 .metric-card small { font-size: 12px; font-weight: 400; color: var(--ink-2); margin-left: 5px; letter-spacing: 0; }
 .metric-foot { display: flex; flex-wrap: wrap; gap: 10px 24px; color: var(--ink-2); font-size: 12px; margin-top: 14px; }
 .metric-foot strong { color: var(--ink); font-weight: 500; margin-left: 6px; }
@@ -304,7 +300,6 @@ button {
   .metric-card { padding: 16px; }
   .metric-card dd { font-size: 24px; margin-top: 10px; }
   .metric-card dt { font-size: 12px; }
-  .page-content h1 { font-size: 28px; }
   .panel-heading { padding: 16px; }
 }
 /* Phones: everything you tap is at least 44px tall. */
@@ -313,22 +308,42 @@ button {
   [role=tablist] > [role=tab] { min-height: 40px; }
 }
 
-/* A service: a pastel icon circle with its name underneath, on a white card that holds a grid of them. */
-.service-panel { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.service-tile { display: flex; align-items: center; gap: 14px; min-height: 76px; padding: 14px 16px; border-radius: 20px; background: var(--card); box-shadow: var(--card-shadow); text-align: left; font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--ink); transition: transform .15s ease, box-shadow .15s ease; }
-.service-tile small { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 500; color: var(--ink-2); }
-.service-icon { display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; }
-.service-tile:hover, .service-tile:focus-visible { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(16,24,40,.05), 0 10px 26px rgba(16,24,40,.10); }
-.service-tile:disabled { opacity: .6; }
-@media (max-width: 1023px) { .service-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Home: the balance card holds the services, like a bank app; the ask bar and the to-do rows sit under it. */
+.home-card { padding: 24px 24px 8px; }
+.home-money { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 40px; }
+.home-balance { font-size: 2.5rem; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
+.home-figures { display: flex; gap: 40px; padding-bottom: 6px; }
+.home-figures dt { font-size: 0.8125rem; color: var(--ink-2); }
+.home-figures dd { margin-top: 2px; font-size: 1.0625rem; font-weight: 600; }
+.home-services { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.home-services.is-large { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.service-tile { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 4px 14px; border-radius: 16px; text-align: center; font-size: 0.875rem; font-weight: 500; line-height: 1.3; color: var(--ink); transition: background-color .15s ease; }
+.service-tile:hover, .service-tile:focus-visible { background: var(--field); }
+.service-icon { display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 16px; }
+.home-services.is-large .service-tile { font-size: 1.0625rem; gap: 10px; }
+.home-services.is-large .service-icon { width: 60px; height: 60px; border-radius: 18px; }
+.home-ask { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 6px 6px 6px 16px; border-radius: 16px; background: var(--card); box-shadow: var(--card-shadow); }
+.home-ask:focus-within { box-shadow: 0 0 0 2px var(--action); }
+.todo-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+.todo-icon { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 12px; }
+.todo-action { flex-shrink: 0; min-height: 36px; padding: 6px 14px; font-size: 0.875rem; }
 @media (max-width: 767px) {
-  .service-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .service-tile { gap: 10px; min-height: 64px; padding: 12px; font-size: 14px; }
-  .service-icon { width: 40px; height: 40px; }
-  .service-tile small { display: none; }
-  .service-panel .is-tabbed { display: none; }
+  .home-card { padding: 20px 16px 6px; }
+  .home-balance { font-size: 2.125rem; }
+  .home-figures { gap: 28px; }
+  .home-services { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .home-services.is-large { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .todo-row { flex-wrap: wrap; }
+  .todo-row:not(.is-plain) > div { flex-basis: calc(100% - 48px); }
+  .todo-action { margin-left: 48px; min-height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) { .service-tile { transition: none; } }
+
+/* a fold-out's arrow turns when it opens */
+details > summary.fold { list-style: none; }
+details > summary.fold::-webkit-details-marker { display: none; }
+details > summary.fold svg { transition: transform .15s ease; }
+details[open] > summary.fold svg { transform: rotate(180deg); }
 
 /* lists inside the assistant's grey bubble are white */
 .bot-bubble .ruled { background-color: var(--card); box-shadow: none; }
@@ -338,29 +353,23 @@ button {
 .drawer-in { animation: drawer-in .18s ease-out; }
 @media (prefers-reduced-motion: reduce) { .drawer-in { animation: none; } }
 
-/* Large text (长辈版): every rem-sized thing 25% bigger; the header's fixed sizes follow; Home shows four big tiles. */
+/* Large text (长辈版): every rem-sized thing 25% bigger; the header's fixed sizes follow; Home shows four big services. */
 :root[data-text="large"] { font-size: 125%; }
 :root[data-text="large"] body { line-height: 1.6; }
 :root[data-text="large"] .site-mainnav a { font-size: 17px; }
 :root[data-text="large"] .tabbar a, :root[data-text="large"] .tabbar button { font-size: 13.5px; }
-.service-panel.is-large { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.service-panel.is-large .service-tile { gap: 16px; padding: 16px 18px; font-size: 20px; }
-.service-panel.is-large .service-icon { width: 64px; height: 64px; }
-@media (max-width: 767px) {
-  .service-panel.is-large { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .service-panel.is-large .service-tile { flex-direction: column; text-align: center; font-size: 18px; padding: 18px 8px; }
-  .service-panel.is-large .service-icon { width: 60px; height: 60px; }
-}
 
 /* Large text on a phone: one figure per row, so big numbers never run out of their tile */
 @media (max-width: 767px) { :root[data-text="large"] .stat-grid { grid-template-columns: minmax(0, 1fr); } }
-.stat-value { overflow-wrap: anywhere; }
+.stat-value { white-space: nowrap; }
+@media (max-width: 639px) { .stat-value { font-size: 1.375rem; } }
 
 /* ======================================================================================
    The system. Surfaces: a grey page, white cards edged by a hairline, grey insets inside cards.
    Colour: green acts (primary buttons, links, the current page); each scenario owns one colour for
    its icons (转账 green · 账单 blue · 理财 violet · 卡片 amber · 自动续费 cyan · 助手 ink);
-   red and amber only ever mean "look at this". Type: 30 page · 18 section · 15 body · 13 caption · 12 small.
+   red and amber only ever mean "look at this". Type: MiSans; 28 page · 18 section · 15 body · 13 caption · 12 small;
+   weights 400 text · 500 labels and buttons · 600 titles and figures (700 only for the two biggest figures).
    Radii: 12 controls and insets · 16 inner panels · 20 cards.
    ====================================================================================== */
 :root {
@@ -383,7 +392,8 @@ html, body { background: var(--bg); }
 .scope-subs { --scope: var(--cyan); --scope-wash: var(--cyan-wash); }
 .tint-scope { background: var(--scope-wash); color: var(--scope); }
 .tint-cyan { background: var(--cyan-wash); color: var(--cyan); }
-.tint-ink { background: var(--ink); color: var(--card); }
+/* the assistant's own icon: ink on a plain grey, so it doesn't outshout the coloured services */
+.tint-ink { background: var(--paper-2); color: var(--ink); }
 .tint-amber { color: var(--amber-ink); }
 
 /* tabs are neutral: a white pill on a grey track; green is kept for acting */
@@ -391,9 +401,9 @@ html, body { background: var(--bg); }
 .segmented-on { background: var(--seg); color: var(--ink); box-shadow: 0 1px 2px rgba(16,24,40,.12); }
 
 /* titles on the scale */
-.page-content h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
-.section-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; }
-@media (max-width: 760px) { .page-content h1 { font-size: 26px; } }
+.page-content h1 { font-size: 1.75rem; font-weight: 600; line-height: 1.25; }
+.section-title { font-size: 1.125rem; font-weight: 600; line-height: 1.35; }
+@media (max-width: 760px) { .page-content h1 { font-size: 1.5rem; } }
 
 /* secondary buttons are white with an edge, so they read the same on the page and inside a card */
 .btn-line { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule-strong); }
@@ -425,3 +435,6 @@ html, body { background: var(--bg); }
   --cat-5: #d55181; --cat-6: #008300; --cat-7: #9085e9; --cat-8: #e66767; --cat-other: #5d6b7a;
   --cat-9: #dd99ff; --cat-10: #6644ff; --cat-11: #ff11bb; --cat-12: #aabb44; --cat-13: #ccaa88;
 }
+
+/* large text: Home's sizes are in rem, so they grow with the rest; the to-do buttons get full-size targets */
+:root[data-text="large"] .todo-action { min-height: 44px; }

@@ -51,7 +51,7 @@ export default function Subscriptions() {
                     <p className="font-semibold">{s.merchant}{s.new && <Badge tone="amber" className="ml-2">{tr('new', '近期开通')}</Badge>}</p>
                     <p className="text-xs text-ink2">{s.cycle === 'monthly' ? tr('monthly', '每月') : tr('yearly', '每年')} · {tr(`next ${s.next_charge_on}`, `下次 ${s.next_charge_on}`)}{s.remind_days_before ? tr(` · reminder ${s.remind_days_before} days before`, ` · 提前 ${s.remind_days_before} 天提醒`) : ''}</p>
                   </div>
-                  <span className="num font-bold">{yuan(s.fen)}</span>
+                  <span className="num font-semibold">{yuan(s.fen)}</span>
                   <span className="col-span-2 inline-flex justify-end gap-2 sm:col-span-1">
                     <button type="button" className="btn btn-line px-4 text-sm" disabled={!!pending} onClick={() => ask(tr(`Remind me 3 days before ${s.merchant} renews`, `${s.merchant}续费前3天提醒我`))}>{tr('Remind', '提醒')}</button>
                     <button type="button" className="btn btn-cinnabar px-4 text-sm" disabled={!!pending} onClick={() => ask(tr(`Cancel ${s.merchant}`, `取消${s.merchant}`))}>{tr('Cancel', '取消')}</button>

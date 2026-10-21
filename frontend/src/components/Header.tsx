@@ -20,7 +20,7 @@ export function Header({ compact = false, extra }: { compact?: boolean; extra?: 
   useEffect(() => {
     window.scrollTo(0, 0)
     const page = PAGE_TITLES[loc.pathname.slice(1)]
-    document.title = tr('Bank Agent', '银行代办') + (page ? ' · ' + tr(page[0], page[1]) : '')
+    document.title = tr('Central Union Bank', '中联银行') + (page ? ' · ' + tr(page[0], page[1]) : '')
   }, [loc.pathname, tr])
   const overview = useQuery({ queryKey: ['overview', lang], queryFn: () => api.overview(lang), enabled: !!user, staleTime: 15_000 })
   const now = overview.data?.now

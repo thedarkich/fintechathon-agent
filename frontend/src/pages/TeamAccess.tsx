@@ -7,7 +7,7 @@ import { SiteHeader, SiteFooter } from '../components/SiteChrome'
 /** Operators open the console with the server's admin token, kept in this browser only. */
 export default function TeamAccess() {
   const { tr } = useLang()
-  useEffect(() => { document.title = tr('Bank Agent · Operator access', '银行代办 · 工作人员访问') }, [tr])
+  useEffect(() => { document.title = tr('Central Union Bank · Operator access', '中联银行 · 工作人员访问') }, [tr])
   const navigate = useNavigate()
   const [token, setToken] = useState('')
   const [busy, setBusy] = useState(false)

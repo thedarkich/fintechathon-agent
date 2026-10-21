@@ -1,11 +1,13 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ChevronDown } from 'lucide-react'
 import { api, errorText } from '../api/client'
 import type { Card } from '../api/types'
 import { useLang } from '../i18n'
 import { useChat } from '../lib/chat'
 import { category, categoryColor, stamp, yuan } from '../lib/format'
 import { CategoryIcon } from './Icon'
+import { Badge, LIST } from './bits'
 import { ConfirmCard } from './PlanView'
 import { SealMark } from './Seal'
 
@@ -39,6 +41,27 @@ function Rows({ items }: { items: Row[] }) {
             {row.sub && <p className="text-xs text-ink2">{row.sub}</p>}
           </div>
           {row.value !== undefined && <span className="num shrink-0 font-semibold">{row.value}</span>}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+type Txn = Awaited<ReturnType<typeof api.transactions>>['items'][number]
+
+/** Transactions as on the bank's pages: the category's badge, merchant, category and time, the amount on the right. */
+export function TxnList({ items, hidden = false }: { items: Txn[]; hidden?: boolean }) {
+  const { tr, lang } = useLang()
+  return (
+    <ul className={LIST}>
+      {items.map((x) => (
+        <li key={x.id} className={`flex items-center gap-3 px-4 py-3 ${x.status === 'declined' ? 'text-ink2' : ''}`}>
+          <CategoryIcon code={x.category} size="1rem" badge />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-medium">{x.merchant}{x.status === 'declined' && <Badge tone="red" className="ml-2">{tr('declined', '已拒绝')}</Badge>}</p>
+            <p className="text-xs text-ink2">{category(x.category, lang)} · {stamp(x.at)}</p>
+          </div>
+          <span className={`num shrink-0 font-semibold ${x.fen > 0 ? 'text-jade' : ''}`}>{hidden ? '¥ ••••' : `${x.fen > 0 ? '+' : ''}${yuan(x.fen)}`}</span>
         </li>
       ))}
     </ul>
@@ -162,7 +185,7 @@ export function Result({ card }: { card: Card }) {
       return (
         <div className="flex items-center gap-3 card px-3 py-2.5">
           <SealMark kind="done" size={30} />
-          <div><p className="font-semibold text-jade">{tr('Done', '已办成')} <span className="num font-bold text-ink">{yuan(card.fen)}</span></p>
+          <div><p className="font-semibold text-jade">{tr('Done', '已办成')} <span className="num font-semibold text-ink">{yuan(card.fen)}</span></p>
             {card.balance_fen !== undefined && <p className="num text-cap text-ink2">{tr('Balance after', '交易后余额')} {yuan(card.balance_fen)}</p>}</div>
         </div>
       )
@@ -264,7 +287,7 @@ export function Result({ card }: { card: Card }) {
         <div className="space-y-2">
           <div className="card p-4">
             <p className="text-sm text-ink2">{card.title}</p>
-            {card.value !== null && <p className="num cond mt-1 text-[1.8rem] font-bold leading-none">{show(card.value)}</p>}
+            {card.value !== null && <p className="num cond mt-1 text-[1.8rem] font-semibold leading-none">{show(card.value)}</p>}
             {card.rows.length > 0 && (
               <ul className="mt-3 divide-y divide-rule">
                 {card.rows.slice(-8).map(([label, value]: [string, number]) => <li key={label} className="flex justify-between py-1.5 text-sm"><span className="num text-ink2">{label}</span><span className="num font-semibold">{show(value)}</span></li>)}
@@ -277,7 +300,7 @@ export function Result({ card }: { card: Card }) {
             )}
           </div>
           <details className="agent-detail !mt-0">
-            <summary>{tr('The generated code and the sandbox limits', '生成的代码与沙箱限制')}</summary>
+            <summary className="fold inline-flex items-center gap-1">{tr('The generated code and the sandbox limits', '生成的代码与沙箱限制')}<ChevronDown size={14} aria-hidden /></summary>
             <pre className="mt-2 max-h-64 overflow-auto rounded-box bg-[#0f1114] p-3 font-code text-xs leading-relaxed text-[#eef6f1]">{card.code}</pre>
             <p>
               {tr(`Ran in ${card.ms} ms in a separate process: ${card.limits.memory_mb} MB memory, ${card.limits.cpu_seconds} s CPU, no files, imports limited to ${card.limits.imports.join(', ')}.`,

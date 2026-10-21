@@ -25,7 +25,7 @@ function digitsOf(text: string) {
 
 function Avatar({ name, masked = false }: { name: string; masked?: boolean }) {
   return (
-    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[1.05rem] font-bold ${masked ? 'bg-paper2 text-ink2' : 'bg-[var(--accent-wash)] text-[var(--action)]'}`} aria-hidden>
+    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[1.05rem] font-semibold ${masked ? 'bg-paper2 text-ink2' : 'bg-[var(--accent-wash)] text-[var(--action)]'}`} aria-hidden>
       {masked ? '*' : name.replace(/^\*/, '').slice(0, 1)}
     </span>
   )
@@ -41,7 +41,7 @@ export default function Send() {
     <main tabIndex={-1} className="page-content scope-send">
       <PageHead title={tr('Transfers', '转账')} />
       <PageTabs label={tr('Transfers', '转账')} value={tab} onChange={setTab}
-        options={[['send', tr('Send', '转账')], ['transfers', tr('Where my money is', '转账记录')], ['payees', tr('Payees', '收款人')], ['scheduled', tr('Scheduled & split', '预约与 AA')]] as const} />
+        options={[['send', tr('Send', '转账')], ['transfers', tr('Sent', '转账记录')], ['payees', tr('Payees', '收款人')], ['scheduled', tr('Scheduled & split', '预约与 AA')]] as const} />
       {tab === 'send' && <SendForm />}
       {tab === 'transfers' && <TransfersSection />}
       {tab === 'payees' && <Payees />}
@@ -105,9 +105,9 @@ function SendForm() {
                 <p className="mb-2 text-sm text-ink2">{tr('Recent', '最近转账')}</p>
                 <div className="tab-scroll flex gap-3">
                   {recent.map((p) => (
-                    <button key={p.id} type="button" onClick={() => pick(p)} className="flex w-16 flex-col items-center gap-1 text-center">
+                    <button key={p.id} type="button" onClick={() => pick(p)} className="flex w-20 flex-col items-center gap-1 text-center">
                       <Avatar name={p.name} masked={p.name.startsWith('*')} />
-                      <span className="w-full truncate text-xs">{p.name}</span>
+                      <span className="line-clamp-2 w-full break-words text-xs leading-tight">{p.name}</span>
                     </button>
                   ))}
                 </div>
@@ -181,9 +181,9 @@ function SendForm() {
             <div>
               <label htmlFor="send-amount" className="text-sm text-ink2">{tr('Amount', '金额')}</label>
               <div className="mt-1 flex items-baseline gap-2 border-b-2 border-rule2 focus-within:border-[var(--action)]">
-                <span className="text-2xl font-bold text-ink2">¥</span>
+                <span className="text-2xl font-semibold text-ink2">¥</span>
                 <input id="send-amount" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" placeholder="0" autoComplete="off"
-                  className="num min-w-0 flex-1 bg-transparent py-2 text-[2.5rem] font-extrabold tracking-[-0.02em] outline-none focus-visible:outline-none" />
+                  className="num min-w-0 flex-1 bg-transparent py-2 text-[2.5rem] font-semibold tracking-[-0.01em] outline-none focus-visible:outline-none" />
               </div>
               {checking && <p className="mt-1.5 text-sm text-ink2">{tr(`From ${checking.name}: ${yuan(checking.fen)}`, `从${checking.name}付款，余额 ${yuan(checking.fen)}`)}</p>}
             </div>
@@ -207,7 +207,7 @@ function SendForm() {
       </section>
 
       <section aria-label={tr('Transfers with this person', '与 TA 的转账')} className="card p-6 max-sm:p-4">
-        <h2 className="mb-4 text-xl font-bold">{payeeId ? tr('Between you', '与 TA 的转账') : tr('Latest transfers', '最近的转账')}</h2>
+        <h2 className="mb-4 text-xl font-semibold">{payeeId ? tr('Between you', '与 TA 的转账') : tr('Latest transfers', '最近的转账')}</h2>
         {(() => {
           const rows = payeeId ? history : (transfers.data?.items ?? []).slice(0, 6)
           if (!transfers.data) return <div className="h-40 animate-pulse rounded-box bg-paper2" aria-hidden />
@@ -221,7 +221,7 @@ function SendForm() {
                     <span className="block truncate font-semibold">{t.payee}{t.memo && <span className="font-normal text-ink2"> · {t.memo}</span>}</span>
                     <span className={`block text-xs ${t.status === 'arrived' ? 'text-jade' : t.status === 'returned' ? 'text-cinnabar' : 'text-ink2'}`}>{t.status_label} · {stamp(t.created_at)}</span>
                   </span>
-                  <span className="num shrink-0 font-bold">{yuan(t.fen)}</span>
+                  <span className="num shrink-0 font-semibold">{yuan(t.fen)}</span>
                 </li>
               ))}
             </ol>
@@ -231,7 +231,7 @@ function SendForm() {
               {rows.map((t) => (
                 <li key={t.id} className="ml-auto w-fit min-w-[11rem] max-w-[85%] rounded-tile rounded-br-md bg-[var(--field)] px-4 py-2.5">
                   {!payeeId && <p className="text-xs font-semibold text-ink2">{t.payee}</p>}
-                  <p className="num text-lg font-extrabold">{yuan(t.fen)}</p>
+                  <p className="num text-lg font-semibold">{yuan(t.fen)}</p>
                   {t.memo && <p className="text-sm">{t.memo}</p>}
                   <p className={`text-xs ${t.status === 'arrived' ? 'text-jade' : t.status === 'returned' ? 'text-cinnabar' : 'text-ink2'}`}>{t.status_label} · {stamp(t.created_at)}</p>
                 </li>
@@ -297,7 +297,7 @@ function Scheduled() {
           <ul className={LIST}>
             {scheduled.data.collections.map((c) => (
               <li key={c.id} className="px-4 py-3 text-body">
-                <p className="flex justify-between gap-3"><span className="font-semibold">{c.title}</span><span className="num font-bold">{yuan(c.total_fen)}</span></p>
+                <p className="flex justify-between gap-3"><span className="font-semibold">{c.title}</span><span className="num font-semibold">{yuan(c.total_fen)}</span></p>
                 <p className="mt-1 flex flex-wrap gap-1.5">{c.participants.map((p) => (
                   <Badge key={p.name} tone={p.status === 'paid' ? 'green' : 'grey'}>{lang === 'zh' ? p.name : p.name_en} {p.status === 'paid' ? tr('paid', '已付') : tr('not yet', '未付')}</Badge>
                 ))}</p>

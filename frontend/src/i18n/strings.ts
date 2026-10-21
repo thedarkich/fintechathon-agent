@@ -1,7 +1,7 @@
 // Shared interface copy, Chinese and English. Page-specific copy is written inline with tr(en, zh).
 export const zh = {
-  brand: '银行代办',
-  brand_en: 'Bank Agent',
+  brand: '中联银行',
+  brand_en: 'Central Union Bank',
   tagline: '你说一句，我来办；动钱之前，先问你。',
 
   // plan outcomes
@@ -27,8 +27,8 @@ export const zh = {
 export type Strings = typeof zh
 
 export const en: Strings = {
-  brand: '银行代办',
-  brand_en: 'Bank Agent',
+  brand: '中联银行',
+  brand_en: 'Central Union Bank',
   tagline: 'Say it once. We do it. Money only moves when you say yes.',
 
   outcome_done: 'Done',

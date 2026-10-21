@@ -49,7 +49,7 @@ export function Decision({ plan: p }: { plan: Plan }) {
           <ol className="mt-1 space-y-1.5">
             {decided.map((s) => (
               <li key={s.id} className="flex gap-2 leading-snug">
-                <span className="w-3 shrink-0 text-center font-bold" style={{ color: mark(s).color }} aria-hidden>{mark(s).glyph}</span>
+                <span className="w-3 shrink-0 text-center font-semibold" style={{ color: mark(s).color }} aria-hidden>{mark(s).glyph}</span>
                 <span className="min-w-0">
                   <span className={s.status === 'cancelled' || s.status === 'skipped' ? 'text-ink2 line-through' : ''}>{s.text}</span>
                   {s.rule_text && <span className="block text-xs text-ink2">{s.rule_text}</span>}

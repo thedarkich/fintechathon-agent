@@ -27,7 +27,7 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
   const [message, setMessage] = useState('')
   useEffect(() => {
     setName(''); setEmail(''); setPassword(''); setConfirm(''); setPin(''); setErrors({}); setMessage(''); setVisible(false)
-    document.title = (register ? tr('Create account', '创建账户') : tr('Sign in', '登录')) + ' · ' + tr('Bank Agent', '银行代办')
+    document.title = (register ? tr('Create account', '创建账户') : tr('Sign in', '登录')) + ' · ' + tr('Central Union Bank', '中联银行')
     window.scrollTo(0, 0)
   }, [register, location.pathname, tr])
   if (user) return <Navigate to={landingFor(user, next)} replace />

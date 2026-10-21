@@ -1,6 +1,6 @@
 # Banking AI Agent · 银行 AI 助手
 
-Entry for the 2026 Shenzhen International FinTech Competition (FinTechathon), **Domestic AI Track: Banking AI Agent**. Working name: 银行代办 / Bank Agent.
+Entry for the 2026 Shenzhen International FinTech Competition (FinTechathon), **Domestic AI Track: Banking AI Agent**. The bank: 中联银行 / Central Union Bank.
 
 **The AI only proposes. Fixed code decides what is allowed, and code (not the AI) states every fact.**
 

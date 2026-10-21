@@ -2,7 +2,7 @@
 
 Slide by slide, with speaker time in brackets. The demo can be live (one click on 马上试试 opens a fresh demo bank) with the video as backup.
 
-1. **Title** (0:20). Name (to be decided; working name 银行代办), one line: “你说一句，我来办；动钱之前，先问你。/ Say it once. We do it. Money only moves when you say yes.” Team.
+1. **Title** (0:20). Name: 中联银行 / Central Union Bank, one line: “你说一句，我来办；动钱之前，先问你。/ Say it once. We do it. Money only moves when you say yes.” Team.
 2. **The problem** (0:50). Mobile banking hides simple tasks behind deep menus; the brief notes a transfer takes three or more steps. Agents can now act on a customer's behalf, so the hard question is control: who decides that money moves?
 3. **Our principle** (0:50). One diagram: words → AI plan (closed catalogue of 43 actions) → code checks it against the customer's own records → 直接办 / 需确认 / 需验证 → the customer's yes → the bank → a reply written by code. The model never sees account data, never approves, never writes a number.
 4. **Demo** (4:00). Live, or the 5-minute video cut to 4 ([DEMO.md](DEMO.md)): a sandboxed spending question; “给妈妈转200” on one confirm card; the red transfer to a new seller that is delayed and then returned for a name mismatch; three bypass attempts and the safety lock; the birthday plan, run by moving the bank clock, or stopped and undone in words.

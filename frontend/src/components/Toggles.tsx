@@ -45,7 +45,7 @@ export function TextSizeSwitch() {
       aria-pressed={large}
       aria-label={tr('Large text', '大字版')}
       title={label}
-      className={`inline-flex h-9 shrink-0 items-center justify-center rounded-box px-2 text-body font-bold ${large ? 'bg-[var(--action)] text-[var(--action-ink)]' : 'text-ink2 hover:bg-[var(--field)] hover:text-ink'}`}
+      className={`inline-flex h-9 shrink-0 items-center justify-center rounded-box px-2 text-body font-semibold ${large ? 'bg-[var(--action)] text-[var(--action-ink)]' : 'text-ink2 hover:bg-[var(--field)] hover:text-ink'}`}
     >
       {tr('A+', '大字')}
     </button>

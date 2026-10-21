@@ -62,14 +62,14 @@ export function DemoDock() {
       <div id="demo-dock" ref={panel} tabIndex={-1} role="dialog" aria-label={tr('Demo tools', '演示工具')} className="demo-dock-panel">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
-            <p className="font-bold">{tr('Demo tools', '演示工具')}</p>
+            <p className="font-semibold">{tr('Demo tools', '演示工具')}</p>
             <p className="text-xs text-ink2">{tr('For showing the demo. A real bank has none of these.', '仅用于演示，真实银行没有这些功能。')}</p>
           </div>
           <button type="button" onClick={() => setOpen(false)} className="grid h-8 w-8 shrink-0 place-items-center rounded-full hover:bg-[var(--field)]" aria-label={tr('Close', '关闭')}><X size={16} /></button>
         </div>
 
         <p className="text-xs text-ink2">{tr('Bank clock', '银行时钟')}{days ? tr(` (${days} days ahead)`, `（快 ${days} 天）`) : ''}</p>
-        <p className="num text-[1.4rem] font-bold leading-tight">{clock.data ? stamp(clock.data.now) : '—'}</p>
+        <p className="num text-[1.4rem] font-semibold leading-tight">{clock.data ? stamp(clock.data.now) : '—'}</p>
         <p className="mb-2 mt-1 text-xs text-ink2">{tr('Move time forward to see scheduled transfers, renewals and reminders happen.', '让时间前进，就能看到预约转账、续费和提醒的发生。')}</p>
         <div className="grid grid-cols-4 gap-1.5">
           {steps.map(([d, h, label]) => (

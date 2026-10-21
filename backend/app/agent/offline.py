@@ -218,13 +218,13 @@ def switches_in(text: str, *, card: bool = False) -> dict:
 
 
 BANKS = ("中国工商银行", "工商银行", "工行", "中国农业银行", "农业银行", "农行", "中国建设银行", "建设银行", "建行", "中国银行",
-         "交通银行", "招商银行", "招行", "浦发银行", "演示银行", "ICBC", "China Merchants Bank", "Bank of China",
-         "China Construction Bank", "Agricultural Bank of China", "Bank of Communications", "SPD Bank", "Demo Bank")
+         "交通银行", "招商银行", "招行", "浦发银行", "中联银行", "ICBC", "China Merchants Bank", "Bank of China",
+         "China Construction Bank", "Agricultural Bank of China", "Bank of Communications", "SPD Bank", "Central Union Bank")
 BANK_FULL = {"工商银行": "中国工商银行", "工行": "中国工商银行", "农业银行": "中国农业银行", "农行": "中国农业银行",
              "建设银行": "中国建设银行", "建行": "中国建设银行", "招行": "招商银行", "ICBC": "中国工商银行",
              "China Merchants Bank": "招商银行", "Bank of China": "中国银行", "China Construction Bank": "中国建设银行",
              "Agricultural Bank of China": "中国农业银行", "Bank of Communications": "交通银行", "SPD Bank": "浦发银行",
-             "Demo Bank": "演示银行"}
+             "Central Union Bank": "中联银行"}
 
 
 def new_payee(text: str) -> PlanOut:

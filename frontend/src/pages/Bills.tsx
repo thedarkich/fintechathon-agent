@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLang } from '../i18n'
-import { Badge, EMPTY, LIST, Notice, PageHead, PageTabs, Section, Segmented, StatTile, useTab } from '../components/bits'
-import { CategoryIcon, Icon } from '../components/Icon'
-import { Bars, Columns } from '../components/Results'
+import { Badge, EMPTY, Notice, PageHead, PageTabs, Section, Segmented, StatTile, useTab } from '../components/bits'
+import { Icon } from '../components/Icon'
+import { Bars, Columns, TxnList } from '../components/Results'
 import { useChat } from '../lib/chat'
-import { category, stamp, yuan } from '../lib/format'
+import { category, yuan } from '../lib/format'
 
 /** Card 02, bill analysis: the month at a glance, what looks unusual, and every transaction. */
 export default function Bills() {
@@ -30,7 +30,7 @@ export default function Bills() {
         options={[['month', tr('Month', '月')], ['year', tr('Year', '年')]] as const} />
       <div className="flex items-center gap-2">
         <button type="button" className="btn btn-line w-11 px-0" onClick={() => setOffset(offset - 1)} aria-label={tr('Earlier', '上一期')}>‹</button>
-        <span className="num min-w-[5.5rem] text-center font-bold">{name}</span>
+        <span className="num min-w-[5.5rem] text-center font-semibold">{name}</span>
         <button type="button" className="btn btn-line w-11 px-0" disabled={offset >= 0} onClick={() => setOffset(offset + 1)} aria-label={tr('Later', '下一期')}>›</button>
       </div>
     </div>
@@ -84,8 +84,10 @@ export default function Bills() {
               <li key={`${a.code}-${a.txn_id ?? a.category}`}>
                 <Notice tone={a.code === 'CATEGORY_SPIKE' || a.code === 'OVERSEAS_DECLINED' ? 'highlight' : 'alert'}
                   title={<span className="flex flex-wrap items-baseline justify-between gap-x-3"><span>{a.merchant ?? category(a.category ?? 'other', lang)} <span className="ml-1 text-xs font-normal text-ink2">{a.code === 'CATEGORY_SPIKE' ? tr(a.at.slice(0, 7), `${a.at.slice(0, 4)}年${Number(a.at.slice(5, 7))}月`) : a.at.slice(5, 16).replace('T', ' ')}</span></span><span className="num text-ink">{yuan(a.fen)}</span></span>}
-                  action={a.code === 'NEW_MERCHANT_LARGE' || a.code === 'NIGHT_LARGE' ? <button type="button" className="btn btn-line bg-[var(--card)] px-4 text-sm text-cinnabar" disabled={!!pending} onClick={() => void send(tr('Freeze the card used for the payment I don’t recognise', '冻结这笔不认识的交易所用的卡'))}>{tr('Freeze card', '冻结卡')}</button> : a.code === 'OVERSEAS_DECLINED' ? <Badge tone="grey">{tr('Blocked, not charged', '已拦截，未扣款')}</Badge> : undefined}>
+                  >
                   {lang === 'zh' ? a.reason_zh : a.reason_en}{a.code === 'DUPLICATE_CHARGE' && tr(' Ask the merchant to refund the second charge.', '可以联系商户退还多扣的那一笔。')}
+                  {(a.code === 'NEW_MERCHANT_LARGE' || a.code === 'NIGHT_LARGE') && <div className="mt-2.5"><button type="button" className="btn btn-line bg-[var(--card)] px-4 text-sm text-cinnabar" disabled={!!pending} onClick={() => void send(tr('Freeze the card used for the payment I don’t recognise', '冻结这笔不认识的交易所用的卡'))}>{tr('Freeze card', '冻结卡')}</button></div>}
+                  {a.code === 'OVERSEAS_DECLINED' && <div className="mt-2"><Badge tone="grey">{tr('Blocked, not charged', '已拦截，未扣款')}</Badge></div>}
                 </Notice>
               </li>
             ))}
@@ -98,25 +100,5 @@ export default function Bills() {
         {!txns.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : !txns.data.items.length ? <p className={EMPTY}>{tr('Nothing found.', '没有找到。')}</p> : <TxnList items={txns.data.items} />}
       </Section>}
     </main>
-  )
-}
-
-type Txn = Awaited<ReturnType<typeof api.transactions>>['items'][number]
-
-function TxnList({ items }: { items: Txn[] }) {
-  const { tr, lang } = useLang()
-  return (
-    <ul className={LIST}>
-      {items.map((x) => (
-        <li key={x.id} className={`flex items-center gap-3 px-4 py-3 ${x.status === 'declined' ? 'text-ink2' : ''}`}>
-          <CategoryIcon code={x.category} size="1rem" badge />
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold">{x.merchant}{x.status === 'declined' && <Badge tone="red" className="ml-2">{tr('declined', '已拒绝')}</Badge>}</p>
-            <p className="text-xs text-ink2">{category(x.category, lang)} · {stamp(x.at)}</p>
-          </div>
-          <span className={`num shrink-0 font-bold ${x.fen > 0 ? 'text-jade' : ''}`}>{x.fen > 0 ? '+' : ''}{yuan(x.fen)}</span>
-        </li>
-      ))}
-    </ul>
   )
 }

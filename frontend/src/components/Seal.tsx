@@ -60,7 +60,7 @@ export function Seal({ kind, size = 168, animate = true, rotate = -8 }: { kind: 
           <circle cx="100" cy="100" r="82" fill="none" strokeWidth="1.6" />
           <text fontSize="17" fontWeight="700" letterSpacing="4" stroke="none" style={{ fontFamily: '"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif' }}>
             <textPath href={`#rim-${uid}`} startOffset="50%" textAnchor="middle">
-              银行代办　规则审核专用
+              中联银行　规则审核专用
             </textPath>
           </text>
           <text x="100" y="116" textAnchor="middle" fontSize="40" fontWeight="800" stroke="none" style={{ fontFamily: '"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif' }}>
@@ -103,15 +103,17 @@ export function SealMark({ kind, size = 30 }: { kind: MarkKind; size?: number })
   )
 }
 
-/** The brand mark: a square name seal (方章) reading 代办, top to bottom, in the brand green.
- *  A placeholder: the final logo replaces this one function. */
-export function BrandSeal({ size = 34 }: { size?: number }) {
+/** The brand mark of 中联银行 (Central Union Bank): a ring, a coin's square in the middle, a cross through both. Brand green. */
+export function BrandMark({ size = 34 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden className="shrink-0" style={{ color: 'var(--action)' }}>
-      <rect x="1.6" y="1.6" width="36.8" height="36.8" rx="9" fill="none" stroke="currentColor" strokeWidth="3" />
-      <g fill="currentColor" fontSize="15.5" fontWeight="700" textAnchor="middle" style={{ fontFamily: '"PingFang SC","Noto Sans SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif' }}>
-        <text x="20" y="18.2">代</text>
-        <text x="20" y="34.4">办</text>
+    <svg width={size} height={size} viewBox="0 0 1024 1024" aria-hidden className="shrink-0" style={{ color: 'var(--action)' }}>
+      <g fill="currentColor">
+        <path fillRule="evenodd" d="M512 0A512 512 0 1 0 512 1024A512 512 0 1 0 512 0ZM512 112A400 400 0 1 1 512 912A400 400 0 1 1 512 112Z" />
+        <path fillRule="evenodd" d="M367 302H655A100 100 0 0 1 755 402V620A100 100 0 0 1 655 720H367A100 100 0 0 1 267 620V402A100 100 0 0 1 367 302ZM390 413A12 12 0 0 0 378 425V598A12 12 0 0 0 390 610H634A12 12 0 0 0 646 598V425A12 12 0 0 0 634 413Z" />
+        <rect x="452" y="100" width="118" height="210" />
+        <rect x="452" y="712" width="118" height="212" />
+        <rect x="100" y="455" width="175" height="112" />
+        <rect x="747" y="455" width="177" height="112" />
       </g>
     </svg>
   )

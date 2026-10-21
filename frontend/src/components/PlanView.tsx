@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { ChevronDown } from 'lucide-react'
 import { api, errorText } from '../api/client'
 import type { Plan, PlanRow, PlanStatus, PlanStep } from '../api/types'
 import { useLang } from '../i18n'
@@ -78,7 +79,7 @@ function StepIcon({ s }: { s: PlanStep }) {
     cancelled: ['–', 'var(--ink-2)', tr('cancelled', '已取消')], skipped: ['–', 'var(--ink-2)', tr('skipped', '未执行')],
   }
   const [glyph, color, label] = map[s.status] ?? ['○', 'var(--ink-2)', tr('waiting for you', '等你确认')]
-  return <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-bold" style={{ color, borderColor: color }} title={label} aria-label={label}>{glyph}</span>
+  return <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-semibold" style={{ color, borderColor: color }} title={label} aria-label={label}>{glyph}</span>
 }
 
 function title(p: Plan, tr: (en: string, zh: string) => string) {
@@ -151,7 +152,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
     <div className="confirm-card card">
       <div className="flex items-start justify-between gap-3 px-5 pb-2 pt-4 max-sm:px-4">
         <div className="min-w-0">
-          <p className="text-[1.1rem] font-extrabold leading-tight">{title(p, tr)}</p>
+          <p className="text-[1.1rem] font-semibold leading-tight">{title(p, tr)}</p>
           {showRequest && <p className="mt-0.5 truncate text-sm text-ink2" title={p.request}>“{p.request}”</p>}
         </div>
         {waiting ? <TierTag tier={p.tier} /> : seal === 'done' || seal === 'scheduled' ? <Seal kind={seal} size={58} /> : null}
@@ -165,7 +166,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
               return (
                 <div key={d.label} className={`flex justify-between gap-4 py-2.5 text-body ${amount ? 'items-center' : 'items-baseline'}`}>
                   <dt className="shrink-0 text-ink2">{d.label}</dt>
-                  <dd className={`min-w-0 text-right ${amount ? 'num text-[1.75rem] font-extrabold leading-none tracking-[-0.02em]' : 'font-semibold'}`}>{d.value}</dd>
+                  <dd className={`min-w-0 text-right ${amount ? 'num text-[1.75rem] font-semibold leading-none tracking-[-0.01em]' : 'font-semibold'}`}>{d.value}</dd>
                 </div>
               )
             })}
@@ -174,7 +175,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
           {warning && <Notice tone={scam ? 'alert' : 'highlight'} className="mt-3" title={warning.label}>{warning.value}</Notice>}
           {more.length > 0 && (
             <details className="mt-2 text-body">
-              <summary className="flex min-h-10 cursor-pointer items-center text-sm font-semibold text-ink2">{tr('More details', '更多信息')}</summary>
+              <summary className="fold flex min-h-10 cursor-pointer items-center gap-1 text-sm font-semibold text-ink2 hover:text-ink">{tr('More details', '更多信息')}<ChevronDown size={15} aria-hidden /></summary>
               <dl className="divide-y divide-[var(--rule)]">
                 {more.map((d) => <div key={d.label} className="flex items-baseline justify-between gap-4 py-2"><dt className="shrink-0 text-ink2">{d.label}</dt><dd className="min-w-0 text-right font-semibold">{d.value}</dd></div>)}
               </dl>
@@ -191,7 +192,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
                 </span>
               </li>
             ))}
-            {total > 0 && p.steps.length > 1 && <li className="flex items-center justify-between border-t border-rule pt-2.5"><span className="text-ink2">{tr('Total', '合计')}</span><span className="num text-[1.5rem] font-extrabold">{yuan(total)}</span></li>}
+            {total > 0 && p.steps.length > 1 && <li className="flex items-center justify-between border-t border-rule pt-2.5"><span className="text-ink2">{tr('Total', '合计')}</span><span className="num text-[1.5rem] font-semibold">{yuan(total)}</span></li>}
           </ol>
         )}
 
@@ -207,7 +208,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
 
         {asking.map((s) => (
           <fieldset key={s.id} className="tile mt-3 p-4 max-sm:p-3">
-            <legend className="float-left w-full font-bold">{tr('What is this payment for?', '这笔钱是做什么用的？')}</legend>
+            <legend className="float-left w-full font-semibold">{tr('What is this payment for?', '这笔钱是做什么用的？')}</legend>
             <p className="mb-3 text-xs text-ink2">{tr('Your answer decides the warning you see, and some answers hold the money until tomorrow. Only you can answer this, not the assistant.', '你的回答决定看到哪条提醒，有的回答会让钱次日才到账。只能由你本人选择，助手不会替你回答。')}</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {s.purpose_options!.map((o) => (
@@ -237,7 +238,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
         {error && <p role="alert" className="mt-2 text-sm font-semibold text-cinnabar">{error}</p>}
 
         <details className="tile mt-3 px-4 py-1">
-          <summary className="flex min-h-10 cursor-pointer items-center text-sm font-semibold text-ink2">{waiting ? tr('Why do I need to confirm?', '为什么要确认？') : tr('How this was checked', '是怎么检查的？')}</summary>
+          <summary className="fold flex min-h-10 cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-ink2 hover:text-ink">{waiting ? tr('Why do I need to confirm?', '为什么要确认？') : tr('How this was checked', '是怎么检查的？')}<ChevronDown size={15} aria-hidden /></summary>
           <div className="pb-3"><Decision plan={p} /></div>
         </details>
       </div>

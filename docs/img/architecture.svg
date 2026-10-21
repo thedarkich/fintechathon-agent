@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 940" width="1600" height="940" font-family="'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC','Helvetica Neue',Arial,sans-serif">
-  <title>银行代办 · 系统架构 / Bank Agent · System architecture</title>
+  <title>中联银行 · 系统架构 / Central Union Bank · System architecture</title>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10 z" fill="#357366"/>
@@ -22,7 +22,7 @@
   <rect width="1600" height="940" fill="#ffffff"/>
 
   <!-- title -->
-  <text x="48" y="58" font-size="30" font-weight="800" fill="#101820">银行代办 · 系统架构 <tspan font-size="20" font-weight="600" fill="#68716f">System architecture</tspan></text>
+  <text x="48" y="58" font-size="30" font-weight="800" fill="#101820">中联银行 · 系统架构 <tspan font-size="20" font-weight="600" fill="#68716f">System architecture</tspan></text>
   <text x="48" y="90" font-size="16" fill="#357366" font-weight="600">AI 只提议，固定代码做决定并陈述事实，你来点头 · <tspan fill="#68716f" font-weight="500">The AI proposes; fixed code decides and states every fact; you approve</tspan></text>
 
   <!-- fixed-code region -->

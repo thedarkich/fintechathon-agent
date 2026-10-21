@@ -47,7 +47,7 @@ export function TabBar() {
       <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setOpen(false)} aria-hidden />
       <div role="dialog" aria-modal="true" aria-label={tr('All pages', '全部页面')} className="sheet-up fixed inset-x-0 bottom-0 z-50 rounded-t-panel bg-paper px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_var(--shadow)]">
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-lg font-bold">{tr('All pages', '全部页面')}</p>
+          <p className="text-lg font-semibold">{tr('All pages', '全部页面')}</p>
           <button type="button" onClick={() => setOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--field)]" aria-label={tr('Close', '关闭')}><X size={18} /></button>
         </div>
         <ul className="divide-y divide-[var(--rule)] ruled">

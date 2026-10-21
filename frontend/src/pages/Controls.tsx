@@ -72,7 +72,7 @@ function CardFace({ card: c }: { card: BankCard }) {
   const face = off ? 'linear-gradient(135deg, #8a929c, #6b737d)' : c.kind === 'virtual' ? 'linear-gradient(135deg, #2b2357, #5b3fb8)' : 'var(--hero)'
   return (
     <div className="relative flex h-[76px] w-[120px] shrink-0 flex-col justify-between overflow-hidden rounded-box p-2.5 text-white shadow-[0_6px_16px_var(--shadow)]" style={{ background: face }} aria-hidden>
-      <span className="flex items-center justify-between text-[0.62rem] font-bold opacity-90">{tr('Bank Agent', '银行代办')}<span>{c.kind === 'virtual' ? tr('Virtual', '虚拟') : tr('Debit', '借记')}</span></span>
+      <span className="flex items-center justify-between text-[0.62rem] font-semibold opacity-90">{tr('Central Union', '中联银行')}<span>{c.kind === 'virtual' ? tr('Virtual', '虚拟') : tr('Debit', '借记')}</span></span>
       {c.kind === 'debit' && <span className="h-3.5 w-5 rounded-[3px] bg-[#e9d18c]" />}
       <span className="font-mono text-xs tracking-wider">•••• {c.last4}</span>
       {off && <span className="absolute inset-0 grid place-items-center bg-black/25"><Lock size={20} /></span>}
@@ -97,8 +97,8 @@ function CardTile({ card: c, ask, busy }: { card: BankCard; ask: (t: string) => 
       <div className="flex items-start gap-4">
         <CardFace card={c} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <p className="font-bold">{c.name} <span className="font-mono text-body font-normal text-ink2">{c.last4}</span></p>
+          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+            <p className="font-semibold">{c.name} <span className="font-mono text-body font-normal text-ink2">{c.last4}</span></p>
             <Badge tone={c.status === 'active' ? 'green' : c.status === 'frozen' || lost ? 'red' : 'grey'}>{state}</Badge>
           </div>
           <p className="mt-1 text-xs text-ink2">{tr(`Daily limit ${yuan(c.daily_limit_fen)}`, `日限额 ${yuan(c.daily_limit_fen)}`)}</p>
@@ -106,12 +106,12 @@ function CardTile({ card: c, ask, busy }: { card: BankCard; ask: (t: string) => 
         </div>
       </div>
       {!lost && <>
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
           {switches.map(([key, on, label, word]) => (
             <button key={key} type="button" disabled={busy} aria-pressed={on}
               className={`flex min-h-11 flex-col items-center justify-center rounded-box px-2 py-1.5 text-cap font-semibold leading-tight ${on ? 'bg-[var(--accent-wash)] text-jade' : 'bg-[var(--field)] text-ink2'}`}
               onClick={() => ask(on ? tr(`Turn off ${word} on card ${id}`, `关闭尾号${id}的卡的${word}`) : tr(`Turn on ${word} on card ${id}`, `开通尾号${id}的卡的${word}`))}>
-              <span>{label}</span><span className="text-xs font-bold">{on ? tr('On', '已开') : tr('Off', '已关')}</span>
+              <span>{label}</span><span className="text-xs font-semibold">{on ? tr('On', '已开') : tr('Off', '已关')}</span>
             </button>
           ))}
         </div>

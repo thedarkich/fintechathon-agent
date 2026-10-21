@@ -1,6 +1,6 @@
 {
-  "name": "银行代办 Bank Agent",
-  "short_name": "银行代办",
+  "name": "中联银行 Central Union Bank",
+  "short_name": "中联银行",
   "start_url": "/#/assistant",
   "display": "standalone",
   "background_color": "#ffffff",
