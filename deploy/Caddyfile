@@ -6,7 +6,6 @@
         X-Content-Type-Options nosniff
         Referrer-Policy no-referrer
         X-Frame-Options DENY
-        Content-Security-Policy "frame-ancestors 'none'"
         Strict-Transport-Security "max-age=86400"
         -Server
     }

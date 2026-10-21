@@ -38,13 +38,21 @@ Two medium findings are worth fixing before the competition; the rest are low or
 - Location: `backend/app/main.py:37-38` (`docs_url="/api/docs"`, `openapi_url="/api/openapi.json"`).
 - Impact: information disclosure amplifier. Kept on purpose for the competition (judges and the "automated evaluation" section of the README drive the API); every route still requires a session or the operator token.
 - Fix (when real customers are involved): disable or put behind the operator token; document the choice.
-- **Fixed:** the docs are served only when `DEMO_TOOLS_ENABLED` is on, the switch already documented as off for real customers (`docs_switch` in `backend/app/main.py`).
+- **Fixed:** the docs are served only when `DEMO_TOOLS_ENABLED` is on, the switch already documented as off for real customers (`docs_switch` in `backend/app/main.py`). The docs' OAuth helper page now lives under `/api/docs/oauth2-redirect` too, so the switch covers it (second review).
 
 ### SBP-5 · Per-device rate limits key on a client-chosen header
 - Location: `backend/app/api/accounts.py:137-139` (`device_limits` reads `X-Device-Id`).
 - Impact: a script can rotate the header to get past the per-device limit; the per-email and global limits still apply, so brute force stays bounded.
 - Fix: none needed for the demo; with real customers, key on the client IP from the trusted proxy as well.
-- **Fixed:** `client_ip()` / `ip_limits()` in `backend/app/api/accounts.py` add a generous per-address limit (sign-in 60 per 15 minutes, sign-up 30 and demo 120 per hour). The address comes from the proxy's `X-Forwarded-For` only when `BEHIND_PROXY` is set, which `deploy/docker-compose.yml` does; otherwise from the connection, so a client-supplied header is never trusted.
+- **Fixed:** `client_ip()` / `ip_limits()` in `backend/app/api/accounts.py` add a generous per-address limit: sign-in 60 failed attempts per 15 minutes (successful sign-ins don't count, so many people on one network can still sign in), sign-up 100 and demo 200 per hour (raised in the second review from 30 and 120, for a venue's shared Wi-Fi). The address comes from the proxy's `X-Forwarded-For` only when `BEHIND_PROXY` is set, which `deploy/docker-compose.yml` does; otherwise from the connection, so a client-supplied header is never trusted.
+
+## Second review (22 October)
+
+A second pass over the fixes above found three more things, all fixed:
+
+- **Caddy replaced the app's policy.** `deploy/Caddyfile` still set `Content-Security-Policy "frame-ancestors 'none'"`. Because the same header block removes `Server` (a `-` entry), Caddy applies the block as the response is written, so that one line would have replaced the app's full policy behind the proxy. The line is gone; the app's policy already includes `frame-ancestors 'none'`, and `X-Frame-Options DENY` stays. Not testable without running Caddy locally; checked by reading the config.
+- **The per-address sign-in limit counted successful sign-ins.** At a venue where everyone shares one address, 60 sign-ins in 15 minutes would have locked everyone out. Now only failed attempts count there (`test_successful_sign_ins_do_not_use_up_the_address_limit`), and the sign-up and demo limits per address are higher (100 and 200 per hour).
+- **The docs' OAuth helper page was outside the switch.** FastAPI serves it at `/docs/oauth2-redirect` by default; it now sits under `/api/docs/` and returns 404 with demo tools off (`test_api_docs_follow_the_demo_tools_switch`).
 
 ## Informational
 

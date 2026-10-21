@@ -31,8 +31,8 @@ def test_public_account_routes_refuse_another_site(tmp_path):
 def test_api_docs_follow_the_demo_tools_switch(tmp_path):
     # SBP-4: a deployment for real customers (demo tools off) doesn't publish the API docs
     with app_client(tmp_path / "off", demo_tools_enabled=False) as client:
-        assert client.get("/api/docs").status_code == 404
-        assert client.get("/api/openapi.json").status_code == 404
+        for path in ("/api/docs", "/api/openapi.json", "/api/docs/oauth2-redirect", "/docs/oauth2-redirect"):
+            assert client.get(path).status_code == 404, path
     with app_client(tmp_path / "on") as client:
         assert client.get("/api/openapi.json").status_code == 200
 
@@ -71,3 +71,20 @@ def test_pages_carry_a_content_security_policy(tmp_path):
         assert f"script-src 'self' 'sha256-{digest}'" in policy
         for part in ("default-src 'self'", "object-src 'none'", "base-uri 'self'", "frame-ancestors 'none'", "connect-src 'self'"):
             assert part in policy, part
+
+
+def test_successful_sign_ins_do_not_use_up_the_address_limit(tmp_path):
+    # many people can share one address (a venue's Wi-Fi, a carrier's shared address): only failures count there
+    from sqlmodel import Session, select
+
+    from app.models import RateBucket
+    runtime = Runtime(settings(tmp_path), background=False)
+    with TestClient(create_app(runtime=runtime)) as client:
+        assert client.post("/api/register", json=CUSTOMER, headers=ORIGIN).status_code == 201
+        for _ in range(5):
+            assert client.post("/api/login", json={"email": CUSTOMER["email"], "password": CUSTOMER["password"]}).status_code == 200
+        with Session(runtime.engine) as session:
+            assert not [b for b in session.exec(select(RateBucket)).all() if b.key.startswith("login-ip:")]
+        assert client.post("/api/login", json={"email": CUSTOMER["email"], "password": "wrong password!"}).status_code == 401
+        with Session(runtime.engine) as session:
+            assert [b.count for b in session.exec(select(RateBucket)).all() if b.key.startswith("login-ip:")] == [1]

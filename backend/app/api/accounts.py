@@ -117,10 +117,12 @@ def view(user: UserAccount) -> AccountView:
                        has_pin=bool(user.pin_hash), demo=bool(user.demo), demo_pin=DEMO_PIN if user.demo else None)
 
 
-def throttle(request: Request, limits):
-    """Durable fixed-window counters. Identities are stored hashed."""
+def throttle(request: Request, limits, *, count: bool = True):
+    """Durable fixed-window counters. Identities are stored hashed. With count=False the limits are only checked
+    (the attempt is counted later, e.g. only if it fails)."""
     runtime = request.app.state.runtime
     salt = runtime.settings.ip_hash_salt.get_secret_value() or runtime.fallback_salt
+    count_attempt = count
     now = int(time.time())
     with runtime.engine.connect() as conn:
         conn.execute(text("BEGIN IMMEDIATE"))
@@ -131,6 +133,8 @@ def throttle(request: Request, limits):
                 count = conn.execute(select(RateBucket.count).where(RateBucket.key == key)).scalar_one_or_none() or 0
                 if count >= limit:
                     raise problem(429, "Too many attempts. Wait and try again.", "尝试过于频繁，请稍后再试。")
+                if not count_attempt:
+                    continue
                 conn.execute(
                     insert(RateBucket).values(key=key, count=count + 1, expires_at=(now // seconds + 1) * seconds)
                     .on_conflict_do_update(index_elements=["key"], set_={"count": count + 1})
@@ -153,7 +157,7 @@ def client_ip(request: Request) -> str:
 
 def ip_limits(request: Request, scope: str, seconds: int, limit: int):
     """A per-address limit next to the per-device one, which a script could dodge by changing its device id.
-    Generous: many people can share one address (a venue, a campus)."""
+    Generous: many people can share one address (a venue's Wi-Fi, a campus, a mobile carrier's shared address)."""
     ip = client_ip(request)
     return [(scope, ip, seconds, limit)] if ip else []
 
@@ -188,7 +192,7 @@ def start_session(request: Request, response: Response, user_id: str):
 @router.post("/register", status_code=201, response_model=AccountResponse, dependencies=[Depends(refuse_other_sites)])
 async def register(request: Request, response: Response, body: Registration):
     throttle(request, [("register-global", "global", 60, 20), *device_limits(request, "register-device", 3600, 10),
-                       *ip_limits(request, "register-ip", 3600, 30)])
+                       *ip_limits(request, "register-ip", 3600, 100)])
     email, name = normalize_email(body.email), clean_name(body.name)
     if weak_pin(body.pin):
         raise problem(422, "Choose a PIN that is not repeated or sequential digits.", "交易密码不能是重复或连续数字。")
@@ -216,7 +220,7 @@ async def demo_start(request: Request, response: Response, body: DemoStart):
     if not request.app.state.runtime.settings.demo_tools_enabled:
         raise problem(403, "Demo accounts are turned off here. Create an account instead.", "这里没有开放演示账户，请注册账户。")
     throttle(request, [("demo-global", "global", 3600, 300), *device_limits(request, "demo-device", 3600, 20),
-                       *ip_limits(request, "demo-ip", 3600, 120)])
+                       *ip_limits(request, "demo-ip", 3600, 200)])
     password_hash, pin_hash = await asyncio.gather(asyncio.to_thread(hash_password, secrets.token_urlsafe(24)),
                                                    asyncio.to_thread(hash_password, DEMO_PIN))
     with Session(request.app.state.runtime.engine) as session:
@@ -237,12 +241,16 @@ async def demo_start(request: Request, response: Response, body: DemoStart):
 async def login(request: Request, response: Response, body: Credentials):
     email = normalize_email(body.email)
     throttle(request, [("login-global", "global", 60, 120), ("login-email", email, LOGIN_WINDOW, 10),
-                       *device_limits(request, "login-device", LOGIN_WINDOW, 30), *ip_limits(request, "login-ip", LOGIN_WINDOW, 60)])
+                       *device_limits(request, "login-device", LOGIN_WINDOW, 30)])
+    # per address only failed attempts count: people sharing one address can still sign in, a guesser cannot go on
+    address = ip_limits(request, "login-ip", LOGIN_WINDOW, 60)
+    throttle(request, address, count=False)
     with Session(request.app.state.runtime.engine) as session:
         user = session.execute(select(UserAccount).where(UserAccount.email == email)).scalar_one_or_none()
         stored = user.password_hash if user else UNKNOWN_ACCOUNT
         result = view(user) if user else None
     if not await asyncio.to_thread(verify_password, stored, body.password) or result is None:
+        throttle(request, address)
         raise problem(401, "Email or password is incorrect.", "邮箱或密码不正确。")
     start_session(request, response, result.id)
     return {"user": result}

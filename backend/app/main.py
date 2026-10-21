@@ -35,7 +35,8 @@ def create_app(settings=None, *, runtime=None):
             await current.stop()
 
     app = FastAPI(lifespan=lifespan, title="Banking AI Agent", version="0.1.0",
-                  docs_url="/api/docs", redoc_url=None, openapi_url="/api/openapi.json")
+                  docs_url="/api/docs", redoc_url=None, openapi_url="/api/openapi.json",
+                  swagger_ui_oauth2_redirect_url="/api/docs/oauth2-redirect")  # under /api, so the docs switch covers it
     app.add_middleware(RequestBoundary)
     hosts = {"localhost", "127.0.0.1", "testserver"}
 
