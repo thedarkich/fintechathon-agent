@@ -34,8 +34,8 @@ Once `npx` is present, proceed with the wrapper script. A global install of `pla
 ## Skill path (set once)
 
 ```bash
-# In this repo the skill lives under .agents/skills (upstream assumes ~/.codex/skills)
-export PWCLI="$(git rev-parse --show-toplevel)/.agents/skills/playwright/scripts/playwright_cli.sh"
+# In this repo the skill lives under .claude/skills (upstream assumes ~/.codex/skills)
+export PWCLI="$(git rev-parse --show-toplevel)/.claude/skills/playwright/scripts/playwright_cli.sh"
 ```
 
 ## Quick start
