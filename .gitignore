@@ -13,5 +13,7 @@ output/
 
 # Runtime data: customer records, audit logs and uploads never enter git.
 data/
+# a skill's own reference data is part of the repo (the line above is for the app's database folder)
+!.claude/skills/*/data/
 deploy/runtime.env
 deploy/backups/
