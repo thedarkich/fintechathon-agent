@@ -1,6 +1,10 @@
 """The AI planner path, with a fake model: whatever the model returns must pass validation, and it
 can never set a tier, skip approval or reach the bank."""
 
+import json
+import time
+from types import SimpleNamespace
+
 import pytest
 from conftest import CUSTOMER, ORIGIN, Bank, settings
 from fastapi.testclient import TestClient
@@ -40,6 +44,28 @@ def bank_with(tmp_path, reply):
     client.__enter__()
     assert client.post("/api/register", json=CUSTOMER, headers=ORIGIN).status_code == 201
     return Bank(client, runtime), gateway
+
+
+def test_the_real_gateway_gets_its_call_budget_during_a_chat(tmp_path):
+    # the hourly call budget lives in the database: a chat must not hold the database while the model is asked
+    # (it did: each model call waited 10 s for the lock, then fell back to the offline planner)
+    runtime = Runtime(settings(tmp_path, ai_model="fake-model"), background=False)
+    runtime.gateway.enabled = True  # the real gateway and budget; only the provider is replaced
+    plan = {"steps": [{"id": "s1", "action": "transfer", "args": {"payee": "妈妈", "amount_yuan": 200}}]}
+
+    async def provider(**_):
+        message = SimpleNamespace(content=json.dumps(plan, ensure_ascii=False))
+        return SimpleNamespace(model="fake-model", choices=[SimpleNamespace(finish_reason="stop", message=message)])
+
+    runtime.gateway.client.chat.completions.create = provider
+    with TestClient(create_app(runtime=runtime)) as client:
+        assert client.post("/api/register", json=CUSTOMER, headers=ORIGIN).status_code == 201
+        started = time.monotonic()
+        body = Bank(client, runtime).chat("给妈妈转200")
+        assert body["plan"]["source"] == "ai"
+        assert time.monotonic() - started < 5
+        with Session(runtime.engine) as session:
+            assert not session.exec(select(AuditEntry).where(AuditEntry.kind == "model_unavailable")).all()
 
 
 def test_model_plan_goes_through_policy(tmp_path):

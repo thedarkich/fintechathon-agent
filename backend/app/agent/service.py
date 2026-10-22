@@ -237,11 +237,15 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
     # the planner learns only that a receipt is attached (its id), never what it says
     planner_text = clean + (f"\n[Attached receipt id: {attachment.id}]" if attachment else "")
     if planner.online and proposed is None:
+        # save the request first: the call budget takes its own write lock (it waited on this one, timed out and every
+        # request fell back), and nothing should hold the database while the model thinks
+        session.commit()
         try:
             proposed = await planner.plan_with_model(planner_text, history(session, conversation.id)[:-1], ctx.today, versions)
             source = "ai"
         except ModelUnavailable as exc:
-            audit.append(session, user.id, "model_unavailable", {"code": exc.code})
+            # 'error', not 'code': the audit hides any field named code (SMS codes)
+            audit.append(session, user.id, "model_unavailable", {"error": exc.code})
             if exc.code == "MODEL_OUTPUT_INVALID":  # counts towards the misbehaving-model lock
                 audit.append(session, user.id, "plan_rejected", {"errors": ["SCHEMA"]})
                 locks.evaluate(session, user.id)
