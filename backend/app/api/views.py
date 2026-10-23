@@ -122,6 +122,6 @@ def plan_view(plan: Plan, ctx: Ctx) -> dict:
             "purpose": s.get("purpose"), "purpose_needed": bool(s.get("purpose_needed")),
             "purpose_options": purpose_options(ctx.lang) if s.get("purpose_needed") or s.get("purpose") else None,
         })
-    return {"id": plan.id, "status": plan.status, "tier": plan.tier, "source": plan.source, "flags": plan.flags,
+    return {"id": plan.id, "status": plan.status, "tier": plan.tier, "source": plan.source, "model": plan.model, "flags": plan.flags,
             "approval_hash": plan.approval_hash if plan.status == "awaiting_approval" else None,
             "ask": plan.ask, "steps": steps, "created_at": plan.created_at, "request": plan.request}

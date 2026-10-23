@@ -595,7 +595,7 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     # open-ended questions: generated analysis code, run in the sandbox
     code = templates.from_question(text, today)
     if code and has(text, "花", "消费", "多少", "几次", "次数", "平均", "spend", "spent", "how much", "how many", "how often", "average"):
-        return one("analyze", {"question": text[:300], "code": code})
+        return one("analyze", {"question": text[:300], "code": code, "days": 730})  # the template filters exact dates
 
     # spending, reports, history
     year = has(text, "年", "year", "annual")

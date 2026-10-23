@@ -30,7 +30,8 @@ class Runtime:
                 settings.ai_base_url, settings.ai_api_key.get_secret_value(),
                 enabled=settings.llm_enabled and bool(settings.ai_base_url and settings.ai_model),
                 hourly_cap=settings.llm_hourly_call_cap, max_tokens=settings.llm_max_output_tokens,
-                timeout=settings.llm_timeout_seconds, budget=ModelCallBudget(self.engine, settings.llm_hourly_call_cap))
+                timeout=settings.llm_timeout_seconds, thinking=settings.llm_thinking,
+                budget=ModelCallBudget(self.engine, settings.llm_hourly_call_cap))
         self.gateway = gateway
         self.planner = Planner(gateway, settings.ai_model)
         self.background = background

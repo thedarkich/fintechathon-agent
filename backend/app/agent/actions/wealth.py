@@ -142,7 +142,7 @@ def compare_reply(ctx: Ctx, r: dict, res: dict) -> str:
 
 
 register(Action(
-    name="wealth_compare", args=CompareArgs, help="Compare 2-4 products by name, code or type (货币/债/混合/股票/QDII).",
+    name="wealth_compare", args=CompareArgs, help="Compare 2-4 products. products = list of names, codes or types (货币/债/混合/股票/QDII).",
     resolve=compare_resolve, run=compare_run,
     describe=lambda ctx, r: ctx.t("对比理财产品", "Compare products"), reply=compare_reply,
     card=lambda ctx, r, res: {"type": "compare", **res},

@@ -227,7 +227,7 @@ def spending_reply(ctx: Ctx, r: dict, res: dict) -> str:
 
 register(Action(
     name="spending", args=SpendingArgs,
-    help="Spending by category. period month|year|custom, offset 0=current -1=previous, start/end for custom, optional category (dining, shopping, transport, groceries, digital, utilities, housing, travel, entertainment, health, family, gifts).",
+    help="Spending by category (for one merchant or anything narrower than these categories, such as 外卖 or coffee, use analyze). period month|year|custom, offset 0=current -1=previous, start/end for custom, optional category (dining, shopping, transport, groceries, digital, utilities, housing, travel, entertainment, health, family, gifts).",
     resolve=spending_resolve, run=spending_run,
     describe=lambda ctx, r: ctx.t("分析消费", "Analyse spending"), reply=spending_reply,
     card=lambda ctx, r, res: {"type": "spending", **res},

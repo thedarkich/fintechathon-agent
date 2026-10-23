@@ -168,7 +168,13 @@ def prepare(ctx: Ctx, plan: Plan) -> Plan:
             return plan
         deps_done = all(d in results for d in step.get("after", []))
         if action.query and when is None and deps_done:
-            step["result"] = action.run(ctx, resolved)
+            try:
+                step["result"] = action.run(ctx, resolved)
+            except (BankError, Refuse) as exc:  # e.g. model-written analysis code that fails in the sandbox
+                fail_step(ctx, plan, step, exc.code, exc.zh, exc.en)
+                plan.status = "failed"
+                save(plan, steps)
+                return plan
             step["status"] = "done"
             results[step["id"]] = step["result"]
             audit.append(ctx.session, ctx.user.id, "step_done", {"step": step["id"], "action": step["action"]}, plan.id)

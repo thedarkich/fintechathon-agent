@@ -114,7 +114,7 @@ def unfreeze_run(ctx: Ctx, r: dict) -> dict:
 
 
 register(Action(
-    name="card_unfreeze", args=CardArgs, help="Unfreeze a frozen card.",
+    name="card_unfreeze", args=CardArgs, help="Unfreeze a frozen card. card = last 4 digits or kind (virtual/debit).",
     resolve=lambda ctx, a: card_fields(ctx, pick_card(ctx, a.card, {"frozen"}, "解冻", "unfreeze")), run=unfreeze_run,
     describe=lambda ctx, r: ctx.t(f"解冻 {r['card']}，恢复正常交易", f"Unfreeze {r['card_en']} so it works again"),
     reply=lambda ctx, r, res: ctx.t(f"{r['card']} 已解冻。", f"{r['card_en']} is active again."),
@@ -269,7 +269,7 @@ def lost_run(ctx: Ctx, r: dict) -> dict:
 
 
 register(Action(
-    name="card_report_lost", args=LostArgs, help="Report a card lost or stolen (permanent) and optionally reissue.",
+    name="card_report_lost", args=LostArgs, help="Report a card lost (挂失, permanent). card = last 4 digits or kind; reissue true|false. Only when the customer asks to report it.",
     resolve=lost_resolve, run=lost_run,
     describe=lambda ctx, r: ctx.t(f"挂失 {r['card']}（永久停用）" + ("并补办新卡" if r["reissue"] else ""),
                                   f"Report {r['card_en']} lost (permanently disabled)" + (" and order a replacement" if r["reissue"] else "")),

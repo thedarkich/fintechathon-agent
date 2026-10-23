@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Sparkles } from 'lucide-react'
 import { api, errorText } from '../api/client'
 import type { Plan, PlanRow, PlanStatus, PlanStep } from '../api/types'
 import { useLang } from '../i18n'
@@ -254,6 +254,7 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
           <Link to="/send?tab=transfers" className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-[var(--action)]">{tr('See where the money is →', '查看到账进度 →')}</Link>
         )}
         {error && <p role="alert" className="mt-2 text-sm font-semibold text-cinnabar">{error}</p>}
+        <PlannedBy plan={p} />
 
         <details className="tile mt-3 px-4 py-1">
           <summary className="fold flex min-h-10 cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-ink2 hover:text-ink">{waiting ? tr('Why do I need to confirm?', '为什么要确认？') : tr('How this was checked', '是怎么检查的？')}<ChevronDown size={15} aria-hidden /></summary>
@@ -263,6 +264,19 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
       {verifying && <VerifyDialog plan={p} hasPasskey={!!overview.data?.has_passkey} onClose={() => setVerifying(false)} />}
     </div>
   )
+}
+
+/** Who understood the request: the AI model, or the bank's built-in rules when the model is off or didn't answer. The tier is always the rules'. */
+function PlannedBy({ plan: p }: { plan: Plan }) {
+  const { tr } = useLang()
+  const text = p.source === 'ai'
+    ? tr(`Understood and planned by the AI model (${p.model || 'AI'}); the bank's rules set the tier`, `由 AI 模型（${p.model || 'AI'}）理解并拟定计划，等级由银行规则决定`)
+    : p.source === 'offline_fallback' ? tr('The AI model wasn’t available, so the built-in rules planned this', 'AI 模型暂时不可用，这次由内置规则拟定')
+    : p.source === 'offline' ? tr('Planned by the built-in rules (the AI model is off)', '由内置规则拟定（未启用 AI 模型）')
+    : p.source === 'followup' ? tr('Completed from your previous request by the bank’s code', '按你上一句话，由银行代码补全')
+    : null
+  if (!text) return null
+  return <p className="mt-3 flex items-start gap-1.5 text-xs text-ink2"><Sparkles size={13} className={`mt-0.5 shrink-0 ${p.source === 'ai' ? 'text-[var(--action)]' : ''}`} aria-hidden />{text}</p>
 }
 
 /** Kept for older call sites: the plan is shown as its confirmation card. */

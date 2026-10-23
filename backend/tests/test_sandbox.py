@@ -48,6 +48,15 @@ def test_template_runs_in_the_sandbox():
     assert outcome["limits"]["memory_mb"] == 256
 
 
+def test_strptime_works_but_its_helper_module_stays_out_of_reach():
+    code = ("from datetime import datetime\ndef answer(txns):\n"
+            "    days = [datetime.strptime(t['date'], '%Y-%m-%d').day for t in txns]\n"
+            "    return {'title': 'days', 'value': sum(days), 'unit': 'count', 'rows': []}")
+    assert runner.run(code, TXNS)["result"]["value"] == 8  # strptime imports _strptime internally
+    with pytest.raises(CodeRejected):
+        check("import _strptime\ndef answer(txns):\n    return {'title': 'x'}")
+
+
 def test_infinite_loop_is_stopped():
     with pytest.raises(runner.SandboxError) as error:
         runner.run("def answer(txns):\n    while True:\n        pass", TXNS)

@@ -69,11 +69,13 @@ class ModelGateway:
         max_tokens: int = 512,
         clock=time.monotonic,
         budget=None,
+        thinking: bool = True,
     ):
         if hourly_cap < 1 or not 1 <= max_tokens <= 4096:
             raise ValueError("invalid model limits")
         self.client = client
         self.enabled = enabled
+        self.thinking = thinking
         self.hourly_cap = hourly_cap
         self.max_tokens = max_tokens
         self.clock = clock
@@ -92,6 +94,7 @@ class ModelGateway:
         max_tokens: int = 1024,
         timeout: float = 30.0,
         budget=None,
+        thinking: bool = True,
     ):
         """Any provider with an OpenAI-compatible chat API. No automatic retries: each call is paid."""
         client = AsyncOpenAI(
@@ -101,7 +104,8 @@ class ModelGateway:
             max_retries=0,
         )
         return cls(
-            client, enabled=enabled, hourly_cap=hourly_cap, max_tokens=max_tokens, budget=budget
+            client, enabled=enabled, hourly_cap=hourly_cap, max_tokens=max_tokens, budget=budget,
+            thinking=thinking,
         )
 
     def exhausted(self):
@@ -161,6 +165,8 @@ class ModelGateway:
                 temperature=0,
                 max_tokens=self.max_tokens,
                 response_format={"type": "json_object"},
+                # skip the model's thinking step: same plans, a few seconds instead of up to a minute
+                **({} if self.thinking else {"extra_body": {"enable_thinking": False}}),
                 messages=[
                     {"role": "system", "content": prompt},
                     {"role": "user", "content": content},

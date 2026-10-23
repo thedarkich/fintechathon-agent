@@ -1,8 +1,10 @@
 """The AI planner path, with a fake model: whatever the model returns must pass validation, and it
 can never set a tier, skip approval or reach the bank."""
 
+import asyncio
 import json
 import time
+from datetime import timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -11,8 +13,9 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlmodel import Session, select
 
+from app import clock
 from app.agent.planner import PlanOut, validate
-from app.llm import ModelUnavailable
+from app.llm import ModelGateway, ModelUnavailable
 from app.main import create_app
 from app.models import AuditEntry
 from app.runtime import Runtime
@@ -66,6 +69,24 @@ def test_the_real_gateway_gets_its_call_budget_during_a_chat(tmp_path):
         assert time.monotonic() - started < 5
         with Session(runtime.engine) as session:
             assert not session.exec(select(AuditEntry).where(AuditEntry.kind == "model_unavailable")).all()
+
+
+def test_the_models_thinking_step_can_be_switched_off():
+    # Qwen answers a plan in about 4 s without its thinking step, and in 7-60 s with it (past the 45 s limit)
+    sent = []
+
+    class Completions:
+        async def create(self, **kwargs):
+            sent.append(kwargs)
+            message = SimpleNamespace(content='{"steps": [{"id": "s1", "action": "balance", "args": {}}]}')
+            return SimpleNamespace(model="m", choices=[SimpleNamespace(finish_reason="stop", message=message)])
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
+    for thinking in (True, False):
+        gateway = ModelGateway(client, enabled=True, thinking=thinking)
+        asyncio.run(gateway.json_response(model="m", system="s", user="u", schema=PlanOut))
+    assert "extra_body" not in sent[0]
+    assert sent[1]["extra_body"] == {"enable_thinking": False}
 
 
 def test_model_plan_goes_through_policy(tmp_path):
@@ -148,6 +169,38 @@ def test_model_written_code_must_pass_the_sandbox_check(tmp_path):
     assert body["plan"]["steps"][0]["error_code"] == "CODE_REJECTED"
     with Session(bank.runtime.engine) as session:
         assert session.exec(select(AuditEntry).where(AuditEntry.kind == "sandbox_run")).first() is None
+
+
+def test_model_code_that_fails_in_the_sandbox_is_a_refusal_not_a_crash(tmp_path):
+    # passes the static check, then fails when it runs: the customer gets a failed step, never a server error
+    broken = "def answer(txns):\n    return {\"title\": \"x\", \"value\": 1 / 0}"
+    bank, _ = bank_with(tmp_path, {"steps": [{"id": "s1", "action": "analyze",
+                                               "args": {"question": "anything", "code": broken}}]})
+    body = bank.chat("how much on coffee after 8pm", lang="en")
+    assert body["plan"]["status"] == "failed"
+    assert body["plan"]["steps"][0]["error_code"] == "SANDBOX_FAILED"
+
+
+def test_model_code_gets_the_calendar_worked_out_by_the_bank(tmp_path):
+    # Qwen summed September of the wrong year for 上个月: the rows now say which month, week and year they are in
+    code = ("def answer(txns):\n"
+            "    last = sorted({t['date'][:7] for t in txns if t['month_offset'] == -1})\n"
+            "    week = sorted({t['date'] for t in txns if t['week_offset'] == -1})\n"
+            "    ok = all(0 <= t['days_ago'] < 365 and t['year_offset'] <= 0 for t in txns)  # 365 days unless asked\n"
+            "    return {'title': 'x', 'value': 1 if ok else 0, 'unit': 'count', 'rows': [[m, 1] for m in last + week]}")
+    bank, _ = bank_with(tmp_path, {"steps": [{"id": "s1", "action": "analyze",
+                                               "args": {"question": "上个月", "code": code}}]})
+    body = bank.chat("上个月外卖花了多少")
+    card = body["messages"][-1]["cards"][0]
+    with Session(bank.runtime.engine) as session:
+        user_id = session.exec(select(AuditEntry)).first().user_id
+        today = clock.now(session, user_id).date()
+    last_month = (today.replace(day=1) - timedelta(days=1)).isoformat()[:7]
+    monday = today - timedelta(days=today.weekday())
+    week = {(monday - timedelta(days=n)).isoformat() for n in range(1, 8)}
+    labels = [label for label, _ in card["rows"]]
+    assert card["value"] == 1 and labels[0] == last_month
+    assert labels[1:] and set(labels[1:]) <= week
 
 
 def test_every_prompt_example_is_a_valid_plan():

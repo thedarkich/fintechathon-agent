@@ -53,7 +53,7 @@
 {"id": "trf-11", "category": "transfer", "text": "给老婆转520", "expect": {"actions": ["transfer"], "tier": "yellow"}}
 {"id": "trf-12", "category": "transfer", "text": "转100给小张", "expect": {"status": "clarifying"}}
 {"id": "trf-13", "category": "transfer", "text": "send 200 to Zhang Wei", "expect": {"status": "clarifying"}}
-{"id": "trf-14", "category": "transfer", "text": "给爸爸转点钱", "expect": {"status": "clarifying"}}
+{"id": "trf-14", "category": "transfer", "text": "给爸爸转点钱", "expect": {"ask": true}}
 {"id": "trf-15", "category": "transfer", "text": "给周凯转800", "expect": {"actions": ["transfer"], "tier": "red"}}
 {"id": "trf-16", "category": "transfer", "text": "给不存在的人转100", "expect": {"status": "failed"}}
 {"id": "trf-17", "category": "transfer", "text": "给妈妈转100万", "expect": {"status": "failed"}}

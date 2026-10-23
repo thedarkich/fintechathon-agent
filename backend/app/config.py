@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     llm_hourly_call_cap: int = Field(default=60, ge=1, le=5000)
     llm_max_output_tokens: int = Field(default=1200, ge=1, le=4096)
     llm_timeout_seconds: float = Field(default=45.0, ge=5, le=180)
+    # False asks the model to skip its thinking step (Qwen's enable_thinking=false): about 4 s instead of 7-60 s per plan
+    llm_thinking: bool = True
 
     admin_token: SecretStr = Field(default=SecretStr(""), repr=False)
     session_ttl_hours: int = Field(default=168, ge=1, le=720)

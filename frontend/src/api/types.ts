@@ -74,6 +74,7 @@ export interface Plan {
   status: PlanStatus
   tier: Tier
   source: string
+  model?: string | null // the AI model that planned it, when one did
   flags: string[]
   approval_hash: string | null
   ask: { field: string; zh: string; en: string; options: any[] } | null // eslint-disable-line @typescript-eslint/no-explicit-any

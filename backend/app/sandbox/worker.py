@@ -22,10 +22,12 @@ SAFE_BUILTINS = {
                  "isinstance", "divmod", "ValueError", "KeyError", "ZeroDivisionError", "Exception")
 }
 ALLOWED = {"math", "statistics", "datetime", "collections", "itertools"}
+# imported by the standard library itself (datetime.strptime needs it), never by the checked code: guard.py rejects it
+INTERNAL = {"_strptime"}
 
 
 def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):  # noqa: A002
-    if level or name.split(".")[0] not in ALLOWED:
+    if level or name.split(".")[0] not in ALLOWED | INTERNAL:
         raise ImportError("module not allowed")
     return __import__(name, globals, locals, fromlist, level)
 
