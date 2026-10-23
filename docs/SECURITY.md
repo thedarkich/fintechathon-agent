@@ -17,7 +17,7 @@ How the agent keeps an AI that operates a bank account safe, how each requiremen
 
 ## 2. How the brief's requirements are met
 
-### 3.1 Permission tiers
+### 2.1 Permission tiers
 
 | Tier | Policy | Operations (the rule codes are in `backend/app/agent/policy.py`) |
 |---|---|---|
@@ -33,7 +33,7 @@ How it is enforced:
 - **Strong verification.** The PIN is stored as a scrypt hash, and repeated or sequential PINs are refused at sign-up. The SMS code lasts 5 minutes and its text says what it approves; codes are hashed and limited to 3 attempts. A passkey (WebAuthn) uses the phone's face or fingerprint unlock, or a hardware security key in the role of a U盾. The SMS is simulated (it appears on a phone panel in the app).
 - **Operators cannot approve.** The human-takeover console can reply, cancel a plan, lift a safety lock and hand the conversation back; no operator route approves or verifies anything (tested).
 
-### 3.2 Security mechanisms
+### 2.2 Security mechanisms
 
 **Hallucination protection.** The model's output is data, not text for the customer. Every fact in a reply (amounts, balances, names, dates, outcomes) is written by code from bank records and action results. Names, cards, merchants, funds and subscriptions are matched against the customer's own records: an unknown one is refused (with what was searched for), an ambiguous one becomes a question with choices built by code. A clarifying question from the model may not contain numbers the customer didn't write. Results of generated code are shown as a table rendered by code, with the code itself in the audit log.
 
@@ -68,8 +68,8 @@ How it is enforced:
 
 ## 3. Evidence
 
-- 160 automated tests through the HTTP API: tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), daily totals across requests, the new-payee rule, approval with a changed plan, PIN and SMS failures, passkeys, the safety lock, injection flags, rollback, scheduled re-checks, transfers (route, delay, cancel, returns), the sandbox (unsafe code refused, runaway code stopped), receipts with hidden instructions, human takeover (operators can cancel and unlock but not approve), demo accounts, and the model planner with a fake model.
-- Evaluation sets: 224 everyday requests and 69 attacks, each run on a newly opened customer. With the offline planner: 224/224 and 69/69, and no attack ran anything without approval ([report](eval/report-offline.md)). The model planner has not yet been measured against these sets; that needs an AI provider and a deliberate, paid run.
+- 164 automated tests through the HTTP API: tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), daily totals across requests, the new-payee rule, approval with a changed plan, PIN and SMS failures, passkeys, the safety lock, injection flags, rollback, scheduled re-checks, transfers (route, delay, cancel, returns), the sandbox (unsafe code refused, runaway code stopped), receipts with hidden instructions, human takeover (operators can cancel and unlock but not approve), demo accounts, and the model planner with a fake model.
+- Evaluation sets: 224 everyday requests and 69 attacks, each run on a newly opened customer. With the offline planner: 224/224 and 69/69, and no attack ran anything without approval ([report](eval/report-offline.md)). With the Qwen planner (qwen3.8-max, 23 October 2026): 201/224 and 69/69, and again no attack ran anything without approval ([report](eval/report-model.md)).
 
 ## 4. Known risks
 
@@ -77,7 +77,7 @@ How it is enforced:
 2. **SMS is a weak second factor.** SMS can be intercepted or SIM-swapped. Passkeys are the stronger option and should be preferred for red-tier actions.
 3. **Screening is pattern-based.** New phrasings will get past it: a probe of 30 new phrasings on 14 October found 21 unflagged, all now caught and added to the attack set. That is acceptable because screening only adds friction: the real control is that tiers, approvals and verification are code. It is still a gap for the safety lock, which counts flags.
 4. **A coached customer can still approve.** If a scammer convinces the customer to approve with their own PIN and code, the payment can go through. The delay, cancel window, name check, new-payee rules and velocity lock reduce this but cannot eliminate it.
-5. **The model planner is not yet measured.** All published numbers come from the offline planner. A real model may misread requests differently; the rules still decide every tier, but wrong plans waste the customer's time and need to be measured before any claim is made.
+5. **The model planner misreads some requests.** On 23 October 2026 Qwen planned 23 of 224 everyday requests differently from what was expected: mostly birthday plans it asked about instead of planning, and open questions where it chose another action. Its analysis code also summed the wrong period; the bank now works out each transaction's month, week and year for the code and limits the rows to a window it enforces. Tiers are still set by the rules, so a wrong plan costs time, not money, and anything that moves money is shown on a card first. Generated analysis code can still compute a wrong total; the customer sees it with its rows and its code.
 6. **Model provider and data.** The customer's words go to the configured provider. A deployment in mainland China should use a provider hosted there, with an agreement covering personal information.
 7. **Audit log is tamper-evident, not tamper-proof.** Someone with write access to the database could rewrite the whole chain consistently. Mitigation: publish or anchor the chain head externally on a schedule.
 8. **Single host.** SQLite on one server: no high availability, and backups are manual.

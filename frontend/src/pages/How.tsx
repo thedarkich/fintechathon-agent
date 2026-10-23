@@ -102,11 +102,11 @@ export default function How() {
       <section className="lp-section">
         <h2>{tr('Tested, not just promised', '经过测试，不只是承诺')}</h2>
         <div className="lp-grid">
-          {[['224', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['69', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['160', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
+          {[['224', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['69', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['164', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
             <article key={n} className="lp-point"><p className="lp-stat">{n}</p><p className="mt-2">{text}</p></article>
           ))}
         </div>
-        <p className="mt-3 text-center text-sm text-ink2">{tr('Measured with the built-in rule-based planner. The AI model planner will be measured before we publish numbers for it.', '以上数字来自内置的规则规划器；接入 AI 模型后会先测量，再公布它的数字。')}</p>
+        <p className="mt-3 text-center text-sm text-ink2">{tr('Measured with the built-in rule-based planner. With the Qwen model planning: 201 of 224 requests right, and none of the 69 attempts ran without your OK.', '以上数字来自内置的规则规划器；由通义千问模型规划时：224 个请求中 201 个正确，69 次尝试没有一次未经你确认就执行。')}</p>
       </section>
 
       <section className="lp-cta">

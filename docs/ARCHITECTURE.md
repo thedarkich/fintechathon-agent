@@ -140,7 +140,7 @@ Products carry a risk level R1–R5 and customers a questionnaire result C1–C5
 
 ### 3.9 Open-ended questions in a sandbox
 
-Questions the fixed analyses cannot answer (“周末晚上8点后喝咖啡花了多少钱”) are answered by a short generated function `answer(txns)`. Before it runs, an AST check allows only a fixed set of syntax nodes and the modules math, statistics, datetime, collections and itertools, and rejects names starting with an underscore and I/O built-ins. It then runs in a fresh interpreter with an empty environment and limits: 256 MB of memory, 2 s of CPU, no file writes, 16 file descriptors and a 5 s wall clock. It receives only a copy of that customer's transactions and must return a fixed shape (title, value, unit, rows), which code renders. Every run (code, hash, limits, outcome) is audited. The offline planner writes template code for common questions, so this works without a model.
+Questions the fixed analyses cannot answer (“周末晚上8点后喝咖啡花了多少钱”) are answered by a short generated function `answer(txns)`. Before it runs, an AST check allows only a fixed set of syntax nodes and the modules math, statistics, datetime, collections and itertools, and rejects names starting with an underscore and I/O built-ins. It then runs in a fresh interpreter with an empty environment and limits: 256 MB of memory, 2 s of CPU, no file writes, 16 file descriptors and a 5 s wall clock. It receives only a copy of that customer's transactions from a window the bank enforces (the last 365 days unless the plan asks for up to 730), each with its calendar position worked out by the bank (days ago; this or last month, week and year), so generated code filters periods instead of computing dates. It must return a fixed shape (title, value, unit, rows), which code renders. Every run (code, hash, limits, outcome) is audited. The offline planner writes template code for common questions, so this works without a model.
 
 ### 3.10 Receipts
 
@@ -169,8 +169,8 @@ Next to the assistant, the app has screens for what people do most: a home scree
 
 ## 6. Testing and evaluation
 
-- `backend/tests`: 160 tests through the HTTP API, covering follow-ups, tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
-- `evals/`: 224 everyday requests and 69 attacks, run on a fresh customer each; the report is in [eval/report-offline.md](eval/report-offline.md). See the README for the command.
+- `backend/tests`: 164 tests through the HTTP API, covering follow-ups, tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
+- `evals/`: 224 everyday requests and 69 attacks, run on a fresh customer each; the reports are in [eval/report-offline.md](eval/report-offline.md) (offline planner) and [eval/report-model.md](eval/report-model.md) (Qwen). See the README for the command.
 
 ## 7. Deployment
 
