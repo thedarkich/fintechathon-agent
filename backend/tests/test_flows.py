@@ -430,3 +430,48 @@ def test_transaction_search_needs_a_sane_range_and_a_signed_in_customer(bank):
     assert bank.get("/api/bank/transactions/search", start="2026-10-10", end="2026-01-01").status_code == 400
     bank.client.cookies.clear()
     assert bank.get("/api/bank/transactions/search", start="2026-01-01", end="2026-01-31").status_code == 401
+
+
+def test_a_choice_can_be_given_in_words(bank):
+    first = plan_of(bank.chat("给小张转100"))
+    assert first["status"] == "clarifying"
+    second = plan_of(bank.chat("第二位"))
+    assert second["id"] == first["id"] and second["status"] == "awaiting_approval"
+    assert "张薇" in second["steps"][0]["text"]
+
+
+def test_two_requests_in_one_message_are_both_planned(bank):
+    plan = plan_of(bank.chat("查余额，再看看有没有异常交易"))
+    assert [s["action"] for s in plan["steps"]] == ["balance", "anomalies"] and plan["status"] == "done"
+    plan = plan_of(bank.chat("What's my balance and how much did I spend this week", lang="en"))
+    assert [s["action"] for s in plan["steps"]] == ["balance", "spending"]
+    # a part that only gives context stays with its request: one collection of ¥600, no spending question
+    plan = plan_of(bank.chat("昨天吃饭花了600，和张伟王芳AA"))
+    assert [s["action"] for s in plan["steps"]] == ["collect"]
+
+
+def test_weeks_and_recent_months_are_the_periods_asked_for(bank):
+    today = date.fromisoformat(bank.get("/api/demo/clock").json()["now"][:10])
+    monday = today.toordinal() - today.weekday()
+    reply = bank.chat("上周花了多少")["messages"][-1]["text"]
+    assert reply.startswith(f"{date.fromordinal(monday - 7)} ~ {date.fromordinal(monday - 1)}")
+    reply = bank.chat("这周花了多少")["messages"][-1]["text"]
+    assert reply.startswith(f"{date.fromordinal(monday)} ~ {today}")
+    reply = bank.chat("最近三个月花得最多的是什么")["messages"][-1]["text"]
+    assert reply.startswith(f"{date.fromordinal(today.toordinal() - 89)} ~ {today}")
+    reply = bank.chat("我今年收入多少")["messages"][-1]["text"]
+    assert reply.startswith(f"{today.year}-01-01 ~ {today}")
+
+
+def test_everyday_wordings_find_their_action(bank):
+    for text, action in (("看看上个月的月报", "report"), ("每个月被扣了哪些钱", "subscriptions"),
+                         ("帮我分析一下我的消费习惯", "report"), ("帮我交下个月的房租", "transfer"),
+                         ("Any weird charges?", "anomalies"), ("Cancel Netflix", "subscription_cancel")):
+        plan = plan_of(bank.chat(text, lang="en" if text.isascii() else "zh"))
+        assert plan and [s["action"] for s in plan["steps"]] == [action], (text, plan)
+    assert "“女朋友”" in bank.chat("我想给我女朋友转500")["messages"][-1]["text"]
+
+
+def test_the_birthday_reply_names_the_date_the_customer_gave(bank):
+    reply = bank.chat("下周三是我爸生日，帮我订个蛋糕")["messages"][-1]["text"]
+    assert reply.startswith("按您说的日期") and "通讯录里李建国的生日是" in reply

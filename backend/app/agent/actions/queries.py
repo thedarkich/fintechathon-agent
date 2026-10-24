@@ -1,5 +1,6 @@
 """Green actions: read-only questions about the customer's own data."""
 
+import re
 from datetime import date, timedelta
 from typing import Literal
 
@@ -268,7 +269,9 @@ def report_reply(ctx: Ctx, r: dict, res: dict) -> str:
     trend = ""
     if res["previous_spend_fen"]:
         pct = change / res["previous_spend_fen"] * 100
-        trend = ctx.t(f"，比上期{'多' if change > 0 else '少'} {abs(pct):.0f}%", f", {abs(pct):.0f}% {'more' if change > 0 else 'less'} than the period before")
+        same = "" if res["complete"] else ctx.t("同期", " (the same days)")
+        trend = ctx.t(f"，比上期{same}{'多' if change > 0 else '少'} {abs(pct):.0f}%",
+                      f", {abs(pct):.0f}% {'more' if change > 0 else 'less'} than the period before{same}")
     top = res["categories"][:3]
     tops = "、".join(f"{label(c['category'], 'zh')} {c['share'] * 100:.0f}%" for c in top) if ctx.lang == "zh" \
         else ", ".join(f"{label(c['category'], 'en')} {c['share'] * 100:.0f}%" for c in top)
@@ -486,6 +489,12 @@ def contact_run(ctx: Ctx, r: dict) -> dict:
 
 
 def contact_reply(ctx: Ctx, r: dict, res: dict) -> str:
+    # '下周三是我爸生日': the plan keeps the date the customer said; say so rather than seem to contradict them
+    said = next((s["args"]["deliver_on"] for s in (ctx.plan.steps if ctx.plan else [])
+                 if re.fullmatch(r"\d{4}-\d{2}-\d{2}", str((s.get("args") or {}).get("deliver_on")))), None)
+    if said and res["birthday"] and said != res["birthday"]:
+        return ctx.t(f"按您说的日期 {said} 安排（通讯录里{res['name']}的生日是 {res['birthday']}）。",
+                     f"Planned for the date you gave, {said} ({res['name_en'] or res['name']}'s birthday on file is {res['birthday']}).")
     if res["birthday"]:
         return ctx.t(f"{res['name']}的下一个生日是 {res['birthday']}。", f"{res['name_en'] or res['name']}'s next birthday is {res['birthday']}.")
     return ctx.t(f"没有记录{res['name']}的生日。", f"No birthday is saved for {res['name_en'] or res['name']}.")

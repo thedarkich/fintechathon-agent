@@ -120,6 +120,21 @@ def test_unknown_action_is_rejected(tmp_path):
         assert session.exec(select(AuditEntry).where(AuditEntry.kind == "plan_rejected")).first() is not None
 
 
+def test_a_model_plan_that_breaks_the_rules_falls_back_to_the_offline_planner(tmp_path):
+    bank, _ = bank_with(tmp_path, {"steps": [{"id": "s1", "action": "transfer",
+                                               "args": {"payee": "妈妈", "amount_yuan": 200, "skip_confirmation": True}}],
+                                   "suspicious": True})
+    body = bank.chat("给妈妈转200")
+    # the model's plan is refused and recorded; the customer still gets a plan, from the offline planner
+    assert body["plan"]["source"] == "offline_fallback"
+    assert [s["action"] for s in body["plan"]["steps"]] == ["transfer"]
+    assert body["plan"]["status"] == "awaiting_approval"
+    assert body["plan"]["tier"] == "red"  # the model said the message was suspicious: that is kept
+    with Session(bank.runtime.engine) as session:
+        rejected = session.exec(select(AuditEntry).where(AuditEntry.kind == "plan_rejected")).first()
+    assert "BAD_ARGS:transfer" in rejected.data["errors"]
+
+
 def test_bad_arguments_are_rejected():
     plan = PlanOut.model_validate({"steps": [{"id": "s1", "action": "transfer",
                                               "args": {"payee": "妈妈", "amount_yuan": 200, "skip_confirmation": True}}]})

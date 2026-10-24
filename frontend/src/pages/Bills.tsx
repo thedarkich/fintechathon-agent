@@ -56,7 +56,7 @@ export default function Bills() {
           <StatTile icon="bank" label={tr('Left over', '结余')} value={yuan(r.net_fen)} />
           <StatTile icon="chart" label={period === 'month' ? tr('Vs. last month', '较上月') : tr('Vs. last year', '较去年')}
             value={change === null ? '—' : `${change > 0 ? '+' : ''}${change}%`} valueClass={change === null ? '' : change > 0 ? 'text-cinnabar' : 'text-jade'}
-            sub={change === null ? undefined : change > 0 ? tr('more than before', '比上期多花') : tr('less than before', '比上期少花')} />
+            sub={change === null ? undefined : (r.complete ? '' : tr('Same days · ', '同期 · ')) + (change > 0 ? tr('more than before', '比上期多花') : tr('less than before', '比上期少花'))} />
         </div>
 
         {flagged.length > 0 && offset === 0 && (

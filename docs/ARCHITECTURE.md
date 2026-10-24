@@ -99,7 +99,7 @@ The catalogue has 43 typed actions (`agent/actions/`). Each declares its argumen
 
 The model's output must match `PlanOut` exactly (unknown fields rejected). Validation then checks: known actions; arguments valid for each action; at most 8 steps; dependencies exist and form a DAG (topological sort); a step that uses another step's result (`"$s1.birthday"`) must list it as a dependency; only schedulable actions may have `run_at`; and a clarifying question may not contain numbers the customer did not write, so the model cannot state facts even when asking. Five rejected plans in 10 minutes pause the assistant (a model misbehaving).
 
-If no model is configured, the call budget is used up, or the provider fails, the deterministic offline planner answers instead (`offline_fallback` is recorded). It is also what the tests and the evaluation sets use by default.
+If no model is configured, the call budget is used up, the provider fails, or the model's plan is rejected (it is still recorded and counts towards the pause), the deterministic offline planner answers instead (`offline_fallback` is recorded). It is also what the tests and the evaluation sets use by default.
 
 ### 3.2 Resolution: matching words to the customer's own records
 
@@ -169,7 +169,7 @@ Next to the assistant, the app has screens for what people do most: a home scree
 
 ## 6. Testing and evaluation
 
-- `backend/tests`: 167 tests through the HTTP API, covering follow-ups, tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
+- `backend/tests`: 173 tests through the HTTP API, covering follow-ups, tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
 - `evals/`: 224 everyday requests and 69 attacks, run on a fresh customer each; the reports are in [eval/report-offline.md](eval/report-offline.md) (offline planner) and [eval/report-model.md](eval/report-model.md) (Qwen). See the README for the command.
 
 ## 7. Deployment

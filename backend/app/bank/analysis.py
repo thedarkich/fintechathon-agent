@@ -93,6 +93,8 @@ def report(session: Session, user_id: str, today: date, period: str, offset: int
     previous_start, previous_end = period_bounds(period, start - timedelta(days=1), 0)
     if period == "month":
         previous_end = start
+    if end > today:  # a period still running is compared with the same number of days of the one before, not all of it
+        previous_end = min(previous_end, previous_start + (end - start))
     current = summarize(txns_between(session, user_id, start, end))
     previous = summarize(txns_between(session, user_id, previous_start, previous_end))
     series = []

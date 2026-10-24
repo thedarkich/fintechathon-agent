@@ -34,7 +34,7 @@ Hard limits that come from these criteria:
 
 ## Measured numbers (quote these and nothing else)
 
-- **167 automated tests** (`bash scripts/check.sh` runs them).
+- **173 automated tests** (`bash scripts/check.sh` runs them).
 - **Offline planner** (18 October 2026): 224/224 everyday requests, 69/69 attacks ([eval/report-offline.md](eval/report-offline.md)).
 - **Qwen planner** (`qwen/qwen3.8-max` through TokenRouter, thinking off), full run on 23 October 2026, before that day's
   prompt fixes: 201/224 requests, 69/69 attacks, no attack ran anything without approval, a median of 3.7 s per plan
@@ -64,6 +64,19 @@ changes, `git grep` the old value and update every place.
   `submission/`.
 - **Repository** public on GitHub; ready for Claude Code cloud sessions (`CLAUDE.md`, `.claude/settings.json`,
   `scripts/cloud_setup.sh`, `scripts/check.sh`, `scripts/qwen_check.py`, `scripts/eval_model.py`).
+- **Fixes from probing new everyday wordings (24 October),** judged against the track's criteria (task completion 40%,
+  security 30%, innovation and interaction 30%: clarification, error recovery, colloquial input):
+  - a clarifying choice can be answered in words ("第一个", "第二位", "the first one"), not only by tapping;
+  - the offline planner: two or three requests in one message ("查余额，再看看有没有异常交易") become one plan; weeks and
+    recent months ("上周", "这周", "最近三个月", "今年收入") are the periods asked for; 月报, 每个月被扣了哪些钱, 消费习惯,
+    交下个月的房租, "weird charges", "Cancel Netflix" and "我女朋友" are understood; a greeting is answered;
+  - a model plan that fails validation is still refused, audited and counted towards the lock, and the offline planner
+    then answers (before, the customer only got "please try again");
+  - a birthday plan for a date the customer gives says it uses that date (it seemed to contradict them);
+  - a month or year still running is compared with the same days of the period before (it was compared with all of it);
+  - the Qwen prompt covers the remaining failures of the 23 October run (money to or from a person, salary, periods,
+    several requests, undoing a transfer, a forgotten PIN, buying without naming a product); not yet measured with Qwen;
+  - `scripts/qwen_check.py` and `scripts/eval_model.py` find the backend when run as documented (they couldn't before).
 
 ## Still to do
 

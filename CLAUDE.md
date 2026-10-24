@@ -20,6 +20,7 @@
   `python -m app.evals --model` with it (no pacing: most cases would hit the limit). Never write a key into the repo,
   and ask before any run that calls the model.
 - **Slides and PDFs:** the decks' sources are in `submission/slides`; `submission/build_slides.py` and
-  `submission/build_docs.py` print the submission PDFs (they need Chrome or Chromium). See `submission/README.md`.
+  `submission/build_docs.py` print the submission PDFs (they need Chrome or Chromium; in a cloud session run them with
+  `CHROME=/opt/pw-browsers/chromium`, Playwright's copy). See `submission/README.md`.
 - **Docs and slides quote measured numbers** (tests, evaluation results). When a change moves one, update every place
   that states it: `git grep` for the old number.

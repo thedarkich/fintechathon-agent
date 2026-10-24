@@ -131,6 +131,10 @@ def option_match(plan: Plan, text: str):
         position = int(index.group(1) or index.group(2)) - 1
         if 0 <= position < len(options) and "value" in options[position]:
             return options[position]["value"]
+    # '第一个', '第二位', 'the first one', '最后一个': a position in words
+    n = followup.ordinal(value) if followup.bare(value, followup.ORDINAL_WORDS, r"位|项|个|吧|就|选|是") else None
+    if n and abs(n) <= len(options) and "value" in options[n - 1 if n > 0 else -1]:
+        return options[n - 1 if n > 0 else -1]["value"]
     for option in options:
         labels = [str(option.get("value", "")), option.get("label_zh", ""), option.get("label_en", "")]
         if any(value and (value == label.casefold() or (len(value) >= 2 and value in label.casefold())) for label in labels):
@@ -259,6 +263,26 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
         audit.append(session, user.id, "followup_invalid", {"errors": errors})
         replaces, source = None, "offline"
         proposed = offline.plan(clean, ctx.today, suspicious=bool(flags))
+        errors = validate(proposed, planner_text)
+    if errors and source == "ai":
+        # the model's plan breaks the rules: it is recorded and counts towards the misbehaving-model lock, and the
+        # offline planner answers instead, as when the model's output doesn't parse (the customer isn't left with nothing)
+        audit.append(session, user.id, "plan_proposed", {"source": source, "model": versions.get("planner"),
+                                                         "plan": proposed.model_dump(), "errors": errors})
+        audit.append(session, user.id, "plan_rejected", {"errors": errors})
+        locks.evaluate(session, user.id)
+        if proposed.suspicious and "MODEL_SUSPICIOUS" not in flags:
+            flags = [*flags, "MODEL_SUSPICIOUS"]
+            audit.append(session, user.id, "screening", {"flags": ["MODEL_SUSPICIOUS"]})
+            locks.evaluate(session, user.id)
+        agent_lock = next((lock for lock in locks.active(session, user.id) if lock.scope == "agent"), None)
+        if agent_lock:  # that rejection tripped the lock: the assistant stops here
+            out.append(add_message(session, ctx, conversation, "assistant", locks.describe(agent_lock, ctx.lang),
+                                   cards=[{"type": "lock", "scope": "agent", "reason": agent_lock.reason}]))
+            session.commit()
+            return conversation, out, None
+        proposed, source = offline.plan(clean, ctx.today, suspicious=bool(flags),
+                                        attachment=attachment.id if attachment else None), "offline_fallback"
         errors = validate(proposed, planner_text)
     audit.append(session, user.id, "plan_proposed", {"source": source, "model": versions.get("planner"),
                                                      "plan": proposed.model_dump(), "errors": errors})

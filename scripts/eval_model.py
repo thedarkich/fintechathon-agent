@@ -11,6 +11,7 @@ import asyncio
 import json
 import os
 import tempfile
+import sys
 import time
 import uuid
 from collections import Counter, defaultdict
@@ -22,6 +23,7 @@ from openai.resources.chat.completions import AsyncCompletions
 from sqlalchemy import delete
 from sqlmodel import Session
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))  # so `app` imports from scripts/
 from app.config import Settings
 from app.evals import ORIGIN, check, confirm, language, markdown, reply_of
 from app.main import create_app
