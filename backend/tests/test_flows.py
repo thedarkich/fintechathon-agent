@@ -501,3 +501,11 @@ def test_a_birthday_plan_can_order_a_gift_and_book_a_dinner(bank):
 def test_two_parts_about_the_same_thing_are_one_request(bank):
     plan = plan_of(bank.chat("我想理财，有什么推荐"))
     assert [s["action"] for s in plan["steps"]] == ["wealth_recommend"]
+
+
+def test_freezing_the_card_a_suspicious_payment_used_needs_no_question(bank):
+    # the Spending page's "Freeze card" button names the card the payment used, so the assistant doesn't ask which
+    flagged = [a for a in bank.get("/api/bank/anomalies").json()["items"] if a["code"] in ("NEW_MERCHANT_LARGE", "NIGHT_LARGE")]
+    assert flagged and all(a["card_last4"] for a in flagged)
+    plan = plan_of(bank.chat(f"冻结尾号{flagged[0]['card_last4']}的卡"))
+    assert [s["action"] for s in plan["steps"]] == ["card_freeze"] and plan["status"] == "awaiting_approval"

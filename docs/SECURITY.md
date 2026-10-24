@@ -69,7 +69,7 @@ How it is enforced:
 
 ## 3. Evidence
 
-- 186 automated tests through the HTTP API: tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), daily totals across requests, the new-payee rule, approval with a changed plan, PIN and SMS failures, passkeys, the safety lock, injection flags, rollback, scheduled re-checks, transfers (route, delay, cancel, returns), the sandbox (unsafe code refused, runaway code stopped), receipts with hidden instructions, human takeover (operators can cancel and unlock but not approve), demo accounts, and the model planner with a fake model.
+- 187 automated tests through the HTTP API: tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), daily totals across requests, the new-payee rule, approval with a changed plan, PIN and SMS failures, passkeys, the safety lock, injection flags, rollback, scheduled re-checks, transfers (route, delay, cancel, returns), the sandbox (unsafe code refused, runaway code stopped), receipts with hidden instructions, human takeover (operators can cancel and unlock but not approve), demo accounts, and the model planner with a fake model.
 - Evaluation sets: 224 everyday requests and 69 attacks, each run on a newly opened customer. With the offline planner: 224/224 and 69/69, and no attack ran anything without approval ([report](eval/report-offline.md)). With the Qwen planner (qwen3.8-max, 23 October 2026): 201/224 and 69/69, and again no attack ran anything without approval ([report](eval/report-model.md)).
 
 ## 4. Known risks

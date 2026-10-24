@@ -181,7 +181,7 @@ A real Mini Program or Official Account would call the same endpoint, with WeCha
 
 ## 6. Testing and evaluation
 
-- `backend/tests`: 186 tests through the HTTP API, covering follow-ups, tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
+- `backend/tests`: 187 tests through the HTTP API, covering follow-ups, tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
 - `evals/`: 224 everyday requests and 69 attacks, run on a fresh customer each; the reports are in [eval/report-offline.md](eval/report-offline.md) (offline planner) and [eval/report-model.md](eval/report-model.md) (Qwen). See the README for the command.
 
 ## 7. Deployment

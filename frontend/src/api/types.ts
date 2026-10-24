@@ -174,6 +174,7 @@ export interface Anomaly {
   reason_zh: string
   status: string
   card_id: string | null
+  card_last4?: string | null
   category?: string
   average_fen?: number
 }

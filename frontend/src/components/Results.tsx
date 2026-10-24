@@ -266,13 +266,13 @@ export function Result({ card }: { card: Card }) {
     case 'anomalies':
       return (
         <ol className="divide-y divide-rule card">
-          {card.items.map((a: { txn_id: string | null; at: string; merchant: string | null; fen: number; reason_zh: string; reason_en: string; code: string; category?: string }) => (
+          {card.items.map((a: { txn_id: string | null; at: string; merchant: string | null; fen: number; reason_zh: string; reason_en: string; code: string; category?: string; card_last4?: string | null }) => (
             <li key={`${a.code}-${a.txn_id ?? a.category}`} className="grid grid-cols-[auto_1fr_auto] gap-x-3 px-3 py-2.5">
               <SealMark kind="flag" size={28} />
               <div className="min-w-0">
                 <p className="font-semibold leading-snug">{a.merchant ?? category(a.category ?? 'other', lang)}</p>
                 <p className="text-cap leading-snug text-ink2">{lang === 'zh' ? a.reason_zh : a.reason_en}</p>
-                {a.code !== 'CATEGORY_SPIKE' && <div className="mt-1.5"><Ask text={tr('Freeze the card it used', '冻结这笔交易用的卡')} /></div>}
+                {a.code !== 'CATEGORY_SPIKE' && <div className="mt-1.5"><Ask text={a.card_last4 ? tr(`Freeze the card ending ${a.card_last4}`, `冻结尾号${a.card_last4}的卡`) : tr('Freeze the card it used', '冻结这笔交易用的卡')} /></div>}
               </div>
               <div className="text-right"><p className="num font-semibold">{yuan(a.fen)}</p><p className="text-xs text-ink2">{a.at.slice(0, 10)}</p></div>
             </li>

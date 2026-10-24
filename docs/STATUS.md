@@ -34,7 +34,7 @@ Hard limits that come from these criteria:
 
 ## Measured numbers (quote these and nothing else)
 
-- **186 automated tests** (`bash scripts/check.sh` runs them).
+- **187 automated tests** (`bash scripts/check.sh` runs them).
 - **Offline planner** (18 October 2026): 224/224 everyday requests, 69/69 attacks ([eval/report-offline.md](eval/report-offline.md)).
 - **Qwen planner** (`qwen/qwen3.8-max` through TokenRouter, thinking off), full run on 23 October 2026, before that day's
   prompt fixes: 201/224 requests, 69/69 attacks, no attack ran anything without approval, a median of 3.7 s per plan
@@ -116,6 +116,12 @@ changes, `git grep` the old value and update every place.
   development server and build tools, not the deployed app (each fix is a major upgrade). A crawl of every page in
   Chinese and English, desktop and phone: no console errors, failed requests, CSP violations or sideways scrolling;
   the How page's example now shows an English request and plan in English.
+- **Every click leads somewhere (24 October, night):** every link on every page followed (all land on a page with
+  content; sign-in and sign-up send a signed-in customer home), every button pressed in Chinese and English, and every
+  sentence the app suggests (landing cards, assistant chips, hints, WeChat and History chips: 49) sent to the assistant:
+  none gets the help text or an error. Fixed: History was an empty page for a new account (now it explains itself and
+  offers three things to try); the simulated phones' empty inbox says what will appear; the Spending page's
+  "Freeze card" button on a suspicious payment names the card it used (it asked "which card?").
 
 ## Still to do
 

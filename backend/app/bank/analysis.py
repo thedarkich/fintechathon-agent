@@ -13,7 +13,7 @@ from sqlmodel import Session, select
 from app import clock
 from app.bank.categories import normalize
 from app.clock import CST
-from app.models import Subscription, Txn
+from app.models import Card, Subscription, Txn
 
 SPEND_KINDS = {"card", "direct_debit", "transfer_out", "order"}
 MUSIC = ("网易云音乐", "qq音乐", "酷狗", "酷我", "apple music", "spotify")
@@ -194,6 +194,10 @@ def anomalies(session: Session, user_id: str, today: date, days: int = 30) -> li
             })
     order = {"OVERSEAS_DECLINED": 0, "NEW_MERCHANT_LARGE": 1, "DUPLICATE_CHARGE": 2, "NIGHT_LARGE": 3,
              "CATEGORY_SPIKE": 4}
+    # the card each payment used, by its last four digits: "freeze that card" can then name it
+    last4 = {c.id: c.last4 for c in session.exec(select(Card).where(Card.user_id == user_id))}
+    for f in found:
+        f["card_last4"] = last4.get(f["card_id"])
     return sorted(found, key=lambda f: (order.get(f["code"], 9), f["at"]))
 
 

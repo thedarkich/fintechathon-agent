@@ -6,7 +6,7 @@ import { useLang } from '../i18n'
 import { usePlans } from '../lib/bank'
 import { useModal } from '../lib/modal'
 import { clock, stamp, yuan } from '../lib/format'
-import { LoadError, Section } from './bits'
+import { AskButton, LoadError, Section } from './bits'
 import { Icon } from './Icon'
 import { ConfirmCard, markColor, markFor, statusLabel } from './PlanView'
 import { SealMark } from './Seal'
@@ -31,7 +31,17 @@ export function Requests() {
 function RequestList({ rows, loading, selected, onSelect }: { rows: PlanRow[]; loading: boolean; selected: string | null; onSelect: (id: string) => void }) {
   const { t, tr } = useLang()
   if (loading) return <div className="h-48 animate-pulse rounded-box bg-paper2" aria-hidden />
-  if (rows.length === 0) return <p className="py-6 text-ink2">{tr('Nothing yet. Ask the assistant something.', '还没有记录，先去问问助手吧。')}</p>
+  // nothing asked yet: a few things to try, so the page is never a dead end
+  if (rows.length === 0) return (
+    <div className="card space-y-3 p-5 max-sm:p-4">
+      <p className="text-ink2">{tr('Nothing yet. Everything you ask the assistant, and everything you confirm, will be listed here with its full trail.', '还没有记录。你让助手办的每件事、确认过的每一步，都会连同完整过程列在这里。')}</p>
+      <div className="flex flex-wrap gap-2">
+        <AskButton label={tr('How much did I spend this month?', '这个月花了多少')} hint={tr('How much did I spend this month?', '这个月花了多少')} />
+        <AskButton label={tr('Send Mum 200', '给妈妈转200')} hint={tr('Send Mum 200', '给妈妈转200')} />
+        <AskButton label={tr('Any unusual charges?', '有没有异常交易')} hint={tr('Any unusual charges?', '有没有异常交易')} />
+      </div>
+    </div>
+  )
   return (
     <ul className="card divide-y divide-[var(--rule)] overflow-hidden">
       {rows.map((p) => {

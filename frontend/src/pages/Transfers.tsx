@@ -115,7 +115,9 @@ function SmsPanel() {
         <Segmented stretch className="flex w-full" label={tr('Text messages', '短信')} value={tab} onChange={setTab}
           options={[['mine', tr('Your phone', '我的手机')], ['theirs', tr('Payee’s phone', '收款方手机')]] as const} />
       </div>
-      {!items.length ? <p className="px-4 py-4 text-sm text-ink2">{tr('No messages.', '暂无短信。')}</p> : (
+      {!items.length ? <p className="px-4 py-4 text-sm text-ink2">{tab === 'mine'
+        ? tr('No messages yet. The bank’s texts to you (codes, returns, cancellations) appear here.', '暂无短信。银行发给你的短信（验证码、退回、撤销）会显示在这里。')
+        : tr('No messages yet. After a transfer, the text the payee’s bank sends them appears here.', '暂无短信。转账之后，收款方银行发给对方的到账短信会显示在这里。')}</p> : (
         <ol className="max-h-80 space-y-2 overflow-y-auto p-3">
           {items.map((m) => (
             <li key={m.id} className="rounded-box bg-[var(--field)] px-3 py-2 text-cap leading-relaxed">

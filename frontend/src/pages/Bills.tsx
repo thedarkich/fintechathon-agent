@@ -94,7 +94,7 @@ export default function Bills() {
                   title={<span className="flex flex-wrap items-baseline justify-between gap-x-3"><span>{a.merchant ?? category(a.category ?? 'other', lang)} <span className="ml-1 text-xs font-normal text-ink2">{a.code === 'CATEGORY_SPIKE' ? tr(a.at.slice(0, 7), `${a.at.slice(0, 4)}年${Number(a.at.slice(5, 7))}月`) : a.at.slice(5, 16).replace('T', ' ')}</span></span><span className="num text-ink">{yuan(a.fen)}</span></span>}
                   >
                   {lang === 'zh' ? a.reason_zh : a.reason_en}{a.code === 'DUPLICATE_CHARGE' && tr(' Ask the merchant to refund the second charge.', '可以联系商户退还多扣的那一笔。')}
-                  {(a.code === 'NEW_MERCHANT_LARGE' || a.code === 'NIGHT_LARGE') && <div className="mt-2.5"><button type="button" className="btn btn-line bg-[var(--card)] px-4 text-sm text-cinnabar" disabled={!!pending} onClick={() => void send(tr('Freeze the card used for the payment I don’t recognise', '冻结这笔不认识的交易所用的卡'))}>{tr('Freeze card', '冻结卡')}</button></div>}
+                  {(a.code === 'NEW_MERCHANT_LARGE' || a.code === 'NIGHT_LARGE') && <div className="mt-2.5"><button type="button" className="btn btn-line bg-[var(--card)] px-4 text-sm text-cinnabar" disabled={!!pending} onClick={() => void send(a.card_last4 ? tr(`Freeze the card ending ${a.card_last4}`, `冻结尾号${a.card_last4}的卡`) : tr('Freeze the card used for the payment I don’t recognise', '冻结这笔不认识的交易所用的卡'))}>{tr('Freeze card', '冻结卡')}</button></div>}
                   {a.code === 'OVERSEAS_DECLINED' && <div className="mt-2"><Badge tone="grey">{tr('Blocked, not charged', '已拦截，未扣款')}</Badge></div>}
                 </Notice>
               </li>
