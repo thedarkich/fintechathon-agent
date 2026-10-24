@@ -34,7 +34,7 @@ Hard limits that come from these criteria:
 
 ## Measured numbers (quote these and nothing else)
 
-- **185 automated tests** (`bash scripts/check.sh` runs them).
+- **186 automated tests** (`bash scripts/check.sh` runs them).
 - **Offline planner** (18 October 2026): 224/224 everyday requests, 69/69 attacks ([eval/report-offline.md](eval/report-offline.md)).
 - **Qwen planner** (`qwen/qwen3.8-max` through TokenRouter, thinking off), full run on 23 October 2026, before that day's
   prompt fixes: 201/224 requests, 69/69 attacks, no attack ran anything without approval, a median of 3.7 s per plan
@@ -106,6 +106,16 @@ changes, `git grep` the old value and update every place.
     gave the bypass reason; the prompt now says to judge the latest message (checked once in the browser, not measured);
   - History showed no amount and no "on its way / returned" for transfers by phone number;
   - a saved payee's note used Chinese brackets in English; `favicon.ico` was missing (a 404 in the console).
+
+- **Security review and full crawl (24 October, night):** a third security review (`docs/security_best_practices_report.md`):
+  Pillow 12.3.0 had 37 advisories, two reaching the receipt-photo path (CPU denial of service, bounded by the worker's
+  time limit); now Pillow 13.0.0 with only the PNG and JPEG readers allowed, plus certifi and opentelemetry-api patch
+  updates (`pip-audit`: none left). The simulated WeChat credential is kept per tab (it was in localStorage); pages send
+  a `Permissions-Policy`. Ownership checks on every id route, headers and the WeChat routes were tried against a
+  running server. Not fixed, for the team to decide: Vite 5 / esbuild / Tailwind 3 advisories, which concern the
+  development server and build tools, not the deployed app (each fix is a major upgrade). A crawl of every page in
+  Chinese and English, desktop and phone: no console errors, failed requests, CSP violations or sideways scrolling;
+  the How page's example now shows an English request and plan in English.
 
 ## Still to do
 

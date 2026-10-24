@@ -12,12 +12,14 @@ import { useAuth } from '../lib/auth'
 
 type Line = { id: number; from: 'me' | 'bank' | 'note'; reply?: WechatReply; text?: string }
 
-/** Per-browser storage that may be missing (private windows, blocked site data): the page works without it. */
+/** This tab's storage, which may be missing (private windows, blocked site data): the page works without it. The chat's
+ * credential lives here too, never in localStorage (security best practice, as for the operator token): it is gone
+ * when the tab closes, and linking again takes the PIN. */
 function stored<T>(key: string, fallback: T): T {
-  try { return JSON.parse(sessionStorage.getItem(key) ?? localStorage.getItem(key) ?? 'null') ?? fallback } catch { return fallback }
+  try { return JSON.parse(sessionStorage.getItem(key) ?? 'null') ?? fallback } catch { return fallback }
 }
-function keep(key: string, value: unknown, where: 'session' | 'local' = 'session') {
-  try { (where === 'local' ? localStorage : sessionStorage).setItem(key, JSON.stringify(value)) } catch { /* storage unavailable */ }
+function keep(key: string, value: unknown) {
+  try { sessionStorage.setItem(key, JSON.stringify(value)) } catch { /* storage unavailable */ }
 }
 function drop(key: string) {
   try { localStorage.removeItem(key); sessionStorage.removeItem(key) } catch { /* storage unavailable */ }
@@ -47,6 +49,7 @@ export default function Wechat() {
   const ready = !!(link.data?.linked && token)
 
   useEffect(() => { keep(chatKey, lines.slice(-60)) }, [chatKey, lines])
+  useEffect(() => { try { localStorage.removeItem(tokenKey) } catch { /* storage unavailable */ } }, [tokenKey])  // a copy an older version left
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }) }, [lines, busy])
 
   const add = (...more: Omit<Line, 'id'>[]) => setLines((all) => [...all, ...more.map((l, i) => ({ ...l, id: Date.now() + i }))])
@@ -75,7 +78,7 @@ export default function Wechat() {
     setLinking(true); setMessage('')
     try {
       const linked = await api.linkWechat(pin)
-      keep(tokenKey, linked.token, 'local'); setToken(linked.token); setPin('')
+      keep(tokenKey, linked.token); setToken(linked.token); setPin('')
       add({ from: 'note', text: tr(`Linked to your Central Union Bank account (WeChat ID ${linked.openid}).`, `已绑定中联银行账户（微信号 ${linked.openid}）。`) })
       void qc.invalidateQueries({ queryKey: ['wechat-link'] })
     } catch (err) {

@@ -71,6 +71,9 @@ def test_pages_carry_a_content_security_policy(tmp_path):
         assert f"script-src 'self' 'sha256-{digest}'" in policy
         for part in ("default-src 'self'", "object-src 'none'", "base-uri 'self'", "frame-ancestors 'none'", "connect-src 'self'"):
             assert part in policy, part
+        # features the bank never uses are off; the microphone (voice input) is this site's only
+        features = client.get("/").headers.get("permissions-policy", "")
+        assert "camera=()" in features and "geolocation=()" in features and "microphone=(self)" in features
 
 
 def test_successful_sign_ins_do_not_use_up_the_address_limit(tmp_path):

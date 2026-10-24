@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import pytest
 from conftest import ORIGIN
 
 DEMO = Path(__file__).resolve().parents[2] / "docs" / "demo"
@@ -62,3 +63,22 @@ def test_someone_elses_receipt_is_not_usable(bank, tmp_path):
 def test_not_a_pdf_or_image_is_refused(bank):
     response = bank.client.post("/api/uploads", files={"file": ("x.txt", b"hello", "text/plain")}, headers=ORIGIN)
     assert response.status_code == 422
+
+
+def test_only_png_and_jpeg_decoders_ever_see_an_upload():
+    from io import BytesIO
+
+    from PIL import Image
+
+    from app.pipeline.ingest import InputError, _image, ingest_bytes
+
+    def encoded(fmt):
+        buffer = BytesIO()
+        Image.new("RGB", (40, 30), "white").save(buffer, format=fmt)
+        return buffer.getvalue()
+
+    assert ingest_bytes(encoded("PNG")).kind == "image" and ingest_bytes(encoded("JPEG")).kind == "image"
+    with pytest.raises(InputError):
+        ingest_bytes(encoded("GIF"))  # refused by its first bytes
+    with pytest.raises(InputError):
+        _image(encoded("TIFF"))  # and even past that check, Pillow's other readers are never tried

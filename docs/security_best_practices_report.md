@@ -59,3 +59,26 @@ A second pass over the fixes above found three more things, all fixed:
 - Request models ignore unknown fields instead of rejecting them (`extra` not set to `forbid`, e.g. `backend/app/api/agent.py:23` `ChatIn`). No mass-assignment risk because every handler reads named fields only; the planner's own plan schema is strict.
 - `deploy/Caddyfile:10` sends `Strict-Transport-Security "max-age=86400"`: short, so a rollback stays possible.
 - Host restriction is in the app too (`host_boundary` in `backend/app/main.py` accepts only localhost and the public host); TLS comes from Caddy. Verify both on the real host.
+
+## Third review (24 October)
+
+Scope: everything since the second review (the WeChat assistant channel `backend/app/api/wechat.py`, `backend/app/channels/wechat.py`, `frontend/src/pages/Wechat.tsx`, `Confirm.tsx`; the evening click-through fixes), plus dependency advisories and response headers on a running server.
+
+Checked and fine: every route with an id in its path checks that the record belongs to the caller (plans through `load()`, conversations, uploads, demo transfers; operator routes are staff-only); the frontend has no HTML-injection sinks, `eval`, `window.open` or data-driven links; API responses carry `Cache-Control: no-store`; the session cookie is `HttpOnly` and `SameSite=Strict`. Against a running server: a link or unlink from another site is refused (403); the app's cookie alone can't use the chat channel (401); the chat's credential can neither approve a plan nor read balances (401); a forged credential is refused (401); a message over 1,000 characters is rejected (422).
+
+### SBP-6 · Pillow 12.3.0 had 37 published advisories (FASTAPI-SUPPLY-001) · Medium
+- Location: `backend/pyproject.toml` (`pillow>=12.3.0`), used by `backend/app/pipeline/ingest.py:48` to read uploaded receipt photos.
+- Impact: most advisories are in readers uploads never reach (TIFF, GIF, EPS, FlashPix, XBM: the magic-byte check admits only PDF, PNG and JPEG), but two reach the PNG path (a large eXIf chunk costs quadratic CPU; APNG frames allocate before the bomb check). Both are denial of service, bounded by the isolated worker's 12-second wall clock.
+- **Fixed:** Pillow 13.0.0; `Image.open(..., formats=("PNG", "JPEG"))`, so Pillow's other readers are never tried even if the byte check were bypassed (`test_only_png_and_jpeg_decoders_ever_see_an_upload`). Also updated: certifi 2026.10.23 (an untrusted root removed) and opentelemetry-api 1.45.1 (through FastAPI). `pip-audit` on the locked packages now reports none.
+
+### SBP-7 · The simulated WeChat credential was kept in `localStorage` (REACT-AUTH-001) · Low
+- Location: `frontend/src/pages/Wechat.tsx` (`keep(tokenKey, linked.token, 'local')`).
+- Impact: the chat's credential (it can ask about the account, never approve) outlived the tab.
+- **Fixed:** kept in `sessionStorage`, like the operator token (SBP-2); an older copy in `localStorage` is removed. Known risk 15 in the security self-assessment says so.
+
+### SBP-8 · No `Permissions-Policy` (FASTAPI-HEADERS-001) · Low
+- **Fixed:** pages now send `camera=(), geolocation=(), payment=(), usb=(), microphone=(self), publickey-credentials-get=(self), publickey-credentials-create=(self)` (voice input and passkeys keep working). Tested in `test_pages_carry_a_content_security_policy`.
+
+### SBP-9 · Build-tool advisories in the frontend (REACT-SUPPLY-001) · Informational, not fixed
+- `npm audit`: Vite 5.4.21 (high; and esbuild through it), tailwindcss 3 with postcss-nested and postcss-selector-parser (moderate), react-router 6 (moderate; kept on 6.x by the team's decision of 22 October).
+- Vite's and esbuild's advisories concern the development server (`npm run dev`), which the deployed app never runs: the backend serves the built files. Tailwind's and PostCSS's are CPU cost while building. Each fix is a major upgrade (Vite 8, Tailwind 4). Left for the team to decide; until then, don't expose `npm run dev` on a shared network.

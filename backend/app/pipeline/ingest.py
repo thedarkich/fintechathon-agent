@@ -45,7 +45,9 @@ def _image(data: bytes) -> Document:
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
-            with Image.open(BytesIO(data)) as original:
+            # security best practice: only the two decoders the magic-byte check allows; Pillow's other readers (TIFF,
+            # GIF, EPS, FlashPix...) carry most of its parsing bugs and must never see an uploaded file
+            with Image.open(BytesIO(data), formats=("PNG", "JPEG")) as original:
                 if original.width * original.height > MAX_PIXELS:
                     raise InputError("image dimensions are too large")
                 clean = ImageOps.exif_transpose(original).convert("RGB")

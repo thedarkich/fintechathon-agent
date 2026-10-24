@@ -20,7 +20,8 @@ export default function How() {
   const [view, setView] = useState<'request' | 'rules' | 'result'>('request')
   useEffect(() => { document.title = tr(`${t.brand_en} · How it stays safe`, `${t.brand} · 安全原理`) }, [tr, t])
   useEffect(() => { window.scrollTo(0, 0) }, [])
-  const plan = JSON.stringify({ steps: [{ id: 's1', action: 'transfer', args: { payee: '房东', amount_yuan: 3200, memo: '房租' } }] }, null, 2)
+  // the plan the planner really gives for the request, in the page's language
+  const plan = JSON.stringify({ steps: [{ id: 's1', action: 'transfer', args: { payee: tr('landlord', '房东'), amount_yuan: 3200, memo: tr('rent', '房租') } }] }, null, 2)
   const levels: ['green' | 'yellow' | 'red', string, string][] = [
     ['green', tr('Questions: balance, spending, reports, unusual transactions, investment returns', '查询：余额、消费、报告、异常交易、理财收益'), tr('Answered right away', '马上回答')],
     ['yellow', tr('Payments while today’s total stays at or under ¥1,000; cancelling a subscription; a virtual card; a split bill; making a card safer', '当天累计不超过 ¥1,000 的付款；取消订阅；申请虚拟卡；AA 收款；让卡更安全的设置'), tr('You check the details and tap Confirm', '你核对内容后点“确认”')],
@@ -68,7 +69,7 @@ export default function How() {
 
       <section className="lp-section">
         <h2>{tr('One request, step by step', '一个请求的完整过程')}</h2>
-        <p className="lp-section-lead">{tr('“Pay my landlord 3200 for rent”: what the AI produced, what the rules checked, and what happened.', '“给房东转3200房租”：AI 给出了什么、规则检查了什么、最后发生了什么。')}</p>
+        <p className="lp-section-lead">{tr('“pay my landlord 3200 for rent”: what the AI produced, what the rules checked, and what happened.', '“给房东转3200房租”：AI 给出了什么、规则检查了什么、最后发生了什么。')}</p>
         <div className="lp-pills lp-calc-tabs" role="group" aria-label={tr('Stage', '阶段')}>
           {(['request', 'rules', 'result'] as const).map((v, i) => <button key={v} aria-pressed={view === v} onClick={() => setView(v)}>{i + 1}. {v === 'request' ? tr('What the AI proposed', 'AI 提出的计划') : v === 'rules' ? tr('What the rules checked', '规则检查') : tr('What happened', '结果')}</button>)}
         </div>
@@ -76,7 +77,7 @@ export default function How() {
           <div className="terminal-body" aria-live="polite">
             {view === 'request' ? <>
               <p className="terminal-comment">{tr('The AI may only return this shape. Any extra field, unknown action or bad value is rejected.', 'AI 只能返回这种格式，多出的字段、未知操作或错误的值都会被拒绝。')}</p>
-              <pre><span className="terminal-prompt">{'>'} 给房东转3200房租{'\n'}</span>{plan}</pre>
+              <pre><span className="terminal-prompt">{'>'} {tr('pay my landlord 3200 for rent', '给房东转3200房租')}{'\n'}</span>{plan}</pre>
             </> : view === 'rules' ? <div className="terminal-checks">
               <p>✓ {tr('“房东” matched to your payee: Zhao Jianhua (landlord), ABC ****7722', '“房东”匹配到你的收款人：赵建华（房东）中国农业银行 ****7722')}</p>
               <p>✓ {tr('Balance and the ¥50,000 single-transfer limit checked', '已核对余额和单笔 ¥50,000 上限')}</p>
@@ -102,7 +103,7 @@ export default function How() {
       <section className="lp-section">
         <h2>{tr('Tested, not just promised', '经过测试，不只是承诺')}</h2>
         <div className="lp-grid">
-          {[['224', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['69', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['185', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
+          {[['224', tr('everyday requests understood correctly', '个日常请求全部理解正确')], ['69', tr('attempts to get around the rules: none ran without your OK', '次绕过规则的尝试：没有一次未经你确认就执行')], ['186', tr('automated tests on every rule and boundary', '个自动化测试覆盖每条规则和边界')]].map(([n, text]) => (
             <article key={n} className="lp-point"><p className="lp-stat">{n}</p><p className="mt-2">{text}</p></article>
           ))}
         </div>

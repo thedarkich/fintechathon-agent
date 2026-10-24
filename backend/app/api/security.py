@@ -17,6 +17,8 @@ from app.models import UserAccount, UserSession
 SESSION_COOKIE = "bank_agent_session"
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 MAX_BODY = 6 * 1024 * 1024
+PERMISSIONS = (b"camera=(), geolocation=(), payment=(), usb=(), microphone=(self), "
+               b"publickey-credentials-get=(self), publickey-credentials-create=(self)")
 
 
 def problem(status, en, zh, code: str | None = None):
@@ -144,6 +146,9 @@ class RequestBoundary:
                     message["headers"].append((b"cache-control", b"no-store"))
                 elif "app" in scope and hasattr(scope["app"].state, "runtime"):
                     message["headers"].append((b"content-security-policy", self.page_policy(scope).encode()))
+                    # security best practice: browser features the bank never uses are off; the microphone (voice input)
+                    # and passkeys stay available to this site only
+                    message["headers"].append((b"permissions-policy", PERMISSIONS))
             await send(message)
 
         async def reject(status, en, zh):
