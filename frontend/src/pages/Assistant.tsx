@@ -183,7 +183,7 @@ export default function Assistant() {
         <aside className="sticky top-[calc(var(--header-h)+16px)] flex max-h-[calc(100dvh-var(--header-h)-2rem)] w-64 shrink-0 flex-col card">{history()}</aside>
       )}
       {!wide && open && <>
-        <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setDrawer(false)} aria-hidden />
+        <div className="fade-in fixed inset-0 z-40 bg-black/40" onClick={() => setDrawer(false)} aria-hidden />
         <aside role="dialog" aria-modal="true" aria-label={tr('Chat history', '对话记录')} className="drawer-in fixed inset-y-0 left-0 z-50 flex w-[85vw] max-w-[320px] flex-col bg-paper shadow-[0_0_40px_var(--shadow)]">{history(drawerStart)}</aside>
       </>}
 
@@ -234,15 +234,15 @@ export default function Assistant() {
             if (m.role === 'user') {
               const file = m.cards.find((c) => c.type === 'attachment')
               return (
-                <div key={m.id} className="ml-auto flex w-fit max-w-[85%] flex-col items-end gap-1.5" title={stamp(m.at)}>
+                <div key={m.id} className="msg-in-user ml-auto flex w-fit max-w-[85%] flex-col items-end gap-1.5" title={stamp(m.at)}>
                   {file && <img src={file.preview} alt={tr('Attached receipt', '附带的小票')} className="h-28 ruled bg-white object-contain" />}
                   <p className="keep whitespace-pre-wrap rounded-tile rounded-br-md bg-[var(--action)] px-4 py-2.5 text-body text-[var(--action-ink)]">{m.text}</p>
                 </div>
               )
             }
-            if (m.role === 'system') return <p key={m.id} className="mx-auto max-w-[90%] text-center text-xs text-ink2">{m.text}</p>
+            if (m.role === 'system') return <p key={m.id} className="msg-in mx-auto max-w-[90%] text-center text-xs text-ink2">{m.text}</p>
             return (
-              <div key={m.id} className="flex gap-2.5" title={stamp(m.at)}>
+              <div key={m.id} className="msg-in flex gap-2.5" title={stamp(m.at)}>
                 <span className="mt-0.5 shrink-0">{m.role === 'operator' ? <span className="agent-avatar !h-7 !w-7"><Icon name="users" size={14} /></span> : <BrandMark size={28} />}</span>
                 <div className="min-w-0 flex-1 space-y-2.5">
                   {m.role === 'operator' && <p className="text-xs font-semibold text-ink2">{tr('Bank staff', '人工客服')}</p>}
@@ -253,8 +253,8 @@ export default function Assistant() {
             )
           })}
           {pending && <>
-            <p className="keep ml-auto w-fit max-w-[85%] rounded-tile rounded-br-md bg-[var(--action)] px-4 py-2.5 text-body text-[var(--action-ink)] opacity-70">{pending}</p>
-            <p className="flex items-center gap-2 text-sm text-ink2" role="status"><span className="step-live inline-block h-2 w-2 rounded-full bg-jade" aria-hidden />{tr('Working on it…', '正在处理…')}</p>
+            <p className="msg-in-user keep ml-auto w-fit max-w-[85%] rounded-tile rounded-br-md bg-[var(--action)] px-4 py-2.5 text-body text-[var(--action-ink)] opacity-70">{pending}</p>
+            <p className="msg-in flex items-center gap-2.5 text-sm text-ink2" role="status"><span className="typing-dots" aria-hidden><i /><i /><i /></span>{tr('Working on it…', '正在处理…')}</p>
           </>}
           {error && <p role="alert" className="text-sm font-semibold text-cinnabar">{error}</p>}
           <div ref={end} />

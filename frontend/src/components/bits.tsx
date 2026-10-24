@@ -206,6 +206,34 @@ export function Panel({ title, note, right, children, id }: { title: string; not
   )
 }
 
+/**
+ * Pages of a long list: previous, the page numbers (both ends and the ones next to the current page), next.
+ * Too narrow for numbers (a phone, a chat card), it reads "3 / 91" between the arrows.
+ */
+export function Pager({ page, pages, onChange, label }: { page: number; pages: number; onChange: (page: number) => void; label: string }) {
+  const { tr } = useLang()
+  if (pages <= 1) return null
+  const shown = [...new Set([1, page - 1, page, page + 1, pages])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b)
+  const items: (number | 'gap')[] = []
+  shown.forEach((n, i) => {
+    if (i && n - shown[i - 1] > 1) items.push('gap')
+    items.push(n)
+  })
+  return (
+    <nav aria-label={label} className="pager">
+      <button type="button" className="pager-step" disabled={page <= 1} onClick={() => onChange(page - 1)} aria-label={tr('Previous page', '上一页')}>‹</button>
+      <span className="pager-numbers">
+        {items.map((n, i) => n === 'gap'
+          ? <span key={`gap-${i}`} className="pager-gap" aria-hidden>…</span>
+          : <button key={n} type="button" className="pager-num num" aria-current={n === page ? 'page' : undefined} aria-label={tr(`Page ${n}`, `第 ${n} 页`)}
+              onClick={() => onChange(n)}>{n}</button>)}
+      </span>
+      <span className="pager-compact num">{page} / {pages}</span>
+      <button type="button" className="pager-step" disabled={page >= pages} onClick={() => onChange(page + 1)} aria-label={tr('Next page', '下一页')}>›</button>
+    </nav>
+  )
+}
+
 /** The list style used everywhere: a white card, rows separated by hairlines. */
 export const LIST = 'card divide-y divide-[var(--rule)] overflow-hidden'
 export const ROW = 'flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-3 text-body'

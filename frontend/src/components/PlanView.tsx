@@ -93,7 +93,7 @@ function StepIcon({ s }: { s: PlanStep }) {
     cancelled: ['–', 'var(--ink-2)', tr('cancelled', '已取消')], skipped: ['–', 'var(--ink-2)', tr('skipped', '未执行')],
   }
   const [glyph, color, label] = map[s.status] ?? ['○', 'var(--ink-2)', tr('waiting for you', '等你确认')]
-  return <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-semibold" style={{ color, borderColor: color }} title={label} aria-label={label}>{glyph}</span>
+  return <span className="step-glyph mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-semibold" style={{ color, borderColor: color }} title={label} aria-label={label}>{glyph}</span>
 }
 
 function title(p: Plan, tr: (en: string, zh: string) => string) {
@@ -196,7 +196,8 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
               const own = s.status === 'pending' ? alarmsOf(s) : null
               return (
                 <li key={s.id} className="flex gap-2.5 text-body leading-snug">
-                  <StepIcon s={s} />
+                  {/* keyed by status: a step that changes state shows its new symbol with a small pop */}
+                  <StepIcon key={s.status} s={s} />
                   <span className={`min-w-0 flex-1 ${s.status === 'cancelled' || s.status === 'skipped' ? 'text-ink2 line-through' : ''}`}>
                     {s.text}
                     {s.status === 'waiting' && s.run_at && <span className="block text-xs text-ink2">{tr(`runs ${stamp(s.run_at)}, after the rules check it again`, `${stamp(s.run_at)} 执行，执行前会再检查一次`)}</span>}

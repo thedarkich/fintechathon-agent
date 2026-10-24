@@ -22,6 +22,7 @@ import type {
   Subscriptions,
   Transfer,
   Txn,
+  TxnQuery,
   UploadResult,
   Wealth,
   Lock,
@@ -135,7 +136,11 @@ export const api = {
 
   // the bank, read directly
   overview: (lang: Lang) => request<Overview>(`/api/bank/overview?lang=${lang}`),
-  transactions: (days = 90, q = '', limit = 200) => request<{ count: number; items: Txn[] }>(`/api/bank/transactions?days=${days}&limit=${limit}${q ? `&q=${encodeURIComponent(q)}` : ''}`),
+  transactions: (days = 90, q = '', limit = 200, offset = 0) => request<{ count: number; items: Txn[] }>(`/api/bank/transactions?days=${days}&limit=${limit}&offset=${offset}${q ? `&q=${encodeURIComponent(q)}` : ''}`),
+  searchTransactions: (query: TxnQuery, offset = 0, size = 10) => request<{ count: number; items: Txn[] }>(`/api/bank/transactions/search?${new URLSearchParams([
+    ...Object.entries(query).filter(([, v]) => v !== null && v !== undefined && v !== '').map(([k, v]) => [k, String(v)]),
+    ['offset', String(offset)], ['size', String(size)],
+  ])}`),
   report: (period: 'month' | 'year', offset: number) => request<Report>(`/api/bank/report?period=${period}&offset=${offset}`),
   anomalies: () => request<{ items: Anomaly[] }>('/api/bank/anomalies'),
   subscriptions: (lang: Lang) => request<Subscriptions>(`/api/bank/subscriptions?lang=${lang}`),

@@ -273,7 +273,7 @@ def transactions(text: str, category: str | None, *, incoming: bool = False) -> 
         payee = m.group(1)  # '我和张伟之间的转账记录', 'transfer history with Zhang Wei'
     elif has(text, "给", "to "):
         payee = payee_from(text)
-    args = {"limit": 10}
+    args = {}  # every match, a page at a time; a number caps it
     # '最近五笔交易', 'last 5 transactions'
     if m := re.search(r"(\d{1,2}|[一二两三四五六七八九十]{1,3})\s*笔", text) or re.search(r"\blast (\d{1,2}) (?:transactions|payments)", text.lower()):
         args["limit"] = min(max(int(cn_number(m.group(1)) or 10), 1), 50)

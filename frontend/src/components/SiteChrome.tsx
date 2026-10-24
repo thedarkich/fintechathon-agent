@@ -6,7 +6,7 @@ import { clearAdminToken, getAdminToken } from '../api/client'
 import { isOperator, useAuth } from '../lib/auth'
 import { useLang } from '../i18n'
 import { BrandMark } from './Seal'
-import { LangSwitch, TextSizeSwitch, ThemeSwitch } from './Toggles'
+import { LangSwitch, ThemeSwitch } from './Toggles'
 
 /** Signing out from the header or from the phone's More sheet. */
 export function useSignOut() {
@@ -73,7 +73,7 @@ function AccountMenu({ status, signOut, busy }: { status?: string; signOut: () =
 
 /**
  * The header: one white row that stays at the top, the same on the public site and in the app.
- * Logo and name, the pages, then large text, language and theme, and the account (or a sign-in button).
+ * Logo and name, the pages, then language and theme, and the account (or a sign-in button).
  */
 export function SiteHeader({ workspace = false, status, extra }: { workspace?: boolean; status?: string; extra?: ReactNode }) {
   const { tr, t } = useLang()
@@ -114,7 +114,7 @@ export function SiteHeader({ workspace = false, status, extra }: { workspace?: b
         {links.map(([to, label]) => <NavLink key={to} to={to} className={({ isActive }) => isActive && (workspace || to === '/how') ? 'is-active' : ''}>{label}</NavLink>)}
       </nav>
       <div className="site-actions">
-        <TextSizeSwitch /><LangSwitch /><ThemeSwitch />
+        <LangSwitch /><ThemeSwitch />
         {workspace ? <>
           {extra}
           {signedIn && <AccountMenu status={status} signOut={signOut} busy={busy} />}

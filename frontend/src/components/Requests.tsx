@@ -66,8 +66,8 @@ function RequestModal({ planId, row, onClose }: { planId: string; row?: PlanRow;
   const dialog = useRef<HTMLDivElement>(null)
   useModal(dialog, onClose)
   return (
-    <div className="fixed inset-0 z-40 flex justify-center bg-black/50 sm:items-center sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={dialog} role="dialog" aria-modal="true" aria-label={tr('What happened', '办理详情')} tabIndex={-1} className="flex h-full w-full flex-col overflow-hidden bg-card outline-none sm:h-auto sm:max-h-[92dvh] sm:max-w-5xl sm:rounded-box sm:border sm:border-rule2">
+    <div className="fade-in fixed inset-0 z-40 flex justify-center bg-black/50 sm:items-center sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div ref={dialog} role="dialog" aria-modal="true" aria-label={tr('What happened', '办理详情')} tabIndex={-1} className="modal-in flex h-full w-full flex-col overflow-hidden bg-card outline-none sm:h-auto sm:max-h-[92dvh] sm:max-w-5xl sm:rounded-box sm:border sm:border-rule2">
         <div className="flex items-start justify-between gap-3 border-b border-rule px-4 py-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold" title={row?.request}>“{row?.request ?? ''}”</p>

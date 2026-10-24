@@ -11,7 +11,6 @@ import { useAuth } from '../lib/auth'
 import { useOverview } from '../lib/bank'
 import { useChat } from '../lib/chat'
 import { yuan } from '../lib/format'
-import { useTextSize } from '../lib/textSize'
 
 const BIRTHDAY: [string, string] = ["It's my wife's birthday next month, help me prepare", '下个月老婆生日，帮我准备一下']
 
@@ -24,8 +23,6 @@ const SCENARIOS: [string, IconName, Tint, [string, string]][] = [
   ['/subscriptions', 'bell', 'cyan', ['Subscriptions', '自动续费']],
   ['birthday', 'agents', 'ink', ['Several at once', '多件事一起办']],
 ]
-// large text (长辈版) keeps Home to the four things used most
-const LARGE = ['/send', '/bills', '/controls', '/subscriptions']
 
 const HIDE_KEY = 'hide-balance'
 
@@ -39,8 +36,6 @@ export default function Home() {
   const { user } = useAuth()
   const { send, pending } = useChat()
   const overview = useOverview()
-  const [size, setSize] = useTextSize()
-  const large = size === 'large'
   const subs = useQuery({ queryKey: ['subscriptions', lang], queryFn: () => api.subscriptions(lang) })
   const notes = useQuery({ queryKey: ['notifications', lang], queryFn: () => api.notifications(lang) })
   const recent = useQuery({ queryKey: ['transactions', 'home'], queryFn: () => api.transactions(30, '', 5) })
@@ -53,7 +48,6 @@ export default function Home() {
   const hour = data ? Number(new Date(data.now).toLocaleString('en-GB', { timeZone: 'Asia/Shanghai', hour: '2-digit', hour12: false })) : 12
   const hello = hour < 11 ? tr('Good morning', '早上好') : hour < 18 ? tr('Good afternoon', '下午好') : tr('Good evening', '晚上好')
   const next = (subs.data?.items ?? []).filter((s) => s.status === 'active').sort((a, b) => a.next_charge_on.localeCompare(b.next_charge_on))[0]
-  const services = large ? SCENARIOS.filter(([to]) => LARGE.includes(to)) : SCENARIOS
   const link = (to: string) => (to === 'birthday' ? `/assistant?ask=${encodeURIComponent(tr(BIRTHDAY[0], BIRTHDAY[1]))}` : to)
   const todo = forYou.length + (next ? 1 : 0)
 
@@ -89,16 +83,10 @@ export default function Home() {
             </dl>
           )}
         </div>
-        <nav aria-label={tr('Services', '服务')} className={`home-services ${large ? 'is-large' : ''}`}>
-          {services.map(([to, icon, tint, name]) => <ServiceTile key={to} to={link(to)} icon={icon} tint={tint} label={tr(name[0], name[1])} />)}
+        <nav aria-label={tr('Services', '服务')} className="home-services">
+          {SCENARIOS.map(([to, icon, tint, name]) => <ServiceTile key={to} to={link(to)} icon={icon} tint={tint} label={tr(name[0], name[1])} />)}
         </nav>
       </section>
-      {large && (
-        <p className="mt-2 flex flex-wrap items-center justify-between gap-2 px-1 text-sm text-ink2">
-          {tr('Large text is on: Home shows the four things used most.', '已开启大字版：首页只显示最常用的四项。')}
-          <button type="button" className="min-h-11 font-medium text-[var(--action)]" onClick={() => setSize('normal')}>{tr('Back to standard', '恢复标准版')}</button>
-        </p>
-      )}
 
       <form onSubmit={submit} className="home-ask">
         <Icon name="chat" size={19} className="text-[var(--action)]" />
@@ -110,7 +98,7 @@ export default function Home() {
         </button>
       </form>
 
-      <div className={`mt-8 grid items-start gap-6 ${large ? '' : 'lg:grid-cols-2'}`}>
+      <div className="mt-8 grid items-start gap-6 lg:grid-cols-2">
         <Section title={todo ? tr(`To do (${todo})`, `待办（${todo}）`) : tr('To do', '待办')}>
           {notes.data && subs.data && !todo ? <p className={EMPTY}>{tr('Nothing needs you right now.', '暂时没有要办的事。')}</p> : (
             <ul className={LIST}>

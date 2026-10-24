@@ -142,6 +142,12 @@ export interface Overview {
 
 export interface Txn { id: string; at: string; merchant: string; fen: number; category: string; channel: string; status: string; kind: string }
 
+/** A transactions search as the assistant ran it (a card's query), or one calendar day: fetched a page at a time. */
+export interface TxnQuery {
+  start: string; end: string; category?: string | null; merchant?: string | null; payee_id?: string | null
+  direction?: string | null; min_fen?: number | null; max_fen?: number | null; limit?: number | null
+}
+
 export interface Report {
   period: 'month' | 'year'
   start: string

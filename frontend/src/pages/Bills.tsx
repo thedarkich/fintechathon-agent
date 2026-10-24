@@ -1,10 +1,13 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLang } from '../i18n'
-import { Badge, EMPTY, Notice, PageHead, PageTabs, Section, Segmented, StatTile, useTab } from '../components/bits'
+import { Badge, EMPTY, Notice, PageHead, PageTabs, Pager, Section, Segmented, StatTile, useTab } from '../components/bits'
 import { Icon } from '../components/Icon'
 import { Bars, Columns, TxnList } from '../components/Results'
+import { SpendCalendar } from '../components/SpendCalendar'
+
+const PAGE = 20 // transactions per page on the Transactions tab
 import { useChat } from '../lib/chat'
 import { category, yuan } from '../lib/format'
 
@@ -16,9 +19,12 @@ export default function Bills() {
   const [period, setPeriod] = useState<'month' | 'year'>('month')
   const [offset, setOffset] = useState(0)
   const [q, setQ] = useState('')
+  const [page, setPage] = useState(1)
   const report = useQuery({ queryKey: ['report', period, offset], queryFn: () => api.report(period, offset) })
   const anomalies = useQuery({ queryKey: ['anomalies'], queryFn: api.anomalies })
-  const txns = useQuery({ queryKey: ['transactions', 'bills', q], queryFn: () => api.transactions(90, q, 120) })
+  const recent = useQuery({ queryKey: ['transactions', 'bills-recent'], queryFn: () => api.transactions(90, '', 7) })
+  const txns = useQuery({ queryKey: ['transactions', 'bills', q, page], queryFn: () => api.transactions(90, q, PAGE, (page - 1) * PAGE), placeholderData: keepPreviousData })
+  const pages = txns.data ? Math.max(1, Math.ceil(txns.data.count / PAGE)) : 1
   const r = report.data
   const change = r && r.previous_spend_fen ? Math.round(((r.spend_fen - r.previous_spend_fen) / r.previous_spend_fen) * 100) : null
   const name = r ? (period === 'month' ? r.start.slice(0, 7) : r.start.slice(0, 4)) : ''
@@ -62,16 +68,18 @@ export default function Bills() {
 
         <div className="mt-8 grid items-start gap-8 lg:grid-cols-2">
           <Section title={tr('Where it went', '花在哪了')}>
-            <div className="card p-5"><Bars rows={r.categories.slice(0, 8).map((c) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%`, cat: c.category }))} /></div>
+            <div className="card p-5"><Bars rows={r.categories.map((c) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%`, cat: c.category }))} /></div>
           </Section>
           <Section title={tr('Recent', '最近交易')} aside={<button type="button" className="min-h-10 px-1 text-sm font-semibold text-[var(--action)]" onClick={() => setTab('transactions')}>{tr('All', '全部')}</button>}>
-            {!txns.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : <TxnList items={txns.data.items.slice(0, 7)} />}
+            {!recent.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : <TxnList items={recent.data.items} />}
           </Section>
           <Section title={tr('Top merchants', '花得最多的商户')}>
             <div className="card p-5"><Bars rows={r.top_merchants.map((m) => ({ label: m.merchant, fen: m.fen, hint: m.category ? category(m.category, lang) : undefined, cat: m.category ?? 'other' }))} /></div>
           </Section>
           <Section title={period === 'month' ? tr('Day by day', '每日支出') : tr('Month by month', '每月支出')}>
-            <div className="card p-5"><Columns series={r.series} /></div>
+            {period === 'month'
+              ? <SpendCalendar key={r.start} month={r.start} series={r.series} current={!r.complete} />
+              : <div className="card p-5"><Columns series={r.series} /></div>}
           </Section>
         </div>
       </>)}
@@ -95,9 +103,15 @@ export default function Bills() {
         </>
       )}
 
-      {tab === 'transactions' && <Section title={tr('Last 90 days', '近 90 天交易')}
-        aside={<label className="flex w-full items-center gap-2 rounded-box border border-rule2 bg-card px-3 py-2 focus-within:border-[var(--action)] focus-within:shadow-[0_0_0_1px_var(--action)] sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm outline-none" autoComplete="off" aria-label={tr('Search transactions', '搜索交易')} placeholder={tr('Search…', '搜索…')} value={q} onChange={(e) => setQ(e.target.value)} /></label>}>
-        {!txns.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : !txns.data.items.length ? <p className={EMPTY}>{tr('Nothing found.', '没有找到。')}</p> : <TxnList items={txns.data.items} />}
+      {tab === 'transactions' && <Section title={txns.data ? tr(`Last 90 days (${txns.data.count})`, `近 90 天交易（${txns.data.count} 笔）`) : tr('Last 90 days', '近 90 天交易')}
+        aside={<label className="flex w-full items-center gap-2 rounded-box border border-rule2 bg-card px-3 py-2 focus-within:border-[var(--action)] focus-within:shadow-[0_0_0_1px_var(--action)] sm:w-60"><Icon name="search" size={16} className="text-ink2" /><input className="min-w-0 w-full bg-transparent text-sm outline-none" autoComplete="off" aria-label={tr('Search transactions', '搜索交易')} placeholder={tr('Search…', '搜索…')} value={q} onChange={(e) => { setQ(e.target.value); setPage(1) }} /></label>}>
+        {!txns.data ? <div className="h-40 animate-pulse rounded-box bg-paper2" /> : !txns.data.items.length ? <p className={EMPTY}>{tr('Nothing found.', '没有找到。')}</p> : <>
+          <div className={txns.isPlaceholderData ? 'opacity-60 transition-opacity' : ''}><TxnList items={txns.data.items} /></div>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3">
+            <p className="num text-xs text-ink2" aria-live="polite">{tr(`${(page - 1) * PAGE + 1}–${Math.min(page * PAGE, txns.data.count)} of ${txns.data.count}`, `第 ${(page - 1) * PAGE + 1}–${Math.min(page * PAGE, txns.data.count)} 笔，共 ${txns.data.count} 笔`)}</p>
+            <Pager page={page} pages={pages} onChange={(n) => { setPage(n); window.scrollTo({ top: 0, behavior: 'smooth' }) }} label={tr('Pages of transactions', '交易分页')} />
+          </div>
+        </>}
       </Section>}
     </main>
   )

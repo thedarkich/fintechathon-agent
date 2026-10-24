@@ -74,7 +74,8 @@ class TransactionsArgs(Args):
     direction: Literal["in", "out", "any"] = "any"
     min_yuan: float | None = Field(default=None, ge=0)
     max_yuan: float | None = Field(default=None, ge=0)
-    limit: int = Field(default=10, ge=1, le=50)
+    # only when the customer asks for a number ('my last 5 payments'); otherwise every match, a page at a time
+    limit: int | None = Field(default=None, ge=1, le=50)
 
 
 # English names of merchants whose records are in Chinese
@@ -111,29 +112,38 @@ def transactions_resolve(ctx: Ctx, args: TransactionsArgs) -> dict:
             "max_fen": to_fen(args.max_yuan) if args.max_yuan is not None else None, "limit": args.limit}
 
 
-def transactions_run(ctx: Ctx, r: dict) -> dict:
-    rows = analysis.txns_between(ctx.session, ctx.user.id, date.fromisoformat(r["start"]),
-                                 date.fromisoformat(r["end"]) + timedelta(days=1))
-    rows = [t for t in rows if t.kind != "internal" or r["category"] == "internal"]
-    if r["category"]:
+PAGE = 10  # rows per page of a transactions card; the card pages through the rest (GET /api/bank/transactions/search)
+QUERY = ("start", "end", "category", "merchant", "payee_id", "direction", "min_fen", "max_fen", "limit")
+
+
+def matching(session, user_id: str, r: dict) -> list[Txn]:
+    """The transactions a search finds, newest first: the chat's card and every later page of it use this."""
+    rows = analysis.txns_between(session, user_id, date.fromisoformat(r["start"]), date.fromisoformat(r["end"]) + timedelta(days=1))
+    rows = [t for t in rows if t.kind != "internal" or r.get("category") == "internal"]
+    if r.get("category"):
         rows = [t for t in rows if t.category == r["category"]]
-    if r["merchant"]:
+    if r.get("merchant"):
         rows = [t for t in rows if r["merchant"].casefold() in t.counterparty.casefold()]
-    if r["payee_id"]:
+    if r.get("payee_id"):
         rows = [t for t in rows if t.payee_id == r["payee_id"]]
-    if r["direction"] == "in":
+    if r.get("direction") == "in":
         rows = [t for t in rows if t.amount_fen > 0]
-    elif r["direction"] == "out":
+    elif r.get("direction") == "out":
         rows = [t for t in rows if t.amount_fen < 0]
-    if r["min_fen"] is not None:
+    if r.get("min_fen") is not None:
         rows = [t for t in rows if abs(t.amount_fen) >= r["min_fen"]]
-    if r["max_fen"] is not None:
+    if r.get("max_fen") is not None:
         rows = [t for t in rows if abs(t.amount_fen) <= r["max_fen"]]
+    rows = sorted(rows, key=lambda t: t.at, reverse=True)
+    return rows[: r["limit"]] if r.get("limit") else rows
+
+
+def transactions_run(ctx: Ctx, r: dict) -> dict:
+    rows = matching(ctx.session, ctx.user.id, r)
     total_out = -sum(t.amount_fen for t in rows if t.amount_fen < 0 and t.status == "posted")
     total_in = sum(t.amount_fen for t in rows if t.amount_fen > 0 and t.status == "posted")
-    shown = sorted(rows, key=lambda t: t.at, reverse=True)[: r["limit"]]
-    return {"count": len(rows), "out_fen": total_out, "in_fen": total_in,
-            "items": [txn_view(t) for t in shown]}
+    return {"count": len(rows), "out_fen": total_out, "in_fen": total_in, "page_size": PAGE,
+            "items": [txn_view(t) for t in rows[:PAGE]], "query": {k: r.get(k) for k in QUERY}}
 
 
 def txn_view(t: Txn) -> dict:
@@ -169,14 +179,17 @@ def transactions_reply(ctx: Ctx, r: dict, result: dict) -> str:
     lines = [f"· {item['at'][5:16].replace('T', ' ')} {item['merchant']} {yuan(item['fen'])}"
              + (ctx.t("（已拒绝）", " (declined)") if item["status"] == "declined" else "")
              for item in result["items"]]
-    more = ctx.t(f"\n（显示最近 {len(result['items'])} 笔）", f"\n(latest {len(result['items'])} shown)") \
+    pages = -(-result["count"] // PAGE)
+    more = ctx.t(f"\n（这里是最近 {len(result['items'])} 笔；全部 {result['count']} 笔分 {pages} 页，可在卡片里翻页）",
+                 f"\n(The latest {len(result['items'])} are listed; all {result['count']} are on {pages} pages in the card.)") \
         if result["count"] > len(result["items"]) else ""
     return head + "\n" + "\n".join(lines) + more
 
 
 register(Action(
     name="transactions", args=TransactionsArgs,
-    help="Transaction history. days or start/end (YYYY-MM-DD), category, merchant, payee, direction in|out, min_yuan, max_yuan, limit.",
+    help="Payments themselves, listed (every match; the card pages through them). days or start/end (YYYY-MM-DD), "
+         "category, merchant, payee, direction in|out, min_yuan, max_yuan; limit only when a number is asked for (last 5).",
     resolve=transactions_resolve, run=transactions_run,
     describe=lambda ctx, r: ctx.t("查询交易记录", "List transactions") + txn_scope(ctx, r), reply=transactions_reply,
     card=lambda ctx, r, result: {"type": "transactions", **result},

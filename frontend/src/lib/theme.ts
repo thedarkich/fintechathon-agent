@@ -36,6 +36,10 @@ export function useTheme(): [Theme, (t: Theme) => void] {
   useEffect(() => apply(theme), [theme])
 
   const setTheme = (t: Theme) => {
+    // colours cross-fade for a moment when the person switches (index.css: .theme-fade), not on first paint
+    const root = document.documentElement
+    root.classList.add('theme-fade')
+    window.setTimeout(() => root.classList.remove('theme-fade'), 400)
     setThemeState(t)
     apply(t)
     try {

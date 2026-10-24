@@ -401,3 +401,32 @@ def test_overseas_switch_picks_the_card_it_would_change(bank):
     assert body["plan"]["status"] == "failed"
     assert "Every card already has overseas payments off" in body["messages"][-1]["text"]
     assert plan_of(bank.chat("开通借记卡的境外支付"))["tier"] == "red"
+
+
+def test_a_long_transactions_answer_pages_through_every_match(bank):
+    # the card used to show the latest 10 and stop; now its pages cover every match once, newest first
+    card = bank.chat("show my payment history", lang="en")["messages"][-1]["cards"][0]
+    assert card["type"] == "transactions" and card["count"] > 25 and len(card["items"]) == card["page_size"] == 10
+    query = {k: v for k, v in card["query"].items() if v is not None}
+    first = bank.get("/api/bank/transactions/search", **query, offset=0, size=10).json()
+    assert [x["id"] for x in first["items"]] == [x["id"] for x in card["items"]]
+    seen, offset = [x["id"] for x in card["items"]], 10
+    while offset < card["count"]:
+        page = bank.get("/api/bank/transactions/search", **query, offset=offset, size=10).json()
+        assert page["count"] == card["count"]
+        seen += [x["id"] for x in page["items"]]
+        offset += 10
+    assert len(seen) == len(set(seen)) == card["count"]
+    stamps = [x["at"] for x in card["items"]]
+    assert stamps == sorted(stamps, reverse=True)
+
+
+def test_asking_for_a_number_of_payments_caps_the_list(bank):
+    card = bank.chat("最近五笔交易")["messages"][-1]["cards"][0]
+    assert card["count"] == len(card["items"]) == 5
+
+
+def test_transaction_search_needs_a_sane_range_and_a_signed_in_customer(bank):
+    assert bank.get("/api/bank/transactions/search", start="2026-10-10", end="2026-01-01").status_code == 400
+    bank.client.cookies.clear()
+    assert bank.get("/api/bank/transactions/search", start="2026-01-01", end="2026-01-31").status_code == 401

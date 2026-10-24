@@ -1,13 +1,14 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { ChevronDown } from 'lucide-react'
 import { api, errorText } from '../api/client'
-import type { Card } from '../api/types'
+import type { Card, TxnQuery } from '../api/types'
 import { useLang } from '../i18n'
 import { useChat } from '../lib/chat'
 import { category, categoryColor, stamp, yuan } from '../lib/format'
 import { CategoryIcon } from './Icon'
-import { Badge, LIST } from './bits'
+import { Badge, LIST, LoadError, Pager } from './bits'
 import { ConfirmCard } from './PlanView'
 import { SealMark } from './Seal'
 
@@ -106,6 +107,62 @@ export function Columns({ series }: { series: { label: string; fen: number }[] }
   )
 }
 
+/** Transactions as the assistant's rows: badge, merchant, category and time, the amount. */
+function txnRows(items: Txn[], tr: (en: string, zh: string) => string, lang: 'zh' | 'en'): Row[] {
+  return items.map((x) => ({
+    key: x.id, muted: x.status === 'declined', lead: <CategoryIcon code={x.category} size="1rem" badge />,
+    main: <>{x.merchant}{x.status === 'declined' && <span className="ml-1.5 text-xs text-cinnabar">{tr('declined', '已拒绝')}</span>}</>,
+    sub: `${category(x.category, lang)} · ${stamp(x.at)}`,
+    value: <span className={x.fen > 0 ? 'text-jade' : ''}>{x.fen > 0 ? '+' : ''}{yuan(x.fen)}</span>,
+  }))
+}
+
+/**
+ * The assistant's transactions card: every match, ten to a page. The first page came with the answer; later ones are
+ * the same search, run again by the bank for this customer when the page is turned.
+ */
+function TxnPages({ card }: { card: Card }) {
+  const { tr, lang } = useLang()
+  const [page, setPage] = useState(1)
+  const query: TxnQuery | undefined = card.query
+  const size: number = card.page_size ?? 10
+  const pages = query ? Math.max(1, Math.ceil(card.count / size)) : 1
+  const later = useQuery({
+    queryKey: ['txn-search', query, page, size], queryFn: () => api.searchTransactions(query!, (page - 1) * size, size),
+    enabled: !!query && page > 1, placeholderData: keepPreviousData,
+  })
+  const items: Txn[] = page === 1 ? card.items : later.data?.items ?? []
+  const from = (page - 1) * size + 1
+  const to = Math.min(page * size, card.count)
+  return (
+    <div className="space-y-1">
+      {page > 1 && later.isError ? <LoadError retry={() => void later.refetch()} />
+        : page > 1 && !later.data ? <div className="card h-40 animate-pulse" aria-hidden />
+        : <div className={later.isPlaceholderData && page > 1 ? 'opacity-60 transition-opacity' : ''}><Rows items={txnRows(items, tr, lang)} /></div>}
+      {pages > 1 && (
+        <div className="flex flex-wrap items-center justify-between gap-x-3">
+          <p className="num text-xs text-ink2" aria-live="polite">{tr(`${from}–${to} of ${card.count}`, `第 ${from}–${to} 笔，共 ${card.count} 笔`)}</p>
+          <Pager page={page} pages={pages} onChange={setPage} label={tr('Pages of transactions', '交易分页')} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** An analysis answer's rows, all of them, ten to a page. */
+function AnalysisRows({ rows, show }: { rows: [string, number][]; show: (v: number) => string }) {
+  const { tr } = useLang()
+  const [page, setPage] = useState(1)
+  const size = 10
+  const pages = Math.ceil(rows.length / size)
+  return <>
+    <ul className="mt-3 divide-y divide-rule">
+      {rows.slice((page - 1) * size, page * size).map(([label, value]) => <li key={label} className="flex justify-between py-1.5 text-sm"><span className="num text-ink2">{label}</span><span className="num font-semibold">{show(value)}</span></li>)}
+    </ul>
+    <Pager page={page} pages={pages} onChange={setPage} label={tr('Pages of rows', '明细分页')} />
+  </>
+}
+
 function Ask({ text }: { text: string }) {
   const { send, pending } = useChat()
   return <button type="button" disabled={!!pending} onClick={() => void send(text)} className="btn btn-line py-1 text-cap">{text}</button>
@@ -196,21 +253,14 @@ export function Result({ card }: { card: Card }) {
         }))} />
       )
     case 'transactions':
-      return (
-        <Rows items={card.items.map((x: { id: string; at: string; merchant: string; fen: number; status: string; category: string }) => ({
-          key: x.id, muted: x.status === 'declined', lead: <CategoryIcon code={x.category} size="1rem" badge />,
-          main: <>{x.merchant}{x.status === 'declined' && <span className="ml-1.5 text-xs text-cinnabar">{tr('declined', '已拒绝')}</span>}</>,
-          sub: `${category(x.category, lang)} · ${stamp(x.at)}`,
-          value: <span className={x.fen > 0 ? 'text-jade' : ''}>{x.fen > 0 ? '+' : ''}{yuan(x.fen)}</span>,
-        }))} />
-      )
+      return <TxnPages card={card} />
     case 'spending':
-      return <div className="card p-4"><Bars rows={card.categories.slice(0, 8).map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%`, cat: c.category }))} /></div>
+      return <div className="card p-4"><Bars rows={card.categories.map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%`, cat: c.category }))} /></div>
     case 'report':
       return (
         <div className="card p-4">
           <Columns series={card.series} />
-          <div className="mt-4"><Bars rows={card.categories.slice(0, 6).map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%`, cat: c.category }))} /></div>
+          <div className="mt-4"><Bars rows={card.categories.map((c: { category: string; fen: number; share: number }) => ({ label: category(c.category, lang), fen: c.fen, hint: `${Math.round(c.share * 100)}%`, cat: c.category }))} /></div>
         </div>
       )
     case 'anomalies':
@@ -288,15 +338,9 @@ export function Result({ card }: { card: Card }) {
           <div className="card p-4">
             <p className="text-sm text-ink2">{card.title}</p>
             {card.value !== null && <p className="num cond mt-1 text-[1.8rem] font-semibold leading-none">{show(card.value)}</p>}
-            {card.rows.length > 0 && (
-              <ul className="mt-3 divide-y divide-rule">
-                {card.rows.slice(-8).map(([label, value]: [string, number]) => <li key={label} className="flex justify-between py-1.5 text-sm"><span className="num text-ink2">{label}</span><span className="num font-semibold">{show(value)}</span></li>)}
-              </ul>
-            )}
+            {card.rows.length > 0 && <AnalysisRows rows={card.rows} show={show} />}
             {card.rows.length > 0 && card.rows.every(([label]: [string, number]) => /^\d{4}-\d{2}$/.test(label)) && (
-              <p className="mt-2 text-xs text-ink2">{card.rows.length > 8
-                ? tr('The latest 8 months with any; months with none are left out.', '最近 8 个有记录的月份；没有记录的月份不列出。')
-                : tr('Only months with any are listed.', '只列出有记录的月份。')}</p>
+              <p className="mt-2 text-xs text-ink2">{tr('Only months with any are listed.', '只列出有记录的月份。')}</p>
             )}
           </div>
           <details className="agent-detail !mt-0">

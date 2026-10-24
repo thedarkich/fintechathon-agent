@@ -71,8 +71,8 @@ export function VerifyDialog({ plan, hasPasskey, onClose }: { plan: Plan; hasPas
   const latest = phone.data?.items[0]
   const ready = pin.length === 6 && (method === 'passkey' || (!!challenge && code.length === 6)) && (!needs || secret.length >= (needs === 'new_pin' ? 6 : 10))
   return (
-    <div className="fixed inset-0 z-[60] flex justify-center bg-black/50 sm:items-center sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <form ref={dialog} onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="verify-title" className="flex h-full w-full flex-col overflow-hidden bg-[var(--card)] outline-none sm:h-auto sm:max-h-[92dvh] sm:max-w-lg sm:rounded-box sm:border-[1.5px] sm:border-rule2">
+    <div className="fade-in fixed inset-0 z-[60] flex justify-center bg-black/50 sm:items-center sm:p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <form ref={dialog} onSubmit={submit} role="dialog" aria-modal="true" aria-labelledby="verify-title" className="modal-in flex h-full w-full flex-col overflow-hidden bg-[var(--card)] outline-none sm:h-auto sm:max-h-[92dvh] sm:max-w-lg sm:rounded-box sm:border-[1.5px] sm:border-rule2">
         <div className="flex items-start justify-between gap-3 border-b-[1.5px] border-rule2 px-4 py-3">
           <div className="min-w-0">
             <p id="verify-title" className="flex items-center gap-2 font-semibold"><ShieldCheck size={18} className="text-cinnabar" />{tr('Strong verification', '强验证')}</p>

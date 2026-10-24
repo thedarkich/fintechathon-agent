@@ -1,7 +1,7 @@
 """The app's own pages: the customer reading their bank directly (no AI involved), plus the
 simulated phone, reminders, the audit trail, safety locks and passkeys."""
 
-from datetime import timedelta
+from datetime import date, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -10,7 +10,7 @@ from sqlmodel import Session, select
 
 from app import clock
 from app.agent import audit, locks, verify
-from app.agent.actions.queries import card_view, txn_view
+from app.agent.actions.queries import card_view, matching, txn_view
 from app.agent.actions.subscriptions import subscriptions_run
 from app.agent.actions.wealth import holdings_run, products_run
 from app.agent.core import Ctx
@@ -73,7 +73,7 @@ async def overview(request: Request, lang: Lang = "zh", user_id: str = Depends(r
 @router.get("/bank/transactions")
 async def transactions(request: Request, days: int = Query(30, ge=1, le=800), category: str | None = None,
                        q: str | None = Query(None, max_length=40), limit: int = Query(100, ge=1, le=500),
-                       user_id: str = Depends(require_user)):
+                       offset: int = Query(0, ge=0), user_id: str = Depends(require_user)):
     with Session(request.app.state.runtime.engine) as session:
         today = clock.now(session, user_id).date()
         rows = analysis.txns_between(session, user_id, today - timedelta(days=days - 1), today + timedelta(days=1))
@@ -82,7 +82,25 @@ async def transactions(request: Request, days: int = Query(30, ge=1, le=800), ca
         if q:
             rows = [t for t in rows if q.casefold() in t.counterparty.casefold()]
         rows = sorted(rows, key=lambda t: t.at, reverse=True)
-        return {"count": len(rows), "items": [txn_view(t) for t in rows[:limit]]}
+        return {"count": len(rows), "items": [txn_view(t) for t in rows[offset:offset + limit]]}
+
+
+@router.get("/bank/transactions/search")
+async def search_transactions(request: Request, start: date, end: date, category: str | None = Query(None, max_length=30),
+                              merchant: str | None = Query(None, max_length=40), payee_id: str | None = Query(None, max_length=40),
+                              direction: Literal["in", "out", "any"] = "any", min_fen: int | None = Query(None, ge=0),
+                              max_fen: int | None = Query(None, ge=0), limit: int | None = Query(None, ge=1, le=50),
+                              offset: int = Query(0, ge=0), size: int = Query(10, ge=1, le=50),
+                              user_id: str = Depends(require_user)):
+    """One page of a search, as the assistant's transactions card ran it (its query), or one day of the calendar.
+    Read-only, and only the signed-in customer's own records."""
+    if end < start or (end - start).days > 800:
+        raise problem(400, "Pick a range of at most 800 days.", "请选择不超过 800 天的时间范围。", "BAD_RANGE")
+    r = {"start": start.isoformat(), "end": end.isoformat(), "category": category, "merchant": merchant, "payee_id": payee_id,
+         "direction": direction, "min_fen": min_fen, "max_fen": max_fen, "limit": limit}
+    with Session(request.app.state.runtime.engine) as session:
+        rows = matching(session, user_id, r)
+        return {"count": len(rows), "items": [txn_view(t) for t in rows[offset:offset + size]]}
 
 
 @router.get("/bank/report")
