@@ -240,7 +240,7 @@ async def audit_verify(request: Request, user_id: str = Depends(require_user)):
         return audit.verify(session, user_id)
 
 
-PAYMENT_ACTIONS = {"transfer", "schedule_transfer", "merchant_order", "wealth_subscribe"}
+PAYMENT_ACTIONS = {"transfer", "phone_transfer", "schedule_transfer", "merchant_order", "wealth_subscribe"}
 
 
 def bank_outcome(session: Session, plan: Plan, lang: str) -> tuple[str | None, str | None]:
@@ -248,7 +248,7 @@ def bank_outcome(session: Session, plan: Plan, lang: str) -> tuple[str | None, s
     the customer's history says what happened to the money, not only that the step ran."""
     for step in plan.steps:
         transfer_id = (step.get("result") or {}).get("transfer_id")
-        row = session.get(Transfer, transfer_id) if step["action"] == "transfer" and transfer_id else None
+        row = session.get(Transfer, transfer_id) if step["action"] in ("transfer", "phone_transfer") and transfer_id else None
         if row is None:
             continue
         zh = lang == "zh"

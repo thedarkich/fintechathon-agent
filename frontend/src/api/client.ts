@@ -102,7 +102,9 @@ async function request<T>(path: string, init: RequestInit = {}, admin = false): 
   }
   const body = await res.json().catch(() => ({}))
   if (res.status === 429) throw new RateLimitedError(body.message_en ?? 'Too many attempts. Wait a minute and try again.', body.message_zh ?? '尝试过于频繁，请稍后再试。')
-  if (res.status === 401 && path !== '/api/me') throw new AuthError(body.message_en ?? 'Sign in first.')
+  // a wrong PIN, SMS code or passkey is a 401 too, with its own code and message: only a missing session signs you out
+  const signedOut = !body.code || body.code === 'NOT_SIGNED_IN'
+  if (res.status === 401 && signedOut && path !== '/api/me') throw new AuthError(body.message_en ?? 'Sign in first.')
   if (!res.ok) throw new ApiError(res.status, body.code, body.message_en ?? `${res.status} on ${path}`, body.message_zh ?? '请求未完成。')
   return body as T
 }

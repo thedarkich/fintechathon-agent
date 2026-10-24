@@ -93,6 +93,19 @@ changes, `git grep` the old value and update every place.
   SECURITY (threat table, "beyond the brief", known risk 15), SPEC §10a, READMEs, DEMO (optional 20-second swap),
   PITCH and one line on slide 11 of each deck (notes still 9:00). The team decided the real Mini Program comes later
   (for the final, if the entry gets there).
+- **Full click-through with Qwen on (24 October, evening):** every page clicked (an automated pass over 16 pages, 0
+  errors) and each flow done by hand: WeChat request → confirm in the app; transfers by payee and by phone number with
+  PIN and SMS code; card switches, freeze, unfreeze, limit; risk questionnaire, buy, redeem; cancel a subscription;
+  History details and the audit chain; three bypass attempts → lock → unlock; the birthday plan run with the demo clock;
+  sign-in and sign-up checks. Fixed:
+  - a wrong PIN, SMS code or passkey said "Your session ended. Sign in again." (any 401 was read as signed out); it now
+    says what was wrong;
+  - an English message with a Chinese name in it ("Cancel 百度网盘SVIP", sent by the English Subscriptions page) got a
+    Chinese reply; a message that mixes both now gets the app's language;
+  - after bypass attempts, Qwen also marked the next plain request suspicious (it saw them in the history) and the card
+    gave the bypass reason; the prompt now says to judge the latest message (checked once in the browser, not measured);
+  - History showed no amount and no "on its way / returned" for transfers by phone number;
+  - a saved payee's note used Chinese brackets in English; `favicon.ico` was missing (a 404 in the console).
 
 ## Still to do
 
@@ -140,6 +153,11 @@ Before submitting:
   rendering). The fix is a breaking upgrade to v7, left by the team's decision (22 October).
 - The last pre-push `npm audit` (24 October) couldn't reach the registry, so it didn't run.
 - The Qwen numbers come from the run before the last prompt fixes (see above).
+- The card, invest and subscription buttons send a sentence to the assistant: **Buy** always asks for ¥5,000 and
+  **Redeem** for ¥1,000 (the confirm card shows it and can be cancelled), and each tap is a model call when Qwen is on.
+- In English, transaction lists show counterparties as the bank recorded them (Chinese names such as 美团外卖, 刘洋),
+  as a Chinese bank statement would; payee and product pages use their English names.
+- Transfers that were returned or cancelled still count towards the day's ¥1,000 total (the stricter reading).
 
 ## Rules
 

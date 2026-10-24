@@ -190,7 +190,7 @@ function Question({ card }: { card: Card }) {
               <p className="text-sm font-semibold">{i + 1}. {lang === 'zh' ? q.question_zh : q.question_en}</p>
               <div className="demo-options !my-2">
                 {(lang === 'zh' ? q.choices_zh : q.choices_en).map((choice, j) => (
-                  <button key={choice} type="button" aria-pressed={answers[i] === j + 1} onClick={() => { const next = [...answers]; next[i] = j + 1; setAnswers(next) }}>{choice}</button>
+                  <button key={choice} type="button" aria-pressed={answers[i] === j + 1} onClick={() => setAnswers((now) => { const next = [...now]; next[i] = j + 1; return next })}>{choice}</button>
                 ))}
               </div>
             </li>

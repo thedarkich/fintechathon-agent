@@ -138,7 +138,7 @@ function SendForm() {
                     {found?.kind === 'payee' && (
                       <div className="flex items-center gap-3 px-1 py-1">
                         <Avatar name={found.payee.name} />
-                        <span className="min-w-0"><span className="block font-semibold">{found.payee.name}{found.payee.note && <span className="font-normal text-ink2">（{found.payee.note}）</span>}</span>
+                        <span className="min-w-0"><span className="block font-semibold">{found.payee.name}{found.payee.note && <span className="font-normal text-ink2">{tr(` (${found.payee.note})`, `（${found.payee.note}）`)}</span>}</span>
                           <span className="block text-sm text-ink2">{found.payee.bank} ****{found.payee.account_tail} · {tr('saved payee', '已保存的收款人')}</span></span>
                       </div>
                     )}

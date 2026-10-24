@@ -470,6 +470,11 @@ def test_everyday_wordings_find_their_action(bank):
         plan = plan_of(bank.chat(text, lang="en" if text.isascii() else "zh"))
         assert plan and [s["action"] for s in plan["steps"]] == [action], (text, plan)
     assert "“女朋友”" in bank.chat("我想给我女朋友转500")["messages"][-1]["text"]
+    # a Chinese name in an English message (what the English Subscriptions page sends) keeps the reply in English
+    body = bank.chat("Cancel 百度网盘SVIP", lang="en")
+    assert [s["action"] for s in plan_of(body)["steps"]] == ["subscription_cancel"]
+    assert "Please check" in body["messages"][-1]["text"] and "请核对" not in body["messages"][-1]["text"]
+    assert "请核对" in bank.chat("取消百度网盘SVIP")["messages"][-1]["text"]
 
 
 def test_the_birthday_reply_names_the_date_the_customer_gave(bank):

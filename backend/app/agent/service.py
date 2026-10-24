@@ -16,11 +16,12 @@ NUMERIC_FIELDS = {"amount_yuan", "total_yuan", "daily_limit_yuan", "horizon_mont
 
 
 def detect_lang(text: str, fallback: str) -> str:
-    if re.search(r"[一-鿿]", text):
-        return "zh"
-    if re.search(r"[A-Za-z]{2,}", text):
-        return "en"
-    return fallback if fallback in ("zh", "en") else "zh"
+    """The message's own language; one that mixes both ("Cancel 百度网盘SVIP" sent from the English app) gets the app's."""
+    fallback = fallback if fallback in ("zh", "en") else "zh"
+    chinese, latin = re.search(r"[一-鿿]", text), re.search(r"[A-Za-z]{2,}", text)
+    if chinese and latin:
+        return fallback
+    return "zh" if chinese else "en" if latin else fallback
 
 
 def conversation_for(session: Session, user: UserAccount, conversation_id: str | None) -> Conversation:

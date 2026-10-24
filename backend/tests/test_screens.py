@@ -38,6 +38,8 @@ def test_first_transfer_to_a_number_is_a_new_payee(bank):
     assert "手机号" in labels and "提醒" in labels
     done = bank.approve(plan).json()["plan"]
     assert done["status"] == "done"
+    row = next(p for p in bank.get("/api/plans").json()["items"] if p["id"] == plan["id"])
+    assert row["fen"] == 20_000  # History shows what a phone-number transfer sent
     with Session(bank.runtime.engine) as session:
         payee = session.exec(select(Payee).where(Payee.phone == phone)).one()
         assert payee.name.startswith("*")  # saved under the masked name the customer saw
