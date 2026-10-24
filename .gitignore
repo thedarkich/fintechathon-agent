@@ -17,3 +17,6 @@ data/
 !.claude/skills/*/data/
 deploy/runtime.env
 deploy/backups/
+
+# PDFs the submission builders write
+submission/pdf/

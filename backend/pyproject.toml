@@ -22,6 +22,7 @@ default = true
 
 [dependency-groups]
 dev = [
+    "markdown>=3.11.2",
     "pytest",
     "ruff",
 ]

@@ -1,0 +1,52 @@
+<section id="architecture" data-transition="fade" style="background:#F4F7F5;color:#13221B;font-family:'Noto Sans SC', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:12px">
+<h2 style="font-size:72px;font-weight:700;line-height:1.15;color:#13221B">架构：AI 规划，七道代码关卡把关</h2>
+<div style="display:flex;flex-direction:row;gap:24px">
+<div style="flex:2;display:flex;flex-direction:row;gap:32px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:20px;padding:24px 28px">
+<div style="flex:1;display:flex;flex-direction:column;gap:6px"><h3 style="font-size:32px;font-weight:700;line-height:1.3">网页应用</h3><p style="font-size:24px;line-height:1.4;color:#4A5A52">对话 · 语音 · 拍小票，手机电脑都能用</p></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px"><h3 style="font-size:32px;font-weight:700;line-height:1.3">人工客服台</h3><p style="font-size:24px;line-height:1.4;color:#4A5A52">可接管对话，不能替客户确认</p></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px;background:#FBFCFA;border:2px dashed #9DB3A7;border-radius:20px;padding:24px 28px"><h3 style="font-size:32px;font-weight:700;line-height:1.3">大模型（AI）</h3><p style="font-size:24px;line-height:1.4;color:#4A5A52">通义千问等，只收到客户原话</p></div>
+</div>
+<div style="display:flex;flex-direction:row;justify-content:center"><x-shape kind="arrow-down" style="width:16px;height:28px;background:#9DB3A7"></x-shape></div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#E9EEEB;border-radius:20px;padding:20px 24px">
+<p style="font-size:24px;font-weight:700;color:#4A5A52">FastAPI 服务：只有第 2 步是 AI（虚线框），其余都是固定代码</p>
+<div style="display:flex;flex-direction:row;align-items:center;gap:8px">
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;gap:6px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:16px;padding:16px"><h3 style="font-size:32px;font-weight:700;line-height:1.2"><span style="color:#1A7F4F">1</span> 筛查</h3><p style="font-size:24px;line-height:1.35;color:#4A5A52">标记绕过话术，隐藏密码</p></div>
+<x-shape kind="arrow-right" style="width:24px;height:12px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;gap:6px;background:#FBFCFA;border:2px dashed #9DB3A7;border-radius:16px;padding:16px"><h3 style="font-size:32px;font-weight:700;line-height:1.2"><span style="color:#1A7F4F">2</span> 规划</h3><p style="font-size:24px;line-height:1.35;color:#4A5A52">大模型，只从 43 个操作里选</p></div>
+<x-shape kind="arrow-right" style="width:24px;height:12px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;gap:6px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:16px;padding:16px"><h3 style="font-size:32px;font-weight:700;line-height:1.2"><span style="color:#1A7F4F">3</span> 校验</h3><p style="font-size:24px;line-height:1.35;color:#4A5A52">严格格式，最多 8 步</p></div>
+<x-shape kind="arrow-right" style="width:24px;height:12px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;gap:6px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:16px;padding:16px"><h3 style="font-size:32px;font-weight:700;line-height:1.2"><span style="color:#1A7F4F">4</span> 匹配</h3><p style="font-size:24px;line-height:1.35;color:#4A5A52">名字、卡片对照本人记录</p></div>
+<x-shape kind="arrow-right" style="width:24px;height:12px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;gap:6px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:16px;padding:16px"><h3 style="font-size:32px;font-weight:700;line-height:1.2"><span style="color:#1A7F4F">5</span> 定级</h3><p style="font-size:24px;line-height:1.35;color:#4A5A52">直接办 / 需确认 / 需验证</p></div>
+<x-shape kind="arrow-right" style="width:24px;height:12px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;gap:6px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:16px;padding:16px"><h3 style="font-size:32px;font-weight:700;line-height:1.2"><span style="color:#1A7F4F">6</span> 确认</h3><p style="font-size:24px;line-height:1.35;color:#4A5A52">内容哈希 + 密码验证</p></div>
+<x-shape kind="arrow-right" style="width:24px;height:12px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;gap:6px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:16px;padding:16px"><h3 style="font-size:32px;font-weight:700;line-height:1.2"><span style="color:#1A7F4F">7</span> 执行</h3><p style="font-size:24px;line-height:1.35;color:#4A5A52">按依赖顺序，可撤销</p></div>
+<x-shape kind="arrow-right" style="width:24px;height:12px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;gap:6px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:16px;padding:16px"><h3 style="font-size:32px;font-weight:700;line-height:1.2"><span style="color:#1A7F4F">8</span> 回复</h3><p style="font-size:24px;line-height:1.35;color:#4A5A52">由代码写出</p></div>
+</div>
+</div>
+<div style="display:flex;flex-direction:row;justify-content:center"><x-shape kind="arrow-down" style="width:16px;height:28px;background:#9DB3A7"></x-shape></div>
+<div style="display:flex;flex-direction:row;gap:24px">
+<div style="flex:2;display:flex;flex-direction:column;gap:6px;background:#E3F1E8;border:1px solid #B9DCC7;border-radius:20px;padding:24px 28px">
+<h3 style="font-size:32px;font-weight:700;line-height:1.3">模拟银行（每位客户一套）</h3>
+<p style="font-size:24px;line-height:1.4;color:#13221B">账本以“分”记账 · 卡片 · 订阅 · 理财 · 账单分析 · 预约调度</p>
+<p style="font-size:24px;line-height:1.4;color:#13221B">转账：行内 / 超级网银，三种到账时间，户名核验</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:20px;padding:24px 28px">
+<h3 style="font-size:32px;font-weight:700;line-height:1.3">隔离进程</h3>
+<p style="font-size:24px;line-height:1.4;color:#4A5A52">分析沙箱：白名单 + 资源限制</p>
+<p style="font-size:24px;line-height:1.4;color:#4A5A52">小票读取：标记隐藏指令</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px;background:#0F2A1F;border-radius:20px;padding:24px 28px">
+<h3 style="font-size:32px;font-weight:700;line-height:1.3;color:#EEF5F1">审计与安全锁</h3>
+<p style="font-size:24px;line-height:1.4;color:#A8C5B6">每个环节进哈希链日志</p>
+<p style="font-size:24px;line-height:1.4;color:#A8C5B6">多次失败或绕过就上锁</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:900px;font-size:24px;color:#6B7A72">中联银行 AI 助手</p>
+<p style="position:absolute;right:128px;bottom:64px;width:200px;font-size:24px;color:#6B7A72;text-align:right">6</p>
+<aside>（约 35 秒）一句话经过八个环节：筛查、规划、校验、匹配、定级、确认、执行、回复。第二步由通义千问规划，关闭思考模式后约四秒出计划；它只收到客户原话，看不到账户数据。其余七步是代码关卡。下面是模拟银行、隔离进程，以及哈希链审计和安全锁。</aside>
+</section>

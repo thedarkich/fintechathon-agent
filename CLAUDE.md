@@ -1,4 +1,5 @@
 @AGENTS.md
+@docs/STATUS.md
 
 ## Claude Code cloud sessions
 
@@ -18,5 +19,7 @@
   says whether Qwen answered or why not. The key allows about 5 requests a minute, so don't run
   `python -m app.evals --model` with it (no pacing: most cases would hit the limit). Never write a key into the repo,
   and ask before any run that calls the model.
+- **Slides and PDFs:** the decks' sources are in `submission/slides`; `submission/build_slides.py` and
+  `submission/build_docs.py` print the submission PDFs (they need Chrome or Chromium). See `submission/README.md`.
 - **Docs and slides quote measured numbers** (tests, evaluation results). When a change moves one, update every place
   that states it: `git grep` for the old number.

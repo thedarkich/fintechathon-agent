@@ -1,0 +1,38 @@
+<section id="architecture" data-transition="fade" style="background:#F4F7F5;color:#13221B;font-family:'Noto Sans SC', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:space-between;gap:40px">
+<h2 style="font-size:72px;font-weight:700;line-height:1.15;color:#13221B">架构：AI 规划，七道代码关卡把关</h2>
+<div style="display:flex;flex-direction:row;align-items:center;gap:10px">
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:8px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:20px;padding:24px 12px"><p style="font-size:24px;font-weight:700;color:#1A7F4F">1</p><p style="font-size:44px;font-weight:700;line-height:1.3">筛查</p></div>
+<x-shape kind="arrow-right" style="width:20px;height:10px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:8px;background:#FBFCFA;border:2px dashed #9DB3A7;border-radius:20px;padding:24px 12px"><p style="font-size:24px;font-weight:700;color:#4A5A52">2 · AI</p><p style="font-size:44px;font-weight:700;line-height:1.3">规划</p></div>
+<x-shape kind="arrow-right" style="width:20px;height:10px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:8px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:20px;padding:24px 12px"><p style="font-size:24px;font-weight:700;color:#1A7F4F">3</p><p style="font-size:44px;font-weight:700;line-height:1.3">校验</p></div>
+<x-shape kind="arrow-right" style="width:20px;height:10px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:8px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:20px;padding:24px 12px"><p style="font-size:24px;font-weight:700;color:#1A7F4F">4</p><p style="font-size:44px;font-weight:700;line-height:1.3">匹配</p></div>
+<x-shape kind="arrow-right" style="width:20px;height:10px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:8px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:20px;padding:24px 12px"><p style="font-size:24px;font-weight:700;color:#1A7F4F">5</p><p style="font-size:44px;font-weight:700;line-height:1.3">定级</p></div>
+<x-shape kind="arrow-right" style="width:20px;height:10px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:8px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:20px;padding:24px 12px"><p style="font-size:24px;font-weight:700;color:#1A7F4F">6</p><p style="font-size:44px;font-weight:700;line-height:1.3">确认</p></div>
+<x-shape kind="arrow-right" style="width:20px;height:10px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:8px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:20px;padding:24px 12px"><p style="font-size:24px;font-weight:700;color:#1A7F4F">7</p><p style="font-size:44px;font-weight:700;line-height:1.3">执行</p></div>
+<x-shape kind="arrow-right" style="width:20px;height:10px;background:#9DB3A7"></x-shape>
+<div style="flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:8px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:20px;padding:24px 12px"><p style="font-size:24px;font-weight:700;color:#1A7F4F">8</p><p style="font-size:44px;font-weight:700;line-height:1.3">回复</p></div>
+</div>
+<p style="font-size:32px;line-height:1.4;color:#4A5A52">第 2 步由通义千问规划，约 4 秒；它只收到客户原话，看不到账户数据。</p>
+<div style="display:flex;flex-direction:row;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#E3F1E8;border:1px solid #B9DCC7;border-radius:20px;padding:32px">
+<h3 style="font-size:44px;font-weight:700;line-height:1.3">模拟银行</h3>
+<p style="font-size:32px;line-height:1.4;color:#13221B">每位客户一套</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FDFEFC;border:1px solid #DCE3DF;border-radius:20px;padding:32px">
+<h3 style="font-size:44px;font-weight:700;line-height:1.3">隔离进程</h3>
+<p style="font-size:32px;line-height:1.4;color:#4A5A52">分析沙箱、小票读取</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#0F2A1F;border-radius:20px;padding:32px">
+<h3 style="font-size:44px;font-weight:700;line-height:1.3;color:#EEF5F1">审计 + 安全锁</h3>
+<p style="font-size:32px;line-height:1.4;color:#A8C5B6">每一步可查，异常就上锁</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:900px;font-size:24px;color:#6B7A72">中联银行 AI 助手</p>
+<p style="position:absolute;right:128px;bottom:64px;width:200px;font-size:24px;color:#6B7A72;text-align:right">6</p>
+<aside>（约 35 秒）一句话经过八个环节：筛查、规划、校验、匹配、定级、确认、执行、回复。第二步由通义千问规划，关闭思考模式后约四秒出计划；它只收到客户原话，看不到账户数据。其余七步是代码关卡。下面是模拟银行、隔离进程，以及哈希链审计和安全锁。</aside>
+</section>
