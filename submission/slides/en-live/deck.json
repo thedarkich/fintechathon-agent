@@ -1,1 +1,61 @@
-{"v":4,"createdOnFiles":{"v":1,"at":"2026-10-22T03:35:00Z"},"lists":"css","title":"Central Union Bank AI · Pitch (live, English)","order":["cover","problem","audience","principle","product","architecture","competition","demo","tiers","layers","china","evidence","risks","next","team","close"],"sections":{"s1":{"description":"Opening: who we are and the problem","start":"cover"},"s2":{"description":"The principle: AI plans, rules guard the money","start":"principle"},"s3":{"description":"Live demo","start":"demo"},"s4":{"description":"Security: three tiers and eight layers","start":"tiers"},"s5":{"description":"Built for China, and the evidence","start":"china"},"s6":{"description":"Risks, next steps, team and close","start":"risks"}},"faces":{"dm-sans":{"family":"DM Sans","href":"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap"}},"designSystems":[]}
+{
+ "v": 4,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-22T03:35:00Z"
+ },
+ "lists": "css",
+ "title": "Central Union Bank AI · Pitch (live, English)",
+ "order": [
+  "cover",
+  "problem",
+  "audience",
+  "market",
+  "principle",
+  "product",
+  "architecture",
+  "competition",
+  "demo",
+  "tiers",
+  "layers",
+  "china",
+  "evidence",
+  "risks",
+  "next",
+  "team",
+  "close"
+ ],
+ "sections": {
+  "s1": {
+   "description": "Opening: who we are and the problem",
+   "start": "cover"
+  },
+  "s2": {
+   "description": "The principle: AI plans, rules guard the money",
+   "start": "principle"
+  },
+  "s3": {
+   "description": "Live demo",
+   "start": "demo"
+  },
+  "s4": {
+   "description": "Security: three tiers and eight layers",
+   "start": "tiers"
+  },
+  "s5": {
+   "description": "Built for China, and the evidence",
+   "start": "china"
+  },
+  "s6": {
+   "description": "Risks, next steps, team and close",
+   "start": "risks"
+  }
+ },
+ "faces": {
+  "dm-sans": {
+   "family": "DM Sans",
+   "href": "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap"
+  }
+ },
+ "designSystems": []
+}

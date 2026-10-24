@@ -1,1 +1,61 @@
-{"v":4,"createdOnFiles":{"v":1,"at":"2026-10-22T03:05:00Z"},"lists":"css","title":"中联银行 AI 助手 · 路演（现场版）","order":["cover","problem","audience","principle","product","architecture","competition","demo","tiers","layers","china","evidence","risks","next","team","close"],"sections":{"s1":{"description":"开场：我们是谁，要解决什么问题","start":"cover"},"s2":{"description":"原则：AI 理解和规划，规则守住钱","start":"principle"},"s3":{"description":"现场演示","start":"demo"},"s4":{"description":"安全：三级权限与八层防护","start":"tiers"},"s5":{"description":"落地与证据","start":"china"},"s6":{"description":"风险、下一步、团队与结尾","start":"risks"}},"faces":{"noto-sans-sc":{"family":"Noto Sans SC","href":"https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap"}},"designSystems":[]}
+{
+ "v": 4,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-22T03:05:00Z"
+ },
+ "lists": "css",
+ "title": "中联银行 AI 助手 · 路演（现场版）",
+ "order": [
+  "cover",
+  "problem",
+  "audience",
+  "market",
+  "principle",
+  "product",
+  "architecture",
+  "competition",
+  "demo",
+  "tiers",
+  "layers",
+  "china",
+  "evidence",
+  "risks",
+  "next",
+  "team",
+  "close"
+ ],
+ "sections": {
+  "s1": {
+   "description": "开场：我们是谁，要解决什么问题",
+   "start": "cover"
+  },
+  "s2": {
+   "description": "原则：AI 理解和规划，规则守住钱",
+   "start": "principle"
+  },
+  "s3": {
+   "description": "现场演示",
+   "start": "demo"
+  },
+  "s4": {
+   "description": "安全：三级权限与八层防护",
+   "start": "tiers"
+  },
+  "s5": {
+   "description": "落地与证据",
+   "start": "china"
+  },
+  "s6": {
+   "description": "风险、下一步、团队与结尾",
+   "start": "risks"
+  }
+ },
+ "faces": {
+  "noto-sans-sc": {
+   "family": "Noto Sans SC",
+   "href": "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap"
+  }
+ },
+ "designSystems": []
+}

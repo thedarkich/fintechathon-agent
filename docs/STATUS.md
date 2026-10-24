@@ -19,14 +19,14 @@ The organisers list five items. Four are required (必交), one is optional (可
 | Item | Required | Status | Where |
 |---|---|---|---|
 | **技术文档**: architecture diagram, algorithm description, security design | 必交 | Done | [ARCHITECTURE.zh.md](ARCHITECTURE.zh.md) ([English](ARCHITECTURE.md)): §一 architecture with [img/architecture.svg](img/architecture.svg), §二 a request end to end, §三 eleven core algorithms; [SECURITY.zh.md](SECURITY.zh.md) for the security design |
-| **答辩 PPT**: the talk is **at most 10 minutes** | 必交 | Done except the team details | [../submission/slides](../submission/slides) (three decks of 16 slides; speaker notes total **9:00**) and the same decks on claude.ai |
+| **答辩 PPT**: the talk is **at most 10 minutes** | 必交 | Done except the team details | [../submission/slides](../submission/slides) (three decks of 17 slides; speaker notes total **9:40**) and the same decks on claude.ai |
 | **源代码**: README, repository, deployment guide and test cases | 必交 | Done | public repo https://github.com/thedarkich/fintechathon-agent; [../README.zh.md](../README.zh.md) / [../README.md](../README.md) (with 部署 / Deploy); [../deploy](../deploy); [../backend/tests](../backend/tests); [../evals](../evals) |
 | **安全自评**: permission tiers and the list of known risks | 必交 | Done | [SECURITY.zh.md](SECURITY.zh.md) §2.1 (the three tiers) and §四 (15 known risks) |
 | **演示视频**: **at most 5 minutes** | 可选 | Not recorded | script: [DEMO.md](DEMO.md) |
 
 Hard limits that come from these criteria:
 
-- The talk must fit in **10 minutes**. The speaker notes add up to 9:00 (each `<aside>` starts with its time). Don't
+- The talk must fit in **10 minutes**. The speaker notes add up to 9:40 (each `<aside>` starts with its time; the live demo counts 3:00). Don't
   add slides or notes that push it past 10.
 - The video, if there is one, is **5 minutes at most**.
 - Everything is in by **2 November**.
@@ -58,8 +58,8 @@ changes, `git grep` the old value and update every place.
 - **Motion** throughout (pages, messages, typing indicator, dialogs, plan steps, bars, theme), none under reduced motion.
 - **Large-text mode removed** from the app, the docs and the slides.
 - **Docs:** a Chinese README; the Qwen results in the README, the security self-assessment (evidence and risk 5) and
-  the architecture docs; the pitch outline for the 9-minute talk; the demo script records with Qwen on.
-- **Slides:** three decks (Chinese for reading, Chinese for presenting, English), 16 slides, 9:00 of notes, AI-forward
+  the architecture docs; the pitch outline for the talk; the demo script records with Qwen on.
+- **Slides:** three decks (Chinese for reading, Chinese for presenting, English), 17 slides, 9:40 of notes, AI-forward
   story ("AI 理解和规划，规则守住钱"), the Qwen results and the GitHub link. Sources in `submission/slides`, builders in
   `submission/`.
 - **Repository** public on GitHub; ready for Claude Code cloud sessions (`CLAUDE.md`, `.claude/settings.json`,
@@ -91,7 +91,7 @@ changes, `git grep` the old value and update every place.
   and plan but approve nothing: a payment comes back as a link to the app's confirm card. Numbers masked in the chat,
   the safety lock covers it, unlink at any time, every request audited with its channel. Docs: ARCHITECTURE §3.12,
   SECURITY (threat table, "beyond the brief", known risk 15), SPEC §10a, READMEs, DEMO (optional 20-second swap),
-  PITCH and one line on slide 11 of each deck (notes still 9:00). The team decided the real Mini Program comes later
+  PITCH and one line on the “Built for banks in China” slide of each deck. The team decided the real Mini Program comes later
   (for the final, if the entry gets there).
 - **Full click-through with Qwen on (24 October, evening):** every page clicked (an automated pass over 16 pages, 0
   errors) and each flow done by hand: WeChat request → confirm in the app; transfers by payee and by phone number with
@@ -122,6 +122,15 @@ changes, `git grep` the old value and update every place.
   none gets the help text or an error. Fixed: History was an empty page for a new account (now it explains itself and
   offers three things to try); the simulated phones' empty inbox says what will appear; the Spending page's
   "Freeze card" button on a suspicious payment names the card it used (it asked "which card?").
+- **Decks: a market slide and new screenshots (24 October, night):** slide 4 in all three decks, "市场：银行都在做 AI
+  助手，缺的是守住钱的那一层" / "The market": why it matters (1.017 billion online payers, 258,000 telecom-fraud cases
+  solved in 2025), why it helps ($200–340 billion a year for banking, McKinsey; 602 million generative-AI users), who
+  builds it (ICBC, CMB, WeBank, Bank of America's Erica; the State Council's "AI+" opinion), each fact with its source on
+  the slide and in [PITCH.md](PITCH.md). Every screenshot retaken from a fresh demo account (Chinese and English, 390 ×
+  844 at 1.5×): the decks' 20 and the README's 8, plus the WeChat assistant as a seventh phone on the product slide;
+  "next steps" now says a real Mini Program. 17 slides, notes 9:40. The plan cards in the screenshots say the built-in
+  rules planned them (taken with the offline planner); retaking those few with Qwen on is paid, so it waits for the
+  team. The decks on claude.ai don't have these changes yet.
 
 ## Still to do
 
@@ -138,7 +147,6 @@ changes, `git grep` the old value and update every place.
    from the deck on claude.ai if a PowerPoint file is required), the repository link and, if made, the video.
 5. Optional: a second full Qwen evaluation on the final prompt (`scripts/eval_model.py`: about 300 paid calls and 80
    minutes; ask the team first). If it runs, update its numbers everywhere they appear.
-6. Optional: retake the README screenshots in `docs/img/screens` (taken 22 October) if the app no longer looks like them.
 
 ## Checks
 
