@@ -132,6 +132,8 @@ changes, `git grep` the old value and update every place.
   its done card, in Chinese and English) were retaken with Qwen on (7 paid calls, the team's OK), so they say the AI
   model planned them; Qwen's prompt now asks for its own labels (a reserve's name) in the customer's language (it
   had written 生日礼物 in an English plan).
+  The three decks on claude.ai now match the repo (the same 17 slides and notes; the new screenshots uploaded to
+  each deck, so `images.json` has their new ids).
 
 ## Still to do
 
