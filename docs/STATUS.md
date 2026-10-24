@@ -128,9 +128,10 @@ changes, `git grep` the old value and update every place.
   builds it (ICBC, CMB, WeBank, Bank of America's Erica; the State Council's "AI+" opinion), each fact with its source on
   the slide and in [PITCH.md](PITCH.md). Every screenshot retaken from a fresh demo account (Chinese and English, 390 ×
   844 at 1.5×): the decks' 20 and the README's 8, plus the WeChat assistant as a seventh phone on the product slide;
-  "next steps" now says a real Mini Program. 17 slides, notes 9:40. The plan cards in the screenshots say the built-in
-  rules planned them (taken with the offline planner); retaking those few with Qwen on is paid, so it waits for the
-  team. The decks on claude.ai don't have these changes yet.
+  "next steps" now says a real Mini Program. 17 slides, notes 9:40. The plan-card screenshots (birthday, ¥200 and
+  its done card, in Chinese and English) were retaken with Qwen on (7 paid calls, the team's OK), so they say the AI
+  model planned them; Qwen's prompt now asks for its own labels (a reserve's name) in the customer's language (it
+  had written 生日礼物 in an English plan).
 
 ## Still to do
 
@@ -175,6 +176,11 @@ Before submitting:
   the offline planner answers and everything still works.
 - `react-router` 6.x has two moderate `npm audit` advisories; judged not exploitable here (hash routes, no server
   rendering). The fix is a breaking upgrade to v7, left by the team's decision (22 October).
+- Vite 5 / esbuild (high) and Tailwind 3 / PostCSS (moderate) `npm audit` advisories concern the development server and
+  the build, not the deployed app; each fix is a major upgrade. Left as they are by the team's decision (24 October);
+  don't run `npm run dev` on a shared network.
+- The market slide's McKinsey figure was confirmed through finews.asia (mckinsey.com was down) and WeBank's "800+ AI
+  agents" comes from a newspaper quoting bank staff; the team chose to keep both (24 October).
 - The last pre-push `npm audit` (24 October) couldn't reach the registry, so it didn't run.
 - The Qwen numbers come from the run before the last prompt fixes (see above).
 - The card, invest and subscription buttons send a sentence to the assistant: **Buy** always asks for ¥5,000 and
