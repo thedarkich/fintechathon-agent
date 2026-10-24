@@ -152,9 +152,20 @@ Next to the assistant, the app has screens for what people do most: a home scree
 
 - **Phone transfers.** A number is looked up in a simulated phone directory: a saved payee, someone else (shown only by a masked name such as “*小明” and their bank), or nobody. Lookups are rate-limited so they can't be used to list strangers' names. A first transfer to a number counts as a payee added today, so the new-payee rule (over ¥500 → red, money arrives 2 hours later) applies.
 
+### 3.12 The WeChat assistant (simulated): ask in the chat, confirm in the app
+
+The brief asks for channels such as apps and IM. The 微信助手（模拟） page simulates the coming WeChat Mini Program: a chat window that stands in for WeChat, and the bank app beside it. Messages from the chat go through exactly the same pipeline as the assistant (screening, planner, validation, resolution, tiers, audit, with `channel: wechat` on each request), in a conversation of its own. What is different is who the channel is and what it may do (`app/api/wechat.py`, `app/channels/wechat.py`):
+
+- **Linking takes the PIN.** The customer links a chat account in the app (`POST /api/wechat/link`) with the transaction PIN; a wrong PIN counts towards the safety lock, and nothing can be linked while a lock is on. Linking issues the channel's own credential, shown once to the chat side; the bank keeps only its hash. Linking again replaces it; unlinking ends it. Both are audited.
+- **The channel can ask, never approve.** The chat side calls `POST /api/channels/wechat/message` with that credential and never with the app's session, as a chat app's servers would. No other route accepts it, so a plan started in the chat can only be approved in the app: its reply is a link (`/#/confirm/{plan}`) to the same confirm card, with the same approval hash, PIN and SMS code.
+- **Replies are written for a chat.** The code-written replies are turned into chat messages: phone and account numbers masked, long lists cut short with a link to the app, choices numbered so a reply of "2" picks one.
+- **The rest still applies.** A PIN typed in the chat is hidden; the safety lock stops the chat as it stops the assistant; messages are rate-limited per linked account.
+
+A real Mini Program or Official Account would call the same endpoint, with WeChat's signature check in place of the simulated credential.
+
 ## 4. Data model
 
-`UserAccount`, `BankAccount` (checking, savings, reserve), `Txn`, `Payee`, `Card`, `Subscription`, `ScheduledTransfer`, `Transfer`, `PayeeMessage`, `Collection`, `WealthProduct`, `Holding`, `RiskProfile`, `Order`, `Plan`, `Conversation`, `Message`, `Challenge`, `Passkey`, `SmsMessage`, `Notification`, `SafetyLock`, `AuditEntry`, `DemoClock`, `Upload`. Money is stored as integer fen; times are China Standard Time. Every new customer gets a seeded bank: about 22 months of realistic transactions, family and friend payees (including two with the same pinyin name and a seller added today whose account is in someone else's name), two cards, subscriptions with an overlap and a forgotten trial, seeded anomalies, holdings and a risk profile.
+`UserAccount`, `BankAccount` (checking, savings, reserve), `Txn`, `Payee`, `Card`, `Subscription`, `ScheduledTransfer`, `Transfer`, `PayeeMessage`, `Collection`, `WealthProduct`, `Holding`, `RiskProfile`, `Order`, `Plan`, `Conversation`, `Message`, `Challenge`, `Passkey`, `SmsMessage`, `Notification`, `SafetyLock`, `AuditEntry`, `DemoClock`, `Upload`, `ChannelLink` (a linked chat account; only its credential's hash). Money is stored as integer fen; times are China Standard Time. Every new customer gets a seeded bank: about 22 months of realistic transactions, family and friend payees (including two with the same pinyin name and a seller added today whose account is in someone else's name), two cards, subscriptions with an overlap and a forgotten trial, seeded anomalies, holdings and a risk profile.
 
 ## 5. Interfaces
 
@@ -164,12 +175,13 @@ Next to the assistant, the app has screens for what people do most: a home scree
 - `GET /api/bank/*`: the customer reading their own bank directly (no AI): overview, transactions, report, anomalies, subscriptions, cards, payees, wealth, scheduled transfers, transfers.
 - `POST /api/screens/plan`: a payment from one of the app's screens, returned as a plan waiting for confirmation. `GET /api/directory`: who a phone number belongs to, for the transfer screen.
 - `GET /api/audit`, `GET /api/audit/verify`: the audit log and chain verification.
+- `GET|POST /api/wechat/link`, `POST /api/wechat/unlink`: link a chat account (with the PIN) or unlink it, in the app. `POST /api/channels/wechat/message`: the chat side, with the channel's own credential; it answers and plans but approves nothing.
 - `POST /api/demo/advance`, `/reset`, `/transfers/{id}`: demo tools (bank clock, fresh seed, transfer stage control).
 - Operator endpoints (the admin bearer token or an operator account): queue, conversation detail, reply, release, cancel, unlock. None approves anything.
 
 ## 6. Testing and evaluation
 
-- `backend/tests`: 173 tests through the HTTP API, covering follow-ups, tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
+- `backend/tests`: 185 tests through the HTTP API, covering follow-ups, tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
 - `evals/`: 224 everyday requests and 69 attacks, run on a fresh customer each; the reports are in [eval/report-offline.md](eval/report-offline.md) (offline planner) and [eval/report-model.md](eval/report-model.md) (Qwen). See the README for the command.
 
 ## 7. Deployment

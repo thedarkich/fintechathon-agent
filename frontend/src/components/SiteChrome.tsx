@@ -36,7 +36,7 @@ export function useWorkspaceLinks(): [string, string][] {
   return ([
     ['/home', tr('Home', '首页')], ['/send', tr('Transfers', '转账')], ['/bills', tr('Spending', '账单')],
     ['/wealth', tr('Invest', '理财')], ['/controls', tr('Cards', '卡片')], ['/subscriptions', tr('Subscriptions', '自动续费')],
-    ['/assistant', tr('Assistant', '助手')], ['/ledger', tr('History', '记录')], ['/operator', tr('Staff', '客服')],
+    ['/assistant', tr('Assistant', '助手')], ['/wechat', tr('WeChat (simulated)', '微信助手（模拟）')], ['/ledger', tr('History', '记录')], ['/operator', tr('Staff', '客服')],
   ] as [string, string][]).filter(([to]) => to !== '/operator' || isOperator(user))
 }
 

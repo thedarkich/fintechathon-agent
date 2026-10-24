@@ -38,11 +38,12 @@ def conversation_for(session: Session, user: UserAccount, conversation_id: str |
     return conversation
 
 
-def screens_conversation(session: Session, user: UserAccount) -> Conversation:
+def screens_conversation(session: Session, user: UserAccount, kind: str = "screens") -> Conversation:
+    """The customer's one conversation of this kind: "screens" (the app's own buttons) or "wechat" (the chat channel)."""
     conversation = session.exec(select(Conversation).where(Conversation.user_id == user.id,
-                                                           Conversation.kind == "screens")).first()
+                                                           Conversation.kind == kind)).first()
     if conversation is None:
-        conversation = Conversation(user_id=user.id, kind="screens")
+        conversation = Conversation(user_id=user.id, kind=kind)
         session.add(conversation)
         session.flush()
     return conversation
@@ -143,7 +144,8 @@ def option_match(plan: Plan, text: str):
 
 
 async def handle(session: Session, user: UserAccount, planner: Planner, text: str, *, conversation_id: str | None = None,
-                 lang: str = "zh", attachment_id: str | None = None) -> tuple[Conversation, list[Message], Plan | None]:
+                 lang: str = "zh", attachment_id: str | None = None, channel: str | None = None
+                 ) -> tuple[Conversation, list[Message], Plan | None]:
     now = clock.now(session, user.id)
     ctx = Ctx(session=session, user=user, now=now, lang=detect_lang(text, lang))
     conversation = conversation_for(session, user, conversation_id)
@@ -155,7 +157,7 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
         {"type": "attachment", "upload_id": attachment.id, "kind": attachment.kind,
          "preview": f"/api/uploads/{attachment.id}/preview"}] if attachment else None)
     audit.append(session, user.id, "request", {"text": clean, "lang": ctx.lang, "secret_hidden": hidden,
-                                               "conversation": conversation.id,
+                                               "conversation": conversation.id, **({"channel": channel} if channel else {}),
                                                "attachment": attachment.id if attachment else None})
     out: list[Message] = [user_message]
 

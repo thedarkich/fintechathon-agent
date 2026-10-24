@@ -45,6 +45,8 @@ const KINDS: Record<string, { mark: MarkKind; zh: string; en: string; group: Exc
   unlock: { mark: 'change', zh: '安全锁解除', en: 'Safety lock lifted', group: 'security' },
   operator: { mark: 'change', zh: '人工客服', en: 'Operator', group: 'security' },
   model_unavailable: { mark: 'error', zh: '模型不可用', en: 'Model unavailable', group: 'security' },
+  channel_linked: { mark: 'done', zh: '绑定微信助手', en: 'WeChat linked', group: 'security' },
+  channel_unlinked: { mark: 'change', zh: '解除微信绑定', en: 'WeChat unlinked', group: 'security' },
 }
 
 const info = (kind: string) => KINDS[kind] ?? { mark: 'change' as MarkKind, zh: kind, en: kind, group: 'actions' as const }
@@ -55,7 +57,7 @@ function detail(e: AuditEntry, lang: 'zh' | 'en'): string {
   const s = (v: unknown) => (v === undefined || v === null ? '' : String(v))
   const list = (v: unknown) => (Array.isArray(v) ? v.map(String) : [])
   switch (e.kind) {
-    case 'request': return `“${s(d.text)}”`
+    case 'request': return `${d.channel === 'wechat' ? (lang === 'zh' ? '微信：' : 'WeChat: ') : ''}“${s(d.text)}”`
     case 'plan_proposed': {
       const plan = d.plan as { steps?: { action: string }[] } | undefined
       const errors = list(d.errors)

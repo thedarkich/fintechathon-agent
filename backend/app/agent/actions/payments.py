@@ -659,11 +659,19 @@ MERCHANTS = {
         {"code": "strawberry6", "name": "6寸草莓奶油蛋糕", "name_en": "6-inch strawberry cream cake", "fen": 16_800},
         {"code": "chocolate8", "name": "8寸巧克力慕斯蛋糕", "name_en": "8-inch chocolate mousse cake", "fen": 23_800},
         {"code": "fruit8", "name": "8寸鲜果蛋糕", "name_en": "8-inch fresh fruit cake", "fen": 21_800}]},
+    "gift": {"name": "心意礼品馆", "name_en": "Xinyi Gift Shop", "items": [
+        {"code": "giftbox", "name": "精选生日礼盒", "name_en": "Birthday gift box", "fen": 29_900},
+        {"code": "scarf", "name": "羊绒围巾", "name_en": "Cashmere scarf", "fen": 39_900},
+        {"code": "candles", "name": "香薰蜡烛礼盒", "name_en": "Scented candle set", "fen": 19_900}]},
+    # a table booked and paid for ahead: the date is when they dine, not a delivery
+    "restaurant": {"name": "江畔私房菜", "name_en": "Riverside Kitchen", "booking": True, "category": "dining", "items": [
+        {"code": "dinner2", "name": "双人生日晚餐（预付）", "name_en": "Birthday dinner for two (prepaid)", "fen": 52_000},
+        {"code": "family4", "name": "四人家宴（预付）", "name_en": "Family dinner for four (prepaid)", "fen": 88_800}]},
 }
 
 
 class OrderArgs(Args):
-    merchant: Literal["florist", "bakery"]
+    merchant: Literal["florist", "bakery", "gift", "restaurant"]
     item: str | None = Field(default=None, max_length=30)
     deliver_on: str | None = Field(default=None, max_length=25)
     recipient: str | None = Field(default=None, max_length=40)
@@ -678,6 +686,8 @@ def order_resolve(ctx: Ctx, args: OrderArgs) -> dict:
         item = next((i for i in shop["items"] if query in (i["code"], i["name"].casefold(), i["name_en"].casefold())
                      or query in i["name"].casefold() or query in i["name_en"].casefold()), item)
     if not args.deliver_on:
+        if shop.get("booking"):
+            raise Ask("deliver_on", "请问订哪一天？", "Which day should I book?")
         raise Ask("deliver_on", "请问哪天送达？", "Which day should it be delivered?")
     deliver = clock.to_date(args.deliver_on) if not args.deliver_on.startswith("$") else None
     if deliver and deliver < ctx.today:
@@ -694,7 +704,8 @@ def order_resolve(ctx: Ctx, args: OrderArgs) -> dict:
         found = find_reserve(ctx.session, ctx.user.id, args.pay_from)
         if found.value:
             pay_from, label, label_en = found.value.id, found.value.name, f"the “{found.value.name}” reserve"
-    return {"merchant": args.merchant, "shop": shop["name"], "shop_en": shop["name_en"], "item": item["code"],
+    return {"merchant": args.merchant, "shop": shop["name"], "shop_en": shop["name_en"], "booking": bool(shop.get("booking")),
+            "item": item["code"],
             "item_name": item["name"], "item_name_en": item["name_en"], "fen": item["fen"],
             "deliver_on": deliver.isoformat() if deliver else args.deliver_on, "recipient": recipient,
             "pay_from": pay_from, "pay_from_label": label, "pay_from_label_en": label_en}
@@ -707,7 +718,7 @@ def order_run(ctx: Ctx, r: dict) -> dict:
         source = ledger.account(ctx.session, ctx.user.id, r["pay_from"])
     shop = MERCHANTS[r["merchant"]]
     txn = ledger.debit(ctx.session, source, r["fen"], when=ctx.now, kind="order", counterparty=shop["name"],
-                       plan_id=ctx.plan.id if ctx.plan else None, memo=r["item_name"], category="gifts")
+                       plan_id=ctx.plan.id if ctx.plan else None, memo=r["item_name"], category=shop.get("category", "gifts"))
     order = Order(user_id=ctx.user.id, merchant=r["merchant"], item=r["item"], item_name=r["item_name"],
                   amount_fen=r["fen"], deliver_on=r["deliver_on"],
                   recipient=r["recipient"]["payee_id"] if r["recipient"] else None, status="paid",
@@ -725,7 +736,7 @@ def order_compensate(ctx: Ctx, r: dict, res: dict) -> dict:
             else ledger.checking(ctx.session, ctx.user.id)
         ledger.credit(ctx.session, target, order.amount_fen, when=ctx.now, kind="refund",
                       counterparty=MERCHANTS[order.merchant]["name"], memo=ctx.t("订单取消退款", "Order cancelled"),
-                      category="gifts")
+                      category=MERCHANTS[order.merchant].get("category", "gifts"))
         order.status = "cancelled"
         ctx.session.add(order)
         return {"refunded": True}
@@ -736,16 +747,27 @@ def order_describe(ctx: Ctx, r: dict) -> str:
     who = ""
     if r["recipient"]:
         who = ctx.t(f"，送给{r['recipient']['name']}", f" for {r['recipient']['name_en']}")
+    paid = r.get("pay_from_label_en", r["pay_from_label"])
+    if r.get("booking"):
+        who = ctx.t(f"，为{r['recipient']['name']}庆生", f" for {r['recipient']['name_en']}") if r["recipient"] else ""
+        return ctx.t(f"在{r['shop']}预订 {r['item_name']} {yuan(r['fen'])}，{r['deliver_on']} 用餐{who}，从{r['pay_from_label']}支付",
+                     f"Book {r['item_name_en']} at {r['shop_en']} ({yuan(r['fen'])}) on {r['deliver_on']}{who}, paid from {paid}")
     return ctx.t(f"在{r['shop']}订购 {r['item_name']} {yuan(r['fen'])}，{r['deliver_on']} 送达{who}，从{r['pay_from_label']}支付",
-                 f"Order {r['item_name_en']} from {r['shop_en']} ({yuan(r['fen'])}), delivered {r['deliver_on']}{who}, paid from {r.get('pay_from_label_en', r['pay_from_label'])}")
+                 f"Order {r['item_name_en']} from {r['shop_en']} ({yuan(r['fen'])}), delivered {r['deliver_on']}{who}, paid from {paid}")
+
+
+def order_reply(ctx: Ctx, r: dict, res: dict) -> str:
+    if r.get("booking"):
+        return ctx.t(f"已预订 {r['item_name']}（{yuan(res['fen'])}），{res['deliver_on']} 用餐。",
+                     f"Booked {r['item_name_en']} ({yuan(res['fen'])}) for {res['deliver_on']}.")
+    return ctx.t(f"已下单 {r['item_name']}（{yuan(res['fen'])}），{res['deliver_on']} 送达。",
+                 f"Ordered {r['item_name_en']} ({yuan(res['fen'])}) for delivery on {res['deliver_on']}.")
 
 
 register(Action(
     name="merchant_order", args=OrderArgs,
-    help="Order from a partner shop. merchant florist|bakery, item (roses, lilies, sunflowers / strawberry6, chocolate8, fruit8), deliver_on (date or $step.birthday), recipient, pay_from (checking or $step.reserve_id).",
-    resolve=order_resolve, run=order_run, describe=order_describe,
-    reply=lambda ctx, r, res: ctx.t(f"已下单 {r['item_name']}（{yuan(res['fen'])}），{res['deliver_on']} 送达。",
-                                    f"Ordered {r['item_name_en']} ({yuan(res['fen'])}) for delivery on {res['deliver_on']}."),
+    help="Order from a partner shop or book a table. merchant florist|bakery|gift|restaurant, item (roses, lilies, sunflowers / strawberry6, chocolate8, fruit8 / giftbox, scarf, candles / dinner2, family4), deliver_on (date or $step.birthday; for restaurant the day they dine), recipient, pay_from (checking or $step.reserve_id).",
+    resolve=order_resolve, run=order_run, describe=order_describe, reply=order_reply,
     rule="PAYMENT", payment=lambda r: r["fen"], compensate=order_compensate, schedulable=True,
 ))
 

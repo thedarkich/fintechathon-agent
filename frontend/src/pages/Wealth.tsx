@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { useLang } from '../i18n'
@@ -22,6 +23,9 @@ export default function Wealth() {
   const d = wealth.data
   const ask = (text: string) => void send(text)
   const pct = (bp: number) => `${(bp / 100).toFixed(2)}%`
+  // products ticked for a side-by-side comparison (the brief's “recommendation and comparison”)
+  const [picked, setPicked] = useState<string[]>([])
+  const pick = (name: string) => setPicked((all) => all.includes(name) ? all.filter((n) => n !== name) : [...all, name].slice(-4))
   return (
     <main tabIndex={-1} className="page-content scope-wealth">
       <PageHead title={tr('Invest', '理财')}
@@ -63,12 +67,17 @@ export default function Wealth() {
           )}
         </Section>
 
-        <Section title={tr('Products', '产品')} className="mt-8">
+        <Section title={tr('Products', '产品')} className="mt-8"
+          aside={<button type="button" className="btn btn-line px-4 text-sm" disabled={!!pending || picked.length < 2}
+            onClick={() => { ask(tr(`Compare ${picked.join(' and ')}`, `对比${picked.join('和')}`)); setPicked([]) }}>
+            {picked.length < 2 ? tr('Tick two to compare', '勾选两个来对比') : tr(`Compare ${picked.length}`, `对比所选（${picked.length}）`)}</button>}>
           <ul className={LIST}>
             {d.products.items.map((p) => (
               <li key={p.code} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-4 py-3.5 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
                 <div className="col-span-2 min-w-0 sm:col-span-1">
-                  <p className="font-semibold">{p.name}</p>
+                  <label className="flex min-h-6 cursor-pointer items-center gap-2 font-semibold">
+                    <input type="checkbox" className="h-4 w-4 accent-[var(--action)]" checked={picked.includes(p.name)} onChange={() => pick(p.name)}
+                      aria-label={tr(`Compare ${p.name}`, `对比 ${p.name}`)} />{p.name}</label>
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-ink2">{(KIND[p.kind] ?? [p.kind, p.kind])[lang === 'zh' ? 0 : 1]}<Risk level={p.risk_level} />{tr(`redeem T+${p.redeem_days}`, `赎回 T+${p.redeem_days}`)}</p>
                 </div>
                 <div className="text-left sm:text-right">

@@ -475,3 +475,24 @@ def test_everyday_wordings_find_their_action(bank):
 def test_the_birthday_reply_names_the_date_the_customer_gave(bank):
     reply = bank.chat("下周三是我爸生日，帮我订个蛋糕")["messages"][-1]["text"]
     assert reply.startswith("按您说的日期") and "通讯录里李建国的生日是" in reply
+
+
+def test_a_card_limit_can_be_called_edu(bank):
+    # 额度 is as common as 限额 for a card's limit; raising it is risk-increasing, so red
+    plan = plan_of(bank.chat("把虚拟卡额度调到5000"))
+    assert [s["action"] for s in plan["steps"]] == ["card_limit"] and plan["tier"] == "red"
+
+
+def test_a_birthday_plan_can_order_a_gift_and_book_a_dinner(bank):
+    plan = plan_of(bank.chat("下个月老婆生日，帮我预留1500，订礼物和餐厅"))
+    orders = [s for s in plan["steps"] if s["action"] == "merchant_order"]
+    assert len(orders) == 2 and "心意礼品馆" in orders[0]["text"] and "江畔私房菜" in orders[1]["text"]
+    assert any(d["label"] == "用餐" for d in orders[1]["details"])  # a table is booked for a day, not delivered
+    assert bank.approve(plan).json()["plan"]["status"] == "scheduled"
+    bank.post("/api/demo/advance", {"days": 40})
+    assert bank.get(f"/api/plans/{plan['id']}").json()["status"] == "done"
+
+
+def test_two_parts_about_the_same_thing_are_one_request(bank):
+    plan = plan_of(bank.chat("我想理财，有什么推荐"))
+    assert [s["action"] for s in plan["steps"]] == ["wealth_recommend"]

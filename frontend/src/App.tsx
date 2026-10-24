@@ -43,6 +43,8 @@ const Wealth = page(() => import('./pages/Wealth'))
 const Controls = page(() => import('./pages/Controls'))
 const Ledger = page(() => import('./pages/Ledger'))
 const Operator = page(() => import('./pages/Operator'))
+const Wechat = page(() => import('./pages/Wechat'))
+const Confirm = page(() => import('./pages/Confirm'))
 const Register = () => <AuthPage register />
 
 const queryClient = new QueryClient({
@@ -109,6 +111,8 @@ export default function App() {
                   <Route path="/wealth" element={<Wealth />} />
                   <Route path="/controls" element={<Controls />} />
                   <Route path="/ledger" element={<Ledger />} />
+                  <Route path="/wechat" element={<Wechat />} />
+                  <Route path="/confirm/:planId" element={<Confirm />} />
                 </Route>
                 <Route path="/operator" element={<Operator />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

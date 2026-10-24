@@ -21,7 +21,7 @@ The organisers list five items. Four are required (必交), one is optional (可
 | **技术文档**: architecture diagram, algorithm description, security design | 必交 | Done | [ARCHITECTURE.zh.md](ARCHITECTURE.zh.md) ([English](ARCHITECTURE.md)): §一 architecture with [img/architecture.svg](img/architecture.svg), §二 a request end to end, §三 eleven core algorithms; [SECURITY.zh.md](SECURITY.zh.md) for the security design |
 | **答辩 PPT**: the talk is **at most 10 minutes** | 必交 | Done except the team details | [../submission/slides](../submission/slides) (three decks of 16 slides; speaker notes total **9:00**) and the same decks on claude.ai |
 | **源代码**: README, repository, deployment guide and test cases | 必交 | Done | public repo https://github.com/thedarkich/fintechathon-agent; [../README.zh.md](../README.zh.md) / [../README.md](../README.md) (with 部署 / Deploy); [../deploy](../deploy); [../backend/tests](../backend/tests); [../evals](../evals) |
-| **安全自评**: permission tiers and the list of known risks | 必交 | Done | [SECURITY.zh.md](SECURITY.zh.md) §2.1 (the three tiers) and §四 (14 known risks) |
+| **安全自评**: permission tiers and the list of known risks | 必交 | Done | [SECURITY.zh.md](SECURITY.zh.md) §2.1 (the three tiers) and §四 (15 known risks) |
 | **演示视频**: **at most 5 minutes** | 可选 | Not recorded | script: [DEMO.md](DEMO.md) |
 
 Hard limits that come from these criteria:
@@ -34,7 +34,7 @@ Hard limits that come from these criteria:
 
 ## Measured numbers (quote these and nothing else)
 
-- **173 automated tests** (`bash scripts/check.sh` runs them).
+- **185 automated tests** (`bash scripts/check.sh` runs them).
 - **Offline planner** (18 October 2026): 224/224 everyday requests, 69/69 attacks ([eval/report-offline.md](eval/report-offline.md)).
 - **Qwen planner** (`qwen/qwen3.8-max` through TokenRouter, thinking off), full run on 23 October 2026, before that day's
   prompt fixes: 201/224 requests, 69/69 attacks, no attack ran anything without approval, a median of 3.7 s per plan
@@ -77,20 +77,39 @@ changes, `git grep` the old value and update every place.
   - the Qwen prompt covers the remaining failures of the 23 October run (money to or from a person, salary, periods,
     several requests, undoing a transfer, a forgotten PIN, buying without naming a product); not yet measured with Qwen;
   - `scripts/qwen_check.py` and `scripts/eval_model.py` find the backend when run as documented (they couldn't before).
+- **The six categories, item by item (24 October):** every sub-item of the brief's six scenarios tried in chat with
+  new wordings, replies read in full, and each category's page checked. Fixed: a card limit called 额度 only listed the
+  cards; the birthday plan had no "other services" (now a gift shop and a restaurant booking next to the florist and
+  bakery; a booking reads 用餐, not 送达); the Invest page had no way to compare products (tick two or more), and a
+  comparison in chat now shows a side-by-side table with the bank's conclusion; two halves of one request about the
+  same thing ("我想理财，有什么推荐") are no longer split. One evaluation expectation changed with the gift shop:
+  `bday-06` ("帮我预留500买礼物") now expects one gift order instead of a florist and a bakery order.
+- **WeChat assistant (simulated), 24 October:** the brief's IM channel ("apps and IM"), as the coming WeChat Mini
+  Program will work: ask in WeChat, confirm in the app ("IM 里说，App 里确认"). A new page 微信助手（模拟） with a
+  phone-shaped chat and the bank app's side. Linking takes the PIN and issues the channel's own credential (stored only
+  as a hash); the chat calls `POST /api/channels/wechat/message` with it and never with the app's session, so it can ask
+  and plan but approve nothing: a payment comes back as a link to the app's confirm card. Numbers masked in the chat,
+  the safety lock covers it, unlink at any time, every request audited with its channel. Docs: ARCHITECTURE §3.12,
+  SECURITY (threat table, "beyond the brief", known risk 15), SPEC §10a, READMEs, DEMO (optional 20-second swap),
+  PITCH and one line on slide 11 of each deck (notes still 9:00). The team decided the real Mini Program comes later
+  (for the final, if the entry gets there).
 
 ## Still to do
 
 1. **Team details in the slides** (all three decks: cover, team and closing slides): the team name, the three members'
    names and one-line roles, and the school. Only the team can supply these; don't invent them. Then rebuild the PDFs
    (`submission/build_slides.py`) and make the same change in the decks on claude.ai.
-2. **Demo video** (optional, at most 5 minutes): recorded by the team from [DEMO.md](DEMO.md), with Qwen on and at most
+2. **WeChat Mini Program** (later, for the final if the entry gets there): a real Mini Program on the same channel
+   endpoint, with WeChat's signature check in place of the simulated credential. Needs WeChat DevTools and an AppID
+   (the team's); publishing a bank Mini Program likely needs company qualifications.
+3. **Demo video** (optional, at most 5 minutes): recorded by the team from [DEMO.md](DEMO.md), with Qwen on and at most
    five messages a minute (the key's limit).
-3. **Submit** on the competition platform by 2 November (the team does this): the 技术文档 and 安全自评 (as PDFs from
+4. **Submit** on the competition platform by 2 November (the team does this): the 技术文档 and 安全自评 (as PDFs from
    `submission/build_docs.py`, or links), the PPT (PDF from `submission/build_slides.py`; a `.pptx` can be downloaded
    from the deck on claude.ai if a PowerPoint file is required), the repository link and, if made, the video.
-4. Optional: a second full Qwen evaluation on the final prompt (`scripts/eval_model.py`: about 300 paid calls and 80
+5. Optional: a second full Qwen evaluation on the final prompt (`scripts/eval_model.py`: about 300 paid calls and 80
    minutes; ask the team first). If it runs, update its numbers everywhere they appear.
-5. Optional: retake the README screenshots in `docs/img/screens` (taken 22 October) if the app no longer looks like them.
+6. Optional: retake the README screenshots in `docs/img/screens` (taken 22 October) if the app no longer looks like them.
 
 ## Checks
 

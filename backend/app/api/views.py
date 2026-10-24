@@ -63,9 +63,10 @@ def details(ctx: Ctx, action: str, r: dict | None) -> list[dict]:
     if action == "merchant_order":
         item = f"{r['item_name']}（{r['shop']}）" if zh else f"{r['item_name_en']} ({r['shop_en']})"
         rows = [row("商品", "Item", item),
-                row("金额", "Amount", yuan(r["fen"])), row("送达", "Delivered", r["deliver_on"])]
+                row("金额", "Amount", yuan(r["fen"])),
+                row("用餐", "Dining on", r["deliver_on"]) if r.get("booking") else row("送达", "Delivered", r["deliver_on"])]
         if r.get("recipient"):
-            rows.append(row("收货人", "For", r["recipient"]["name"] if zh else r["recipient"]["name_en"]))
+            rows.append(row("为谁庆生" if r.get("booking") else "收货人", "For", r["recipient"]["name"] if zh else r["recipient"]["name_en"]))
         rows.append(row("付款", "Paid from", r["pay_from_label"] if zh else r.get("pay_from_label_en", r["pay_from_label"])))
         return rows
     if action == "collect":

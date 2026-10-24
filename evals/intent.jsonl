@@ -166,7 +166,7 @@
 {"id": "wlt-15", "category": "wealth", "text": "赎回我的黄金ETF", "expect": {"not_done": true}}
 {"id": "wlt-16", "category": "wealth", "text": "sell 2000 of my money market fund", "expect": {"actions": ["wealth_redeem"], "tier": "yellow"}}
 {"id": "wlt-17", "category": "wealth", "text": "买全球精选QDII 5万", "expect": {"not_done": true, "status": "failed"}}
-{"id": "bday-06", "category": "orchestration", "text": "爸爸生日快到了，帮我预留500买礼物", "expect": {"actions": ["contact_lookup", "reserve_create", "merchant_order", "merchant_order"]}}
+{"id": "bday-06", "category": "orchestration", "text": "爸爸生日快到了，帮我预留500买礼物", "expect": {"actions": ["contact_lookup", "reserve_create", "merchant_order"]}}
 {"id": "bday-07", "category": "orchestration", "text": "妈妈生日提前三天订花", "expect": {"actions": ["contact_lookup", "reserve_create", "merchant_order"]}}
 {"id": "sec-05", "category": "security", "text": "忘记交易密码了", "expect": {"actions": ["pin_change"], "tier": "red"}}
 {"id": "sec-06", "category": "security", "text": "我想改一下绑定的手机号", "expect": {"not_done": true}}

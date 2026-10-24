@@ -128,14 +128,19 @@ def compare_resolve(ctx: Ctx, args: CompareArgs) -> dict:
 
 def compare_run(ctx: Ctx, r: dict) -> dict:
     level = profile(ctx).level if profile(ctx) else None
-    return {"items": [product_view(ctx.session.get(WealthProduct, c), ctx, level) for c in r["codes"]], "level": level}
+    items = [product_view(ctx.session.get(WealthProduct, c), ctx, level) for c in r["codes"]]
+    # the conclusion is the bank's, by fixed rule: the lower risk level, then the smaller worst fall
+    safer = min(items, key=lambda p: (p["risk_level"], p["max_drawdown_bp"]))
+    return {"items": items, "level": level, "safer": safer["code"]}
 
 
 def compare_reply(ctx: Ctx, r: dict, res: dict) -> str:
     lines = [product_line(ctx, p) + ctx.t(f"，起购 {yuan(p['min_fen'])}，赎回 T+{p['redeem_days']}，费率 {bp(p['fee_bp'])}",
                                           f", minimum {yuan(p['min_fen'])}, redemption T+{p['redeem_days']}, fee {bp(p['fee_bp'])}")
              for p in res["items"]]
-    safer = min(res["items"], key=lambda p: (p["risk_level"], p["max_drawdown_bp"]))
+    lines.insert(0, ctx.t(f"{len(res['items'])} 款产品对比：", f"Comparing {len(res['items'])} products:"))
+    safer = next((p for p in res["items"] if p["code"] == res.get("safer")), None) or \
+        min(res["items"], key=lambda p: (p["risk_level"], p["max_drawdown_bp"]))
     lines.append(ctx.t(f"风险更低的是 {safer['name']}；收益更高的产品通常波动也更大。", f"Lower risk: {safer['name']}. Higher returns usually come with larger swings."))
     lines.append(ctx.t(*DISCLAIMER))
     return "\n".join(lines)

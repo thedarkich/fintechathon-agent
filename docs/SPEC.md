@@ -135,9 +135,18 @@ For questions the fixed analyses cannot answer ("how much on coffee on weekends 
 
 ## 10. Data model (simulated bank)
 
-`Customer` (the account), `BankAccount` (checking, savings, reserve), `Txn`, `Payee` (name, aliases, phone, bank, masked account, relationship, birthday, note), `Card` (physical/virtual, status, limits, restriction switches), `Subscription`, `ScheduledTransfer`, `Transfer` (route, arrival, stage events, §6a), `PayeeMessage` (the payee's phone), `Collection` (split-bill requests), `WealthProduct`, `Holding`, `RiskProfile`, `Merchant` + `Order`, `Plan`, `Conversation` + `Message`, `Challenge` (SMS / passkey), `Passkey`, `SmsMessage` (simulated phone), `Notification`, `SafetyLock`, `AuditEntry`, `DemoClock`.
+`Customer` (the account), `BankAccount` (checking, savings, reserve), `Txn`, `Payee` (name, aliases, phone, bank, masked account, relationship, birthday, note), `Card` (physical/virtual, status, limits, restriction switches), `Subscription`, `ScheduledTransfer`, `Transfer` (route, arrival, stage events, §6a), `PayeeMessage` (the payee's phone), `Collection` (split-bill requests), `WealthProduct`, `Holding`, `RiskProfile`, `Merchant` + `Order` (partner services for the birthday plan: florist, bakery, gift shop, restaurant booking), `Plan`, `Conversation` + `Message`, `Challenge` (SMS / passkey), `Passkey`, `SmsMessage` (simulated phone), `Notification`, `SafetyLock`, `AuditEntry`, `DemoClock`.
 
 Every customer gets their own seeded bank on sign-up: about 22 months of realistic transactions (so a full-year report works), family and friend payees (including two people with the same pinyin name, to show clarification), subscriptions (including a duplicate music service and a forgotten trial), seeded anomalies (duplicate charge, late-night large purchase at a new merchant, overseas online charge), two cards, wealth holdings and a risk profile. `POST /api/demo/reset` restores it.
+
+## 10a. Channels: the WeChat assistant (simulated)
+
+The brief's IM channel, simulated until the WeChat Mini Program exists. Ask in the chat, confirm in the app.
+
+- A chat account is linked in the app with the transaction PIN (`POST /api/wechat/link`; a wrong PIN counts towards the safety lock; nothing is linked while a `red` or `agent` lock is on). Linking issues the channel's own credential, shown once; only its sha256 is stored (`ChannelLink`). Linking again replaces it; `POST /api/wechat/unlink` ends it. Both are audited (`channel_linked`, `channel_unlinked`).
+- The chat side calls `POST /api/channels/wechat/message` with that credential as a bearer token, never with the app's session. The message goes through `service.handle` like any chat message (conversation kind `wechat`, request audited with `channel: wechat`); rate limit 20 a minute per link.
+- No other route accepts the credential. A plan waiting for approval is returned as a `confirm` reply with a link to `/#/confirm/{plan_id}`, the app's own confirm card, with the same approval hash, PIN and code.
+- Replies are written by code as in the app, then turned into chat messages: phone numbers and account numbers masked, at most 12 lines with a link to the app for the rest, choices numbered.
 
 ## 11. Evaluation support
 

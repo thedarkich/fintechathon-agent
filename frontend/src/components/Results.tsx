@@ -307,8 +307,39 @@ export function Result({ card }: { card: Card }) {
           value: yuan(h.value_fen),
         }))} />
       )
+    case 'compare': {
+      // side by side, one column per product; every figure and the conclusion come from the bank
+      type P = { code: string; name: string; kind: string; risk_level: number; yield_bp: number; return_1y_bp: number; max_drawdown_bp: number; min_fen: number; redeem_days: number; fee_bp: number; suitable: boolean }
+      const items = card.items as P[]
+      const pct = (v: number) => `${(v / 100).toFixed(2)}%`
+      const kinds: Record<string, [string, string]> = { money_market: ['Money market', '货币基金'], bond: ['Bond', '债券基金'], mixed: ['Mixed', '混合基金'], equity: ['Equity', '股票基金'], qdii: ['QDII', 'QDII 基金'] }
+      const rows: [string, (p: P) => ReactNode][] = [
+        [tr('Type', '类型'), (p) => (kinds[p.kind] ? tr(...kinds[p.kind]) : p.kind)],
+        [tr('Risk', '风险等级'), (p) => `R${p.risk_level}`],
+        [tr('Return', '收益'), (p) => (p.yield_bp ? `${tr('7-day', '七日年化')} ${pct(p.yield_bp)}` : `${tr('1 year', '近一年')} ${pct(p.return_1y_bp)}`)],
+        [tr('Worst fall', '最大回撤'), (p) => (p.max_drawdown_bp ? pct(p.max_drawdown_bp) : '—')],
+        [tr('Minimum', '起购'), (p) => yuan(p.min_fen)],
+        [tr('Redemption', '赎回到账'), (p) => `T+${p.redeem_days}`],
+        [tr('Fee', '费率'), (p) => pct(p.fee_bp)],
+        [tr('For you', '是否适合你'), (p) => (p.suitable ? <BuyButton name={p.name} /> : <span className="text-sm font-semibold text-cinnabar">{tr('Above your level', '超出等级')}</span>)],
+      ]
+      const safer = items.find((p) => p.code === card.safer)
+      return (
+        <div className="space-y-1.5">
+          <Table head={['', ...items.map((p) => p.name)]} minWidth={`${10 + items.length * 9}rem`}>
+            {rows.map(([label, value]) => (
+              <tr key={label} className="rule-b last:border-b-0">
+                <td className="px-3 py-1.5 text-ink2">{label}</td>
+                {items.map((p, i) => <td key={p.code} className={`num px-3 py-1.5 font-semibold ${i === items.length - 1 ? 'text-right' : ''}`}>{value(p)}</td>)}
+              </tr>
+            ))}
+          </Table>
+          {safer && <p className="text-sm">{tr(`Lower risk: ${safer.name}. Higher returns usually come with larger swings.`, `风险更低的是 ${safer.name}；收益更高的产品通常波动也更大。`)}</p>}
+          <p className="text-xs text-ink2">{tr('Simulated products. Not investment advice.', '模拟产品，不构成投资建议。')}</p>
+        </div>
+      )
+    }
     case 'products':
-    case 'compare':
       return (
         <div className="space-y-1.5">
           <Rows items={card.items.map((p: { code: string; name: string; risk_level: number; yield_bp: number; return_1y_bp: number; suitable: boolean }) => ({

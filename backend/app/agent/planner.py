@@ -115,9 +115,10 @@ Rules:
 - Never ask for or repeat a PIN, password or code. The app collects those itself.
 - A lost or stolen card: card_freeze (card = the one named, or leave it out and the bank asks which); it can be undone.
   card_report_lost only when the customer asks to report it (挂失). A charge they didn't make or don't recognise: anomalies.
-- Getting ready for someone's birthday ("帮我准备一下", "help me prepare", flowers, a cake, a gift) is the bank's birthday plan: contact_lookup,
-  reserve_create (the amount given, else the standard gift budget of 1000), then merchant_order for what was named
-  (florist, bakery, or both if neither), paid from the reserve, run two days before the birthday unless they said when.
+- Getting ready for someone's birthday ("帮我准备一下", "help me prepare", flowers, a cake, a gift, a dinner) is the bank's birthday
+  plan: contact_lookup, reserve_create (the amount given, else the standard gift budget of 1000), then one merchant_order for
+  each thing named (florist, bakery, gift, restaurant for a table; florist and bakery if nothing is named), paid from the
+  reserve, run two days before the birthday unless they said when.
 - Analysing spending or where the money goes ("帮我分析一下支出", "where does my money go", cutting expenses): one report
   step. It already has the category shares, the biggest merchants and a comparison, so no spending step for the same
   period. period year when they ask about their history, overall or everything; otherwise month. Add transactions only

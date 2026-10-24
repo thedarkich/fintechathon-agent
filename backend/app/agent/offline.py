@@ -34,6 +34,12 @@ CATEGORY_WORDS = [
 ]
 
 
+# the bank's partner services for a birthday, and the words that name them; flowers and a cake when none is named
+SHOPS = (("florist", ("花", "flower")), ("bakery", ("蛋糕", "cake")),
+         ("gift", ("礼物", "礼品", "礼盒", "gift", "present")),
+         ("restaurant", ("餐厅", "订座", "订位", "订桌", "订个桌", "晚餐", "吃顿饭", "吃饭", "dinner", "restaurant", "table for")))
+
+
 def cn_number(text: str) -> float | None:
     """'两千五' -> 2500, '三百' -> 300, '1万' -> 10000, '一千二百' -> 1200."""
     if not text:
@@ -359,6 +365,15 @@ JOINS = re.compile(r"[，,；;。]|顺便|另外|同时|然后|并且|再(?=帮|
                    r"|\band\b(?=\s+(?:show|check|what|how|freeze|cancel|tell|list|give|send|turn|block|find))", re.IGNORECASE)
 
 
+def area(action: str) -> str:
+    """Which part of the bank an action belongs to: balance, spending, wealth, card, subscription, transfer..."""
+    for prefix, name in (("wealth", "wealth"), ("card", "card"), ("subscription", "subscription"), ("transfer", "transfer"),
+                         ("schedule", "transfer"), ("reserve", "reserve")):
+        if action.startswith(prefix):
+            return name
+    return {"spending": "spending", "report": "spending", "analyze": "spending", "transactions": "spending"}.get(action, action)
+
+
 def _together(text: str, today: date, whole: PlanOut) -> PlanOut:
     """Two or three requests in one message: each part is planned on its own, and the parts are kept only when every
     one of them is a request the planner understands by itself. Otherwise the message is read as a whole, as before."""
@@ -370,6 +385,8 @@ def _together(text: str, today: date, whole: PlanOut) -> PlanOut:
     plans = [_plan(p, today, None) for p in parts]
     if any(len(p.steps) != 1 for p in plans):
         return whole  # a part that asks a question or is a plan of its own ('备注生活费', a birthday)
+    if len({area(p.steps[0].action) for p in plans}) < len(plans):
+        return whole  # two parts in the same area are one request said in two breaths ('我想理财，有什么推荐')
     steps, seen = [], set()
     for p in plans:
         key = (p.steps[0].action, repr(sorted(p.steps[0].args.items())))
@@ -413,7 +430,8 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         return one("plan_cancel", {"plan": topic, "undo": has(text, "撤销", "退回", "还给我", "undo", "refund", "money back", "reverse")})
 
     # cross-scenario: birthday preparation
-    if has(text, "生日", "birthday") and has(text, "准备", "安排", "预留", "花", "蛋糕", "礼物", "prepare", "plan", "flowers", "cake", "set aside", "gift"):
+    if has(text, "生日", "birthday") and has(text, "准备", "安排", "预留", "花", "蛋糕", "礼物", "prepare", "plan", "flowers", "cake", "set aside", "gift",
+                                          *(w for _, words in SHOPS for w in words)):
         who = next((w for w in RELATION_WORDS if found(w, lowered)), None)
         if who is None:
             return ask("请问是谁的生日？", "Whose birthday is it?")
@@ -435,18 +453,16 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         steps = [step(1, "contact_lookup", {"who": who}),
                  step(2, "reserve_create", {"amount_yuan": amount, "name": "生日礼物" if re.search(r"[一-龥]", text) else "Birthday gift",
                                             "month_of": day}, after=["s1"])]
-        n = 3
-        for merchant, words in (("florist", ("花", "flower")), ("bakery", ("蛋糕", "cake"))):
-            if has(text, *words) or not has(text, "花", "flower", "蛋糕", "cake"):
-                steps.append(step(n, "merchant_order", {"merchant": merchant, "deliver_on": day, "recipient": who,
-                                                        "pay_from": "$s2.reserve_id"}, after=["s1", "s2"], run_at=run_at))
-                n += 1
+        named = [shop for shop, words in SHOPS if has(text, *words)] or ["florist", "bakery"]
+        for n, merchant in enumerate(named[:5], start=3):
+            steps.append(step(n, "merchant_order", {"merchant": merchant, "deliver_on": day, "recipient": who,
+                                                    "pay_from": "$s2.reserve_id"}, after=["s1", "s2"], run_at=run_at))
         return PlanOut(steps=steps)
 
     # cards
     if has(text, "卡", "card"):
         hint = card_hint(text)
-        if has(text, "余额", "多少钱", "还有多少", "balance") and not has(text, "限额", "limit"):
+        if has(text, "余额", "多少钱", "还有多少", "balance") and not has(text, "限额", "额度", "limit"):
             return one("balance")
         if has(text, "挂失") or re.search(r"\breport\b.{0,30}\b(lost|stolen)\b", lowered):
             return one("card_report_lost", {"card": hint})
@@ -460,7 +476,7 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
             return one("card_unfreeze", {"card": hint})
         if has(text, "冻结", "锁卡", "锁定", "freeze", "lock", "block"):
             return one("card_freeze", {"card": hint})
-        if has(text, "限额", "limit"):
+        if has(text, "限额", "额度", "limit"):
             if not money and has(text, "多少", "是什么", "查", "看", "what", "how much", "show"):
                 return one("cards")  # '我的虚拟卡日限额是多少' asks; it changes nothing
             amount = money[0] if money else None
@@ -667,7 +683,7 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         return one("report", {"period": "month", "offset": 0})  # this month's report compares it with the last
     if has(text, "比前个月", "比前一个月", "比上上个月", "多花了多少", "少花了多少", "than the month before", "compared with the month before"):
         return one("report", {"period": "month", "offset": -1 if has(text, "上个月", "上月", "last month") else 0})
-    if has(text, "报告", "总结", "报表", "月报", "年报", "年度账单", "月度账单", "年账单", "report", "summary", "review"):
+    if has(text, "报告", "总结", "报表", "月报", "年报", "占比", "比例", "share of", "年度账单", "月度账单", "年账单", "report", "summary", "review"):
         return one("report", {"period": "year" if year else "month", "offset": offset if (offset or year or has(text, "本月", "这个月", "this month", "今年", "this year")) else -1})
     if has(text, "习惯", "分析", "花太多", "花得太多", "花多了", "habits", "analyse my", "analyze my", "spending too much",
            "spend too much") and has(text, "花", "消费", "支出", "开销", "spend", "expens", "money"):

@@ -15,6 +15,8 @@ A bilingual (中文 / English) React app with light and dark themes that works a
 | Cards | `/controls` | Tabs: Cards (one tile per card: switches, freeze, limit, report lost) and Security (safety lock, passkeys) |
 | Subscriptions | `/subscriptions` | What renews automatically and what it costs a month, the next charge, services paid for twice; remind or cancel each |
 | History | `/ledger` | What you asked for (open one to see its card and trail), then the hash-chained audit log |
+| WeChat assistant (simulated) | `/wechat` | A phone-shaped chat standing in for the coming WeChat Mini Program, beside the bank app's side: link with the PIN, unlink, what the chat can and can't do. The chat calls the channel with its own token only (no session cookie) |
+| Confirm in the app | `/confirm/:planId` | Where the chat's links land: the request's confirm card, for the signed-in customer |
 | Operator | `/operator` | The human-takeover console, for operator accounts or the admin token |
 
 Older links still work: `/accounts` and `/transfers` open the matching tab of Transfers, `/controls?tab=subscriptions` opens Subscriptions. The demo clock and reset are under Demo tools in the header.

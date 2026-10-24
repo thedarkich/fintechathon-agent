@@ -152,9 +152,20 @@ flowchart LR
 
 - **手机号转账。** 号码会在模拟的手机号目录中查找：已保存的收款人、其他人（只显示打码的姓名，如“*小明”，以及所属银行），或查无此人。查询有频率限制，不能用来批量获取陌生人的姓名。第一次转给某个号码视为今天新加的收款人，适用新收款人规则（超过 ¥500 为红色，2 小时后到账）。
 
+### 3.12 微信助手（模拟）：微信里问，App 里确认
+
+赛题要求通过 App 和即时通讯（IM）等渠道触达客户。“微信助手（模拟）”页面模拟将来的微信小程序：左边的聊天窗口代表微信，右边是银行 App。聊天里的消息走的是和助手完全相同的流程（筛查、规划、校验、匹配、分级、审计，每个请求都记录 `channel: wechat`），只是放在单独的对话里。不同的是渠道的身份和权限（`app/api/wechat.py`、`app/channels/wechat.py`）：
+
+- **绑定要输入交易密码。** 客户在 App 里用交易密码绑定微信（`POST /api/wechat/link`）；密码错误计入安全锁，安全锁开启时不能绑定。绑定时发给聊天一侧一个渠道专用凭证，只显示一次，银行只保存它的哈希。重新绑定会替换旧凭证，解除绑定立即失效，两者都记入审计。
+- **渠道只能问，不能确认。** 聊天一侧只用这个凭证调用 `POST /api/channels/wechat/message`，从不使用 App 的登录会话，就像微信的服务器调用银行一样。其他接口都不接受这个凭证，所以在微信里发起的计划只能在 App 里确认：回复是一个链接（`/#/confirm/{plan}`），打开的是同一张确认卡片，同样需要确认哈希、交易密码和短信验证码。
+- **回复按聊天的方式写。** 由代码写好的回复会转成聊天消息：手机号和账号打码，长列表截短并附上 App 链接，多个选项编号，回复“2”即可选择。
+- **其他规则照常有效。** 在聊天里输入的密码会被隐藏；安全锁开启时聊天同样暂停；每个绑定的账户有消息频率限制。
+
+真正的小程序或公众号会调用同一个接口，用微信的签名校验代替模拟凭证。
+
 ## 四、数据模型
 
-`UserAccount`、`BankAccount`（活期、储蓄、预留）、`Txn`、`Payee`、`Card`、`Subscription`、`ScheduledTransfer`、`Transfer`、`PayeeMessage`、`Collection`、`WealthProduct`、`Holding`、`RiskProfile`、`Order`、`Plan`、`Conversation`、`Message`、`Challenge`、`Passkey`、`SmsMessage`、`Notification`、`SafetyLock`、`AuditEntry`、`DemoClock`、`Upload`。金额以整数“分”存储，时间为北京时间。每位新客户都会得到一个预置的银行：约 22 个月的真实感交易、家人和朋友收款人（包括两位拼音同名的人，以及一位今天新加、账户却登记在别人名下的卖家）、两张卡、包含重复和遗忘试用的订阅、预置的异常交易、理财持仓和风险测评结果。
+`UserAccount`、`BankAccount`（活期、储蓄、预留）、`Txn`、`Payee`、`Card`、`Subscription`、`ScheduledTransfer`、`Transfer`、`PayeeMessage`、`Collection`、`WealthProduct`、`Holding`、`RiskProfile`、`Order`、`Plan`、`Conversation`、`Message`、`Challenge`、`Passkey`、`SmsMessage`、`Notification`、`SafetyLock`、`AuditEntry`、`DemoClock`、`Upload`、`ChannelLink`（绑定的聊天账户，只存凭证的哈希）。金额以整数“分”存储，时间为北京时间。每位新客户都会得到一个预置的银行：约 22 个月的真实感交易、家人和朋友收款人（包括两位拼音同名的人，以及一位今天新加、账户却登记在别人名下的卖家）、两张卡、包含重复和遗忘试用的订阅、预置的异常交易、理财持仓和风险测评结果。
 
 ## 五、接口
 
@@ -164,12 +175,13 @@ flowchart LR
 - `GET /api/bank/*`：客户直接查看自己的银行（不经过 AI）：总览、交易、报告、异常、订阅、卡片、收款人、理财、预约转账、转账进度。
 - `POST /api/screens/plan`：应用页面发起的付款，返回一个等待确认的计划。`GET /api/directory`：转账页面查询手机号对应的账户。
 - `GET /api/audit`、`GET /api/audit/verify`：审计日志与链校验。
+- `GET|POST /api/wechat/link`、`POST /api/wechat/unlink`：在 App 里用交易密码绑定或解除绑定聊天账户。`POST /api/channels/wechat/message`：聊天一侧，使用渠道专用凭证；它能回答和发起计划，但不能确认任何操作。
 - `POST /api/demo/advance`、`/reset`、`/transfers/{id}`：演示工具（银行时钟、重新生成数据、转账进度控制）。
 - 人工客服接口（管理员令牌或工作人员账户）：队列、对话详情、回复、交还、取消、解锁。没有任何接口可以代为确认。
 
 ## 六、测试与评测
 
-- `backend/tests`：173 个通过 HTTP 接口运行的测试，覆盖承接上文的追问、等级边界、确认哈希、验证、安全锁、回滚、停止计划和预约转账、人工接管、演示账户、转账、沙箱、小票，以及用模拟模型测试的模型规划器。
+- `backend/tests`：185 个通过 HTTP 接口运行的测试，覆盖承接上文的追问、等级边界、确认哈希、验证、安全锁、回滚、停止计划和预约转账、人工接管、演示账户、转账、沙箱、小票，以及用模拟模型测试的模型规划器。
 - `evals/`：224 个日常请求和 69 个攻击，每个都在新开的客户上运行；报告见 [eval/report-offline.md](eval/report-offline.md)（离线规划器）和 [eval/report-model.md](eval/report-model.md)（通义千问），运行命令见 README。
 
 ## 七、部署

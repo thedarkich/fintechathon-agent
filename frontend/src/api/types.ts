@@ -303,3 +303,15 @@ export interface OperatorDetail {
   locks: { scope: string; reason: string; since: string }[]
   audit: { seq: number; kind: string; plan_id: string | null; at: string; data: Record<string, unknown> }[]
 }
+
+/** The WeChat assistant (simulated): whether a chat account is linked, and what the chat shows. */
+export interface WechatLink {
+  linked: boolean
+  openid?: string
+  linked_at?: string
+}
+
+export type WechatReply =
+  | { kind: 'text'; text: string }
+  | { kind: 'link'; text: string; url: string }
+  | { kind: 'confirm'; plan_id: string; tier: 'yellow' | 'red'; lines: string[]; text: string; needs: string; url: string }

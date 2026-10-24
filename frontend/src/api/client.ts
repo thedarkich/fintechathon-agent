@@ -26,6 +26,8 @@ import type {
   UploadResult,
   Wealth,
   Lock,
+  WechatLink,
+  WechatReply,
 } from './types'
 import { getDeviceId } from '../lib/device'
 
@@ -105,11 +107,34 @@ async function request<T>(path: string, init: RequestInit = {}, admin = false): 
   return body as T
 }
 
+/** The chat app's side of the WeChat assistant: its own token and never the bank session's cookie, as a real chat
+ * app's servers would call the bank. It can ask and plan; nothing it holds can approve. */
+export async function wechatSay(token: string, text: string, lang: Lang): Promise<WechatReply[]> {
+  let res: Response
+  try {
+    res = await fetch('/api/channels/wechat/message', {
+      method: 'POST', credentials: 'omit', cache: 'no-store', body: JSON.stringify({ text, lang }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    })
+  } catch {
+    throw new TypeError('network')
+  }
+  const body = await res.json().catch(() => ({}))
+  if (res.status === 429) throw new RateLimitedError(body.message_en ?? 'Too many messages. Wait a minute.', body.message_zh ?? '消息太频繁，请稍后再试。')
+  if (!res.ok) throw new ApiError(res.status, body.code, body.message_en ?? 'The message was not delivered.', body.message_zh ?? '消息没有送达。')
+  return body.replies as WechatReply[]
+}
+
 const post = <T,>(path: string, data: unknown = {}, admin = false) =>
   request<T>(path, { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } }, admin)
 
 export const api = {
   mode: 'live' as const,
+
+  // the WeChat assistant (simulated): linking happens in the bank app, with the signed-in session and the PIN
+  wechatLink: () => request<WechatLink>('/api/wechat/link'),
+  linkWechat: (pin: string) => post<WechatLink & { token: string }>('/api/wechat/link', { pin }),
+  unlinkWechat: () => post<WechatLink>('/api/wechat/unlink'),
   health: () => request<{ ok: boolean; planner: 'ai' | 'offline'; demo_tools: boolean }>('/api/health'),
 
   // the assistant

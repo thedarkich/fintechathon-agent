@@ -308,7 +308,7 @@ class Conversation(SQLModel, table=True):
     escalated: bool = False
     escalated_reason: str | None = None
     hidden: bool | None = None  # removed from the customer's chat list; its messages and audit trail are kept
-    kind: str | None = None  # None = a chat with the assistant; "screens" = requests made with the app's own buttons
+    kind: str | None = None  # None = a chat with the assistant; "screens" = requests made with the app's own buttons; "wechat" = the chat channel
 
 
 class Message(SQLModel, table=True):
@@ -365,6 +365,19 @@ class Passkey(SQLModel, table=True):
     sign_count: int = 0
     label: str = ""
     created_at: str = Field(default_factory=now_iso)
+
+
+class ChannelLink(SQLModel, table=True):
+    """A chat app account (the simulated WeChat assistant) linked to the customer's bank account. The channel signs in
+    with its own token, never the app's session, so it can ask and plan but has no way to approve anything."""
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    user_id: str = Field(index=True)
+    channel: str = "wechat"
+    openid: str  # the chat app's id for this person (simulated)
+    token_hash: str = Field(index=True)  # sha256 of the channel's credential; the credential itself is never stored
+    created_at: str = Field(default_factory=now_iso)
+    revoked_at: str | None = None
 
 
 class SmsMessage(SQLModel, table=True):

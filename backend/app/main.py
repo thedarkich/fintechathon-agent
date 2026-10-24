@@ -17,6 +17,8 @@ from app.api.operator import router as operator
 from app.api.screens import router as screens
 from app.api.security import RequestBoundary, problem
 from app.api.uploads import router as uploads
+from app.api.wechat import app_side as wechat_app
+from app.api.wechat import channel_side as wechat_channel
 from app.config import Settings
 from app.runtime import Runtime
 
@@ -85,6 +87,8 @@ def create_app(settings=None, *, runtime=None):
     app.include_router(operator)
     app.include_router(screens)
     app.include_router(uploads)
+    app.include_router(wechat_app)
+    app.include_router(wechat_channel)
 
     @app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], include_in_schema=False)
     async def unknown_api(path: str):
