@@ -11,8 +11,12 @@
 - **Run the app:** `cd backend && uv run uvicorn app.main:app --port 8000` serves the API and `frontend/dist`. Without an
   AI key the offline planner answers, and everything works. After changing `frontend/src`, run `npm run build` in
   `frontend` so the served app has the change.
-- **The AI planner (Qwen) is opt-in and paid** (rule 5): it needs `LLM_ENABLED=true`, `AI_BASE_URL`, `AI_API_KEY`,
-  `AI_MODEL` and `LLM_THINKING=false` in the environment, and the provider's host on the cloud environment's allowed
-  domains. Never write a key into the repo, and ask before any run that calls it.
+- **The AI planner (Qwen) is paid** (rule 5). It runs when the environment sets `LLM_ENABLED=true`, `AI_BASE_URL`,
+  `AI_API_KEY`, `AI_MODEL` and `LLM_THINKING=false` (a cloud environment's variables, or a network secret for the key),
+  and the provider's host is reachable. Then the running app plans with Qwen; the tests and `scripts/check.sh` never
+  call it whatever the environment says. `cd backend && uv run python ../scripts/qwen_check.py` makes one call and
+  says whether Qwen answered or why not. The key allows about 5 requests a minute, so don't run
+  `python -m app.evals --model` with it (no pacing: most cases would hit the limit). Never write a key into the repo,
+  and ask before any run that calls the model.
 - **Docs and slides quote measured numbers** (tests, evaluation results). When a change moves one, update every place
   that states it: `git grep` for the old number.
