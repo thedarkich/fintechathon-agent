@@ -1,6 +1,8 @@
 /* The public pages: the landing page (lx-) and How it stays safe (lp-). Same tokens, type and buttons as the
    app, so the site and the bank behind it read as one product. Interface fragments (marked data-ui) are
-   pieces of the real app at their true size: they keep the app's own small labels and control borders. */
+   pieces of the real app at their true size: they keep the app's own small labels and control borders.
+   The landing page moves: every tile plays its request on a loop while it is on screen, and all of it rests
+   on its finished picture under reduced motion. */
 
 .lx main, .lp { --section-gap: clamp(120px, 14vw, 200px); }
 .lx-hero, .lx-section, .lp { width: min(var(--page-w), calc(100% - 2 * var(--gutter))); margin-left: auto; margin-right: auto; }
@@ -18,9 +20,15 @@
 .lx-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .lx-link:hover span { transform: translateX(3px); }
 .lx-link:disabled { opacity: .5; }
+.lx-accent { color: var(--action); }
 
-/* Hero: the headline left, the assistant working on the right */
-.lx-hero { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 56px; align-items: center; min-height: min(calc(100svh - var(--header-h)), 860px); padding: 48px 0 72px; }
+/* Hero: the headline left; on the right the assistant at work, with the bank's services circling it */
+.lx-hero-wrap { position: relative; overflow: hidden; }
+.lx-hero-wrap::before { content: ''; position: absolute; inset: -32px; pointer-events: none; animation: lx-pan 40s linear infinite;
+  background-image: radial-gradient(color-mix(in srgb, var(--ink) 13%, transparent) 1px, transparent 1.5px); background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(ellipse 60% 70% at 72% 50%, #000 15%, transparent 70%); mask-image: radial-gradient(ellipse 60% 70% at 72% 50%, #000 15%, transparent 70%); } /* taste-skill-ignore: a dot field faded at its edges, not a colour gradient */
+@keyframes lx-pan { to { transform: translate(26px, 26px); } }
+.lx-hero { position: relative; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 56px; align-items: center; min-height: min(calc(100svh - var(--header-h)), 860px); padding: 48px 0 72px; }
 .lx-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; margin-top: 36px; }
 .lx-line { display: block; overflow: hidden; padding-bottom: .06em; margin-bottom: -.06em; }
 .lx-line > span { display: block; animation: lx-line 1s var(--ease-out) both; }
@@ -28,12 +36,28 @@
 .lx-hero .lx-lede { animation: rise .9s var(--ease-out) 380ms both; }
 .lx-hero .lx-actions, .lx-hero .lx-small { animation: rise .9s var(--ease-out) 460ms both; }
 @keyframes lx-line { from { transform: translateY(105%); } to { transform: none; } }
-.lx-hero-stage { --drift: 0; display: flex; justify-content: center; align-items: center; min-height: 600px; padding: 48px 32px; border-radius: 28px; background: var(--field); animation: rise 1.1s var(--ease-out) 200ms both; }
-.lx-hero-stage > .lx-chat { transform: translateY(calc(var(--drift) * -36px)); transition: transform .1s linear; }
+
+.lx-hero-stage { position: relative; width: 100%; max-width: 620px; aspect-ratio: 1; justify-self: center; border-radius: 32px; background: var(--field); overflow: hidden; animation: rise 1.1s var(--ease-out) 200ms both; }
+.lx-ring { position: absolute; inset: 0; margin: auto; border-radius: 50%; border: 1px dashed color-mix(in srgb, var(--ink) 12%, transparent); container-type: size; } /* taste-skill-ignore: the orbit the icons travel on */
+.lx-ring.is-inner { width: 76%; height: 76%; animation: lx-spin 70s linear infinite; }
+.lx-ring.is-outer { width: 100%; height: 100%; border-color: transparent; animation: lx-spin 110s linear infinite reverse; }
+@keyframes lx-spin { to { transform: rotate(360deg); } }
+.lx-orb { position: absolute; left: 50%; top: 50%; transform: rotate(var(--a)) translateX(50cqw) rotate(calc(-1 * var(--a))); }
+.lx-orb-icon { position: absolute; left: -24px; top: -24px; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 15px; background: var(--paper); color: var(--ink-2); transition: background-color .4s var(--ease), color .4s var(--ease), scale .5s var(--ease-out); }
+.lx-orb-icon svg { width: 22px; height: 22px; }
+.is-inner .lx-orb-icon { animation: lx-spin 70s linear infinite reverse; }
+.is-outer .lx-orb-icon { animation: lx-spin 110s linear infinite; left: -19px; top: -19px; width: 38px; height: 38px; border-radius: 12px; color: var(--ink-off); background: color-mix(in srgb, var(--paper) 55%, transparent); }
+.is-outer .lx-orb-icon svg { width: 17px; height: 17px; }
+.is-outer .lx-orb { transform: rotate(var(--a)) translateX(43cqw) rotate(calc(-1 * var(--a))); }
+.lx-orb-icon.is-lit { background: var(--action); color: var(--action-ink); scale: 1.22; }
+.lx-orb-icon.is-lit::after { content: ''; position: absolute; inset: -6px; border-radius: 19px; border: 2px solid var(--action); animation: lx-ping 1.4s var(--ease-out) infinite; } /* taste-skill-ignore: the pulse on the service the chat is using */
+@keyframes lx-ping { from { opacity: .8; transform: scale(.92); } to { opacity: 0; transform: scale(1.45); } }
 
 /* The assistant, as it looks in the app */
 .lx-chat { position: relative; width: min(100%, 400px); padding: 20px; border-radius: 24px; background: var(--paper); font-size: 15px; }
+.lx-hero-stage .lx-chat { position: absolute; left: 50%; top: 50%; translate: -50% -50%; z-index: 2; width: min(318px, 58%); padding: 16px; box-shadow: 0 24px 60px color-mix(in srgb, #000 22%, transparent); } /* taste-skill-ignore: the chat floats above the orbit */
 .lx-chat-log { display: flex; flex-direction: column; gap: 10px; min-height: 372px; }
+.lx-hero-stage .lx-chat-log { min-height: 252px; }
 .lx-bubble { max-width: 85%; padding: 9px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; animation: lx-pop .45s var(--ease-out) both; }
 .lx-me { align-self: flex-end; background: var(--action); color: var(--action-ink); border-bottom-right-radius: 6px; }
 .lx-bot { align-self: flex-start; background: var(--field); border-top-left-radius: 6px; }
@@ -50,80 +74,109 @@
 .lx-confirm dl > div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 14px; }
 .lx-confirm dt { color: var(--ink-2); }
 .lx-confirm dd { text-align: right; font-weight: 500; }
+.lx-hero-stage .lx-confirm { padding: 10px 14px; }
+.lx-hero-stage .lx-confirm dl > div { padding: 4px 0; font-size: 13px; }
 .lx-amount { font-size: 17px; font-weight: 600 !important; }
 .lx-confirm-actions { display: flex; gap: 8px; margin-top: 10px; }
 .lx-ui-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 8px 14px; border-radius: 980px; background: var(--action); color: var(--action-ink); font-size: 14px; font-weight: 500; transition: transform .2s var(--ease), background-color .2s var(--ease); }
 .lx-ui-btn.is-pressed { transform: scale(.95); background: color-mix(in srgb, var(--action) 80%, #000); }
 .lx-ui-line { background: var(--field); color: var(--ink); }
-.lx-chat-input { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding: 10px 10px 10px 16px; border-radius: 980px; background: var(--field); color: var(--ink-2); font-size: 14px; }
-.lx-chat-input i { width: 28px; height: 28px; border-radius: 50%; background: var(--action); opacity: .9; }
+.lx-chat-input { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding: 8px 8px 8px 16px; border-radius: 980px; background: var(--field); color: var(--ink-2); font-size: 14px; }
+.lx-chat-input i { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--action); color: var(--action-ink); }
 .lx-sms { position: absolute; left: -36px; right: 36px; bottom: -28px; padding: 12px 16px; border-radius: 18px; background: var(--ink); color: var(--paper); font-size: 13.5px; line-height: 1.45; opacity: 0; transform: translateY(16px) scale(.98); transition: opacity .5s var(--ease-out), transform .6s var(--ease-out); pointer-events: none; box-shadow: 0 18px 40px rgba(0, 0, 0, .18); } /* taste-skill-ignore: the text message floats over the chat like a notification */
+.lx-hero-stage .lx-sms { left: auto; right: 5%; bottom: 5%; width: min(290px, 56%); z-index: 3; font-size: 13px; }
 .lx-sms.is-shown { opacity: 1; transform: none; }
 .lx-sms-who { font-size: 12px; opacity: .7; margin-bottom: 3px; }
-.lx-sms.is-static { position: static; box-shadow: none; transform: none; opacity: 1; max-width: 420px; } /* taste-skill-ignore: switch and slider knobs inside a data-ui control */
+.lx-sms.is-static { position: static; box-shadow: none; transform: none; opacity: 1; max-width: 420px; }
+
+/* Things you can say: two rows of real requests drifting past, in both languages; each one sends itself */
+.lx-say { padding-top: 64px; }
+.lx-say-head { text-align: center; font-size: 15px; color: var(--ink-2); margin-bottom: 20px; }
+.lx-marquee { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); } /* taste-skill-ignore: fades the row's ends, not a colour gradient */
+.lx-marquee + .lx-marquee { margin-top: 12px; }
+.lx-marquee-track { display: flex; gap: 12px; width: max-content; padding: 4px 0; animation: lx-slide 52s linear infinite; }
+.lx-marquee.is-reverse .lx-marquee-track { animation-direction: reverse; animation-duration: 60s; }
+.lx-marquee:hover .lx-marquee-track, .lx-marquee:focus-within .lx-marquee-track { animation-play-state: paused; }
+@keyframes lx-slide { to { transform: translateX(calc(-50% - 6px)); } }
+.lx-say-chip { display: inline-flex; align-items: center; gap: 10px; padding: 8px 18px 8px 8px; border-radius: 980px; background: var(--field); font-size: 15px; white-space: nowrap; transition: background-color .2s var(--ease), transform .25s var(--ease-out); }
+.lx-say-chip:hover { background: var(--paper-2); transform: translateY(-2px); }
+.lx-say-chip:active { transform: scale(.97); }
+.lx-say-chip:disabled { opacity: .5; }
+.lx-say-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent-wash); color: var(--action); }
+.lx-say-other { font-size: 13px; color: var(--ink-2); }
 
 /* Sections */
 .lx-section { padding-top: var(--section-gap); }
-.lx-head { margin-bottom: 72px; }
-.lx-field { width: 100%; max-width: none; margin-top: var(--section-gap); padding: var(--section-gap) var(--gutter); background: var(--field); }
-.lx-field + .lx-section { padding-top: var(--section-gap); }
+.lx-head { margin-bottom: 64px; }
 
-/* A capability row: the claim, then the product doing it. The fragments change size from row to row. */
-.lx-row { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 64px; align-items: center; padding: 56px 0; }
-.lx-row + .lx-row { margin-top: 24px; }
-.lx-row h3 { font-size: 28px; font-weight: 600; line-height: 1.15; letter-spacing: -.025em; }
-.lx-row-copy p { margin-top: 14px; font-size: 17px; line-height: 1.5; max-width: 30em; }
-.lx-row-copy .lx-link { display: inline-block; margin-top: 20px; white-space: normal; text-align: left; }
-.lx-row-ui { display: flex; justify-content: flex-start; padding: 40px; border-radius: 28px; background: var(--field); min-height: 320px; align-items: center; }
-.lx-row:nth-of-type(odd) .lx-row-ui { justify-content: center; }
-.lx-row.is-wide { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); }
+/* The grid of what it does: each tile is the product doing one thing, on a loop, above the claim */
+.lx-bento { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: minmax(420px, auto); grid-auto-flow: dense; gap: 16px; }
+.lx-tile { position: relative; isolation: isolate; display: flex; flex-direction: column; border-radius: 28px; background: var(--field); overflow: hidden; container-type: inline-size; transition: translate .4s var(--ease-out); }
+.lx-tile::before { content: ''; position: absolute; inset: 0; z-index: -1; opacity: 0; transition: opacity .3s var(--ease); pointer-events: none;
+  background: radial-gradient(440px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--action) 14%, transparent), transparent 60%); } /* taste-skill-ignore: the light that follows the pointer over a tile */
+.lx-tile:hover::before { opacity: 1; }
+.lx-tile:hover { translate: 0 -4px; }
+.lx-tile.is-wide { grid-column: span 2; }
+.lx-tile.is-wider { grid-column: span 3; }
+.lx-tile:not(.is-live) *, .lx-tile:not(.is-live) *::before, .lx-tile:not(.is-live) *::after { animation-play-state: paused !important; }
+.lx-tile-ui { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 24px 24px 0; min-width: 0; }
+.lx-tile-copy { padding: 20px 24px 24px; }
+.lx-tile-copy h3 { font-size: 21px; font-weight: 600; line-height: 1.2; letter-spacing: -.02em; }
+.lx-tile-copy p { margin-top: 6px; font-size: 15px; line-height: 1.5; }
+.lx-tile-copy .lx-link { margin-top: 10px; font-size: 15px; white-space: normal; text-align: left; }
+.lx-motion .lx-bento > [data-rise]:nth-child(4n + 2) { transition-delay: 70ms; }
+.lx-motion .lx-bento > [data-rise]:nth-child(4n + 3) { transition-delay: 140ms; }
+.lx-motion .lx-bento > [data-rise]:nth-child(4n + 4) { transition-delay: 210ms; }
 
 /* Fragments of the app: the app's own small type and control borders, at true size */
 .lx-ui { width: 100%; font-size: 14px; line-height: 1.45; }
-.lx-ui-question { max-width: 440px; display: flex; flex-direction: column; gap: 10px; }
+.lx-ui-val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+.lx-ui-note { margin-top: 12px; font-size: 13px; color: var(--ink-2); }
+.lx-ui-yield { color: var(--action); font-weight: 600; }
+.lx-caret { display: inline-block; width: 2px; height: 1.05em; margin-left: 1px; vertical-align: -.15em; background: currentColor; animation: lx-caret 1s steps(1) infinite; }
+@keyframes lx-caret { 50% { opacity: 0; } }
+.lx-reveal { opacity: 0; transform: translateY(12px); transition: opacity .4s var(--ease), transform .55s var(--ease-out); }
+.lx-reveal.is-shown { opacity: 1; transform: none; }
+
+/* pay by name */
+.lx-ui-question { display: flex; flex-direction: column; gap: 12px; }
+.lx-typed { min-height: 40px; min-width: 48px; }
 .lx-ui-card { padding: 16px; border-radius: 16px; background: var(--paper); }
 .lx-ui-title { font-weight: 600; font-size: 15px; }
 .lx-ui-options { display: grid; gap: 8px; margin-top: 12px; }
-.lx-ui-options button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 11px 14px; border: 1px solid var(--rule-strong); border-radius: 12px; text-align: left; transition: border-color .2s var(--ease), background-color .2s var(--ease), transform .2s var(--ease); } /* taste-skill-ignore: inside a data-ui fragment (the app's own control borders) */
+.lx-ui-options.is-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@container (max-width: 420px) { .lx-ui-options.is-pair { grid-template-columns: 1fr; } }
+.lx-ui-options button { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 11px 14px; border: 1px solid var(--rule-strong); border-radius: 12px; text-align: left; transition: border-color .2s var(--ease), background-color .2s var(--ease), transform .2s var(--ease); } /* taste-skill-ignore: inside a data-ui fragment (the app's own control borders) */
 .lx-ui-options button:hover { border-color: var(--ink-2); }
 .lx-ui-options button:active { transform: scale(.98); }
 .lx-ui-options button.is-on { border-color: var(--action); background: var(--accent-wash); }
 .lx-ui-options b { font-weight: 600; }
 .lx-ui-options span { font-size: 13px; color: var(--ink-2); }
+.lx-cursor { position: absolute; right: 22%; top: 42%; width: 20px; height: 22px; pointer-events: none; opacity: 0; transform: translate(150px, 70px);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 22'%3E%3Cpath d='M2 1l15 10-6.5 1.5L7 20z' fill='%23fff' stroke='%23000' stroke-width='1.4' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat;
+  transition: transform .9s var(--ease-out), opacity .3s var(--ease); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .35)); }
+.lx-cursor.is-moving, .lx-cursor.is-there { opacity: 1; transform: none; }
+.lx-cursor.is-there { animation: lx-click .3s var(--ease); }
+@keyframes lx-click { 50% { transform: scale(.75); } }
+.lx-ui-note.is-ok { display: flex; align-items: center; gap: 6px; color: var(--action); font-weight: 500; opacity: 0; transition: opacity .4s var(--ease); }
+.lx-ui-note.is-ok.is-shown { opacity: 1; }
 
-.lx-ui-spend { max-width: 520px; padding: 22px 24px; border-radius: 18px; background: var(--paper); }
-.lx-ui-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
-.lx-ui-head b { font-weight: 600; font-size: 15px; }
-.lx-ui-total { font-size: 24px; font-weight: 600; letter-spacing: -.02em; }
-.lx-ui-spend li { display: grid; grid-template-columns: 9em minmax(0, 1fr) 6.5em; gap: 14px; align-items: center; padding: 7px 0; }
-.lx-ui-name { color: var(--ink); }
-.lx-ui-bar { height: 8px; border-radius: 8px; background: var(--field); overflow: hidden; }
-.lx-ui-bar i { display: block; height: 100%; border-radius: inherit; background: var(--ink-off); transform-origin: left; }
-.lx-ui-bar i.is-top { background: var(--action); }
-.lx-motion .lx-row-ui:not(.in) .lx-ui-bar i { transform: scaleX(0); }
-.lx-ui-bar i { transition: transform 1.1s var(--ease-out) .25s; }
-.lx-ui-val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
-.lx-ui-note { margin-top: 14px; font-size: 13px; color: var(--ink-2); }
-.lx-ui-note.is-flag { color: var(--cinnabar); font-weight: 500; }
-
-.lx-ui-wealth { max-width: 600px; padding: 10px 6px 18px; border-radius: 18px; background: var(--paper); }
-.lx-ui-wealth table { width: 100%; border-collapse: collapse; }
-.lx-ui-wealth th, .lx-ui-wealth td { padding: 11px 12px; text-align: left; font-size: 14px; }
-.lx-ui-wealth thead th { font-size: 12px; font-weight: 500; color: var(--ink-2); border-bottom: 1px solid var(--rule); } /* taste-skill-ignore: inside a data-ui fragment (the app's own control borders) */
-.lx-ui-wealth tbody th { font-weight: 600; }
-.lx-ui-wealth tbody tr + tr { border-top: 1px solid var(--rule); } /* taste-skill-ignore: inside a data-ui fragment (the app's own control borders) */
-.lx-ui-wealth tr.is-picked { background: var(--accent-wash); }
-.lx-ui-yield { color: var(--action); font-weight: 600; }
-.lx-ui-wealth .lx-ui-note { padding: 0 12px; }
-
-.lx-ui-card-controls { max-width: 360px; padding: 18px; border-radius: 22px; background: var(--paper); }
-.lx-ui-plastic { display: flex; flex-direction: column; gap: 2px; padding: 18px 18px 16px; border-radius: 14px; background: var(--hero); color: #fff; aspect-ratio: 1.75; justify-content: flex-end; transition: background-color .5s var(--ease), filter .5s var(--ease); }
-.lx-ui-plastic b { font-weight: 600; font-size: 15px; margin-bottom: auto; }
-.lx-ui-plastic span { font-size: 17px; letter-spacing: .08em; }
+/* card controls */
+.lx-ui-card-controls { padding: 14px; border-radius: 20px; background: var(--paper); }
+.lx-ui-plastic { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 14px; background: var(--hero); color: #fff; aspect-ratio: 2; justify-content: flex-end; transition: background-color .5s var(--ease), filter .5s var(--ease); }
+.lx-ui-plastic::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); animation: lx-sheen 4.5s var(--ease) infinite;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, .22) 50%, transparent 65%); } /* taste-skill-ignore: the light passing over the plastic */
+@keyframes lx-sheen { 0%, 55% { transform: translateX(-100%); } 85%, 100% { transform: translateX(100%); } }
+.lx-ui-plastic b { font-weight: 600; font-size: 14px; margin-bottom: auto; }
+.lx-ui-plastic > span { font-size: 16px; letter-spacing: .08em; }
 .lx-ui-plastic em { font-style: normal; font-size: 12px; opacity: .85; }
 .is-frozen .lx-ui-plastic { background: #6e6e73; filter: saturate(.2); }
-.lx-ui-card-controls ul { margin: 12px 0; }
-.lx-ui-card-controls li { display: flex; justify-content: space-between; align-items: center; padding: 8px 2px; }
+.lx-frost { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; color: #fff; background: rgba(196, 228, 255, .5); clip-path: inset(0 100% 0 0); transition: clip-path .8s var(--ease-out); }
+.lx-frost svg { width: 48px; height: 48px; transform: rotate(-120deg) scale(.4); transition: transform 1s var(--ease-out); }
+.is-frozen .lx-frost { clip-path: inset(0); }
+.is-frozen .lx-frost svg { transform: none; }
+.lx-ui-card-controls ul { margin: 8px 0 10px; }
+.lx-ui-card-controls li { display: flex; justify-content: space-between; align-items: center; padding: 4px 2px; }
 .lx-ui-wide { width: 100%; }
 .is-frozen .lx-ui-wide { background: var(--field); color: var(--ink); }
 .lx-switch { position: relative; width: 44px; height: 26px; border-radius: 980px; background: var(--paper-2); flex-shrink: 0; transition: background-color .25s var(--ease); }
@@ -132,52 +185,78 @@
 .lx-switch.is-on i { transform: translateX(18px); }
 .lx-switch:disabled { opacity: .5; }
 
-.lx-ui-subs { max-width: 480px; padding: 8px 20px 18px; border-radius: 18px; background: var(--paper); }
-.lx-ui-subs li { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 10px 0; }
-.lx-ui-subs li + li { border-top: 1px solid var(--rule); } /* taste-skill-ignore: inside a data-ui fragment (the app's own control borders) */
-.lx-ui-subs li span:first-child { display: flex; flex-direction: column; }
-.lx-ui-subs b { font-weight: 500; }
-.lx-ui-subs small { font-size: 12px; color: var(--ink-2); }
-.lx-ui-subs li.is-flag b, .lx-ui-subs li.is-flag .lx-ui-val { color: var(--cinnabar); }
+/* spending */
+.lx-ui-spend { padding: 18px; border-radius: 18px; background: var(--paper); }
+.lx-ui-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.lx-ui-head b { font-weight: 500; font-size: 13px; color: var(--ink-2); }
+.lx-ui-total { font-size: 26px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lx-ui-spend li { display: grid; grid-template-columns: 4.6em minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 5px 0; font-size: 12.5px; }
+.lx-ui-bar { height: 8px; border-radius: 8px; background: var(--field); overflow: hidden; }
+.lx-ui-bar i { display: block; height: 100%; border-radius: inherit; background: var(--ink-off); transform-origin: left; animation: lx-grow 1.1s var(--ease-out) both; animation-delay: calc(var(--k) * 120ms + .25s); }
+.lx-ui-bar i.is-top { background: var(--action); }
+@keyframes lx-grow { from { transform: scaleX(0); } }
+.lx-donut { position: relative; flex-shrink: 0; width: 72px; height: 72px; }
+.lx-donut svg { width: 100%; height: 100%; rotate: -90deg; }
+.lx-donut circle { fill: none; stroke: var(--field); stroke-width: 16; }
+.lx-donut circle.is-share { stroke: var(--action); stroke-linecap: round; stroke-dasharray: 116.6 402; animation: lx-share 1.4s var(--ease-out) .9s both; }
+@keyframes lx-share { from { stroke-dasharray: 0 402; } }
+.lx-donut p { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; color: var(--ink-2); line-height: 1.1; }
+.lx-donut b { font-size: 15px; font-weight: 600; color: var(--ink); }
 
-.lx-ui-plan { max-width: 640px; display: flex; flex-direction: column; gap: 14px; }
-.lx-ui-plan ol { padding: 8px 20px; border-radius: 18px; background: var(--paper); }
-.lx-ui-plan li { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 0; }
-.lx-ui-plan li + li { border-top: 1px solid var(--rule); } /* taste-skill-ignore: inside a data-ui fragment (the app's own control borders) */
+/* subscriptions */
+.lx-ui-subs ul { display: grid; gap: 4px; }
+.lx-ui-subs li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; font-size: 13px; transition: background-color .3s var(--ease), color .3s var(--ease); }
+.lx-ui-subs li b { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lx-ui-subs li.is-reading { background: var(--paper); }
+.lx-ui-subs li.is-flag { background: var(--cinnabar-wash); color: var(--cinnabar); }
+.lx-save { margin-top: 12px; padding: 8px 14px; border-radius: 14px; background: var(--cinnabar); color: var(--paper); font-size: 13px; font-weight: 600; transform: scale(0); transform-origin: left center; transition: transform .5s cubic-bezier(.34, 1.56, .64, 1); }
+.lx-save.is-shown { transform: none; }
+
+/* a plan */
+.lx-ui-plan { display: flex; flex-direction: column; gap: 16px; }
+.lx-ui-plan ol { position: relative; display: grid; gap: 14px; padding: 16px 18px 16px 52px; border-radius: 18px; background: var(--paper); }
+.lx-ui-plan ol::before, .lx-ui-plan ol::after { content: ''; position: absolute; left: 30px; top: 30px; bottom: 30px; width: 2px; background: var(--paper-2); }
+.lx-ui-plan ol::after { background: var(--action); transform-origin: top; transform: scaleY(var(--p, 0)); transition: transform .8s var(--ease-out); }
+.lx-ui-plan li { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 14px; opacity: .45; transition: opacity .4s var(--ease); }
+.lx-ui-plan li.is-on { opacity: 1; }
 .lx-ui-plan li > span:nth-child(2) { display: flex; flex-direction: column; }
 .lx-ui-plan b { font-weight: 600; font-size: 15px; }
 .lx-ui-plan small { font-size: 13px; color: var(--ink-2); }
-.lx-ui-plan em { font-style: normal; font-size: 13px; font-weight: 500; padding: 3px 10px; border-radius: 980px; background: var(--field); }
-.lx-ui-plan .is-done em { background: var(--accent-wash); color: var(--action); }
-.lx-ui-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--paper-2); }
-.lx-ui-plan .is-done .lx-ui-dot, .lx-ui-plan .is-set .lx-ui-dot { background: var(--action); }
+.lx-ui-plan em { font-style: normal; font-size: 13px; font-weight: 500; padding: 3px 10px; border-radius: 980px; background: var(--accent-wash); color: var(--action); white-space: nowrap; }
+.lx-ui-dot { position: absolute; z-index: 1; left: -35px; top: 50%; translate: 0 -50%; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--paper-2); color: var(--action-ink); transition: background-color .3s var(--ease), scale .4s var(--ease-out); }
+.lx-ui-dot svg { opacity: 0; transition: opacity .3s var(--ease); }
+.lx-ui-plan li.is-on .lx-ui-dot { background: var(--action); scale: 1.08; }
+.lx-ui-plan li.is-on .lx-ui-dot svg { opacity: 1; }
 
-/* Ask. Check. Done.: what you give, what comes back, one exchange after another */
-.lx-column { max-width: 760px; margin: 0 auto; }
-.lx-column .lx-h2 { margin-bottom: 56px; }
-.lx-exchange + .lx-exchange { margin-top: 88px; }
-.lx-step { font-size: 28px; font-weight: 600; letter-spacing: -.02em; }
-.lx-call { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; max-width: 560px; padding: 16px 16px 16px 22px; border-radius: 980px; background: var(--paper); font-size: 17px; }
-.lx-call > i { width: 34px; height: 34px; border-radius: 50%; background: var(--action); flex-shrink: 0; }
-.lx-meter { flex-wrap: wrap; border-radius: 18px; padding: 18px 22px; }
-.lx-meter > span:first-child { color: var(--ink-2); font-size: 15px; }
-.lx-meter b { font-weight: 600; font-variant-numeric: tabular-nums; }
-.lx-meter-track { flex-basis: 100%; height: 8px; border-radius: 8px; background: var(--field); overflow: hidden; }
-.lx-meter-track i { display: block; height: 100%; background: var(--action); border-radius: inherit; }
-.lx-response { margin: 12px 0 0 56px; max-width: 504px; padding: 16px 20px; border-radius: 18px; background: var(--paper); }
-.lx-response p { font-size: 16px; font-weight: 500; }
-.lx-response small { display: block; margin-top: 4px; font-size: 14px; color: var(--ink-2); }
-.lx-result { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-top: 16px; padding: 28px; border-radius: 24px; background: var(--paper); }
-.lx-receipt { display: flex; gap: 20px; align-items: center; flex: 1 1 280px; }
-.lx-receipt-amount { font-size: 40px; font-weight: 600; letter-spacing: -.03em; line-height: 1; color: var(--action); }
-.lx-receipt p + p { margin-top: 6px; font-size: 15px; }
-.lx-receipt-balance { color: var(--ink-2); }
-.lx-result .lx-sms { flex: 1 1 260px; }
+/* the risk gauge */
+.lx-ui-gauge svg { display: block; width: min(100%, 200px); margin: 0 auto; overflow: visible; }
+.lx-arc { fill: none; stroke-width: 14; }
+.lx-arc.is-r1 { stroke: var(--action); } .lx-arc.is-r2 { stroke: color-mix(in srgb, var(--action) 55%, var(--dot)); } .lx-arc.is-r3 { stroke: var(--dot); }
+.lx-arc.is-r4 { stroke: color-mix(in srgb, var(--dot) 50%, var(--cinnabar)); } .lx-arc.is-r5 { stroke: var(--cinnabar); }
+.lx-needle { transform-origin: 100px 100px; transition: transform 1.2s cubic-bezier(.34, 1.4, .64, 1); }
+.lx-needle line { stroke: var(--ink); stroke-width: 4; stroke-linecap: round; }
+.lx-needle circle { fill: var(--ink); }
+.lx-gauge-label { text-align: center; margin-top: 4px; font-size: 13px; color: var(--ink-2); }
+.lx-gauge-label b { font-size: 18px; color: var(--ink); }
+.lx-ui-gauge ul { display: grid; gap: 6px; margin-top: 14px; }
+.lx-ui-gauge li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; background: var(--paper); font-size: 13px; transition: opacity .5s var(--ease), filter .5s var(--ease); }
+.lx-ui-gauge li.is-out { opacity: .35; filter: grayscale(1); }
 
-/* How much are you sending?: a figure the visitor sets */
-#check { min-height: 88svh; display: flex; flex-direction: column; }
-.lx-check { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 64px; margin-top: 28px; }
-.lx-check-control { width: min(100%, 440px); padding: 22px 24px; border-radius: 22px; background: var(--field); }
+/* a bill */
+.lx-ui-bill { padding: 18px; border-radius: 18px; background: var(--paper); }
+.lx-ui-bill-head { display: flex; align-items: center; gap: 12px; }
+.lx-ui-bill-head > span:last-child { display: flex; flex-direction: column; }
+.lx-ui-bill-head b { font-weight: 600; font-size: 15px; }
+.lx-ui-bill-head small { font-size: 13px; color: var(--ink-2); }
+.lx-ui-bill-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--accent-wash); color: var(--action); }
+.lx-ui-bill-amount { margin: 16px 0; font-size: 36px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; transition: color .4s var(--ease); }
+.is-paid .lx-ui-bill-amount { color: var(--action); }
+.lx-ui-bill-stamp { display: flex; align-items: center; gap: 12px; min-height: 38px; font-size: 13px; color: var(--ink-2); animation: lx-pop .4s var(--ease-out) both; }
+
+/* the bank's rules: drag the amount, or watch it walk through the three answers */
+.lx-check { display: grid; gap: 20px; align-items: center; }
+@container (min-width: 560px) { .lx-check { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; } }
+.lx-check-control { padding: 18px 20px; border-radius: 20px; background: var(--paper); }
 .lx-check-control label { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; color: var(--ink-2); }
 .lx-check-control output { font-size: 22px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 .lx-check-control input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; margin: 6px 0 4px; background: transparent; cursor: pointer; }
@@ -188,38 +267,90 @@
 .lx-check-control input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .3); } /* taste-skill-ignore: inside a data-ui fragment (the app's own control borders) */
 .lx-check-control input[type=range]:active::-webkit-slider-thumb { transform: scale(1.1); }
 .lx-check-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; font-size: 14px; }
-.lx-check-result { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 24px 48px; }
-.lx-figure { font-size: clamp(72px, 12vw, 176px); font-weight: 700; line-height: .85; letter-spacing: -.05em; white-space: nowrap; color: var(--action); }
-.lx-check-why { max-width: 30ch; font-size: 17px; line-height: 1.5; }
+.lx-check-result { container-type: inline-size; min-width: 0; }
+.lx-figure { font-size: min(72px, 17cqi); font-weight: 700; line-height: .9; letter-spacing: -.04em; white-space: nowrap; animation: lx-pop .5s var(--ease-out) both; transition: color .4s var(--ease); }
+.lx-figure.is-tap { color: var(--action); } .lx-figure.is-strong { color: var(--dot); } .lx-figure.is-wait { color: var(--cinnabar); }
+.lx-check-why { margin-top: 12px; font-size: 15px; line-height: 1.5; }
 
-/* Just say it.: the box on the left, sentences to start from on the right */
-.lx-ask { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 64px; align-items: end; }
+/* Ask. Check. Done.: three stops in a row, and a coin that travels along them as the page scrolls */
+.lx-journey { position: relative; }
+.lx-path { position: absolute; left: 16.66%; right: 16.66%; top: 42px; height: 4px; border-radius: 4px; background: var(--paper-2); }
+.lx-path-fill { position: absolute; inset: 0; border-radius: inherit; background: var(--action); transform-origin: left; transform: scaleX(var(--jp, 0)); }
+.lx-coin { position: absolute; top: 50%; left: calc(var(--jp, 0) * 100%); z-index: 2; display: grid; place-items: center; width: 44px; height: 44px; translate: -50% -50%; border-radius: 50%; background: var(--dot); color: #3a2400; box-shadow: 0 0 0 6px color-mix(in srgb, var(--dot) 22%, transparent); } /* taste-skill-ignore: a halo marks the coin as the moving thing */
+.lx-stops { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
+.lx-stop { text-align: center; }
+.lx-stop-badge { position: relative; z-index: 1; display: grid; place-items: center; width: 88px; height: 88px; margin: 0 auto; border-radius: 28px; background: var(--field); color: var(--ink-2); transition: background-color .5s var(--ease), color .5s var(--ease), transform .6s cubic-bezier(.34, 1.56, .64, 1); }
+.lx-stop-badge svg { width: 36px; height: 36px; }
+.lx-stop.is-on .lx-stop-badge { background: var(--action); color: var(--action-ink); transform: rotate(-6deg) scale(1.05); }
+.lx-stop h3 { margin-top: 22px; font-size: 24px; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; }
+.lx-stop > p { max-width: 22em; margin: 8px auto 0; font-size: 16px; }
+.lx-stop-ui { max-width: 340px; margin: 20px auto 0; padding: 16px 18px; border-radius: 18px; background: var(--field); text-align: left; font-size: 14px; opacity: .4; transform: translateY(10px); transition: opacity .5s var(--ease), transform .6s var(--ease-out); }
+.lx-stop.is-on .lx-stop-ui { opacity: 1; transform: none; }
+.lx-stop-ui p { font-weight: 500; }
+.lx-stop-ui small { display: block; margin-top: 6px; font-size: 13px; color: var(--ink-2); }
+.lx-meter { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.lx-meter > span:first-child { color: var(--ink-2); }
+.lx-meter b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.lx-meter-track { flex-basis: 100%; height: 8px; border-radius: 8px; background: var(--paper); overflow: hidden; }
+.lx-meter-track i { display: block; height: 100%; background: var(--action); border-radius: inherit; }
+.lx-receipt { display: flex; gap: 14px; align-items: center; }
+.lx-receipt-amount { font-size: 28px; font-weight: 600 !important; letter-spacing: -.03em; line-height: 1; color: var(--action); }
+.lx-receipt p + p { margin-top: 4px; font-weight: 400; font-size: 13px; }
+.lx-stop-ui .lx-sms { margin-top: 12px; }
+
+/* Just say it.: one panel, the box in the middle, sentences to start from under it */
+.lx-ask { position: relative; overflow: hidden; padding: clamp(48px, 7vw, 96px) clamp(20px, 5vw, 64px); border-radius: 36px; background: var(--accent-wash); text-align: center; }
+.lx-ask .lx-h2, .lx-ask .lx-lede { margin-left: auto; margin-right: auto; }
 .lx-ask .lx-lede { margin-top: 16px; }
-.lx-askbox { display: flex; gap: 10px; align-items: center; width: 100%; margin-top: 36px; padding: 6px 6px 6px 22px; border-radius: 980px; background: var(--field); border: 1px solid transparent; transition: border-color .2s var(--ease), box-shadow .2s var(--ease); } /* taste-skill-ignore: inside a data-ui fragment (the app's own control borders) */
+.lx-ask-floaters svg { position: absolute; width: 36px; height: 36px; color: var(--action); opacity: .3; animation: lx-bob 7s ease-in-out infinite; }
+.lx-ask-floaters svg:nth-child(1) { left: 7%; top: 16%; }
+.lx-ask-floaters svg:nth-child(2) { left: 11%; bottom: 14%; animation-delay: -2s; }
+.lx-ask-floaters svg:nth-child(3) { right: 8%; top: 20%; animation-delay: -4s; }
+.lx-ask-floaters svg:nth-child(4) { right: 12%; bottom: 12%; animation-delay: -1s; }
+@keyframes lx-bob { 50% { transform: translateY(-18px) rotate(8deg); } }
+.lx-askbox { position: relative; display: flex; gap: 10px; align-items: center; width: min(100%, 640px); margin: 36px auto 0; padding: 6px 6px 6px 22px; border-radius: 980px; background: var(--paper); border: 1px solid transparent; transition: border-color .2s var(--ease), box-shadow .2s var(--ease); } /* taste-skill-ignore: inside a data-ui fragment (the app's own control borders) */
 .lx-askbox:focus-within { border-color: var(--action); box-shadow: 0 0 0 4px color-mix(in srgb, var(--action) 16%, transparent); } /* taste-skill-ignore: switch and slider knobs inside a data-ui control */
 .lx-askbox input { flex: 1; min-width: 0; height: 48px; background: transparent; outline: none; font-size: 17px; }
 .lx-askbox .site-button { min-height: 44px; padding: 10px 22px; }
-.lx-chips { display: flex; flex-direction: column; gap: 8px; }
-.lx-chips p { font-size: 14px; color: var(--ink-2); margin-bottom: 4px; }
-.lx-chips button { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 20px; border-radius: 16px; background: var(--field); font-size: 17px; text-align: left; transition: background-color .2s var(--ease), transform .2s var(--ease); }
+.lx-chips { position: relative; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 760px; margin: 24px auto 0; }
+.lx-chips button { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 980px; background: var(--paper); font-size: 15px; transition: transform .2s var(--ease); }
 .lx-chips button span[aria-hidden] { color: var(--ink-2); transition: transform .25s var(--ease-out); }
-.lx-chips button:hover { background: var(--paper-2); }
 .lx-chips button:hover span[aria-hidden] { transform: translateX(3px); }
+.lx-chips button:hover { transform: translateY(-2px); }
 .lx-chips button:active { transform: scale(.96); }
+.lx-ask .lx-small { position: relative; }
+
+/* The close: the name at full width, its letters lifting under the pointer */
+.lx-close { padding-top: var(--section-gap); text-align: center; overflow: hidden; }
+.lx-top { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 980px; background: var(--field); font-size: 15px; font-weight: 500; transition: transform .25s var(--ease-out), background-color .2s var(--ease); }
+.lx-top:hover { transform: translateY(-3px); background: var(--paper-2); }
+.lx-wordmark { margin-top: 28px; font-size: clamp(64px, 15vw, 216px); font-weight: 700; line-height: .8; letter-spacing: -.05em; white-space: nowrap; color: var(--paper-2); user-select: none; }
+.lx-wordmark span { display: inline-block; transition: transform .5s var(--ease-out), color .4s var(--ease); }
+.lx-wordmark:hover span { color: var(--action); transform: translateY(-.08em); transition-delay: calc(var(--k) * 30ms); }
+.lx-close + .site-footer, .lx main + .site-footer { margin-top: 0; }
 
 /* Parts of each section rise into place once (opted in by script, so nothing hides without it) */
-.lx-motion [data-rise] { opacity: 0; transform: translateY(28px); transition: opacity .9s var(--ease-out), transform .9s var(--ease-out); }
+.lx-motion [data-rise] { opacity: 0; transform: translateY(28px); transition: opacity .9s var(--ease-out), transform .9s var(--ease-out), translate .4s var(--ease-out); }
 .lx-motion [data-rise].in { opacity: 1; transform: none; }
-.lx-motion .lx-row-ui[data-rise] { transition-delay: 90ms; }
-.lx-motion .lx-row-ui[data-rise] { transform: translateY(40px) scale(.98); }
-.lx-motion .lx-row-ui[data-rise].in { transform: none; }
 
+@media (max-width: 1100px) {
+  .lx-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lx-tile.is-wider { grid-column: span 2; }
+}
 @media (max-width: 1023px) {
   .lx-hero { grid-template-columns: 1fr; min-height: 0; gap: 40px; padding-top: 40px; }
-  .lx-hero-stage { min-height: 0; padding: 40px 24px 56px; }
-  .lx-row, .lx-row.is-wide { grid-template-columns: 1fr; gap: 28px; padding: 32px 0; }
-  .lx-row-ui { padding: 28px 20px; min-height: 0; justify-content: center; }
-  .lx-ask { grid-template-columns: 1fr; gap: 32px; }
+  .lx-hero-wrap::before { -webkit-mask-image: radial-gradient(ellipse 80% 50% at 50% 70%, #000 15%, transparent 70%); mask-image: radial-gradient(ellipse 80% 50% at 50% 70%, #000 15%, transparent 70%); } /* taste-skill-ignore: a dot field faded at its edges */
+}
+@media (max-width: 760px) {
+  .lx-path { left: 42px; right: auto; top: 44px; bottom: 44px; width: 4px; height: auto; }
+  .lx-path-fill { transform-origin: top; transform: scaleY(var(--jp, 0)); }
+  .lx-coin { left: 50%; top: calc(var(--jp, 0) * 100%); }
+  .lx-stops { grid-template-columns: 1fr; gap: 48px; }
+  .lx-stop { display: grid; grid-template-columns: 88px minmax(0, 1fr); column-gap: 20px; text-align: left; }
+  .lx-stop-badge { grid-row: span 3; margin: 0; }
+  .lx-stop h3 { margin-top: 4px; font-size: 21px; }
+  .lx-stop > p { margin: 6px 0 0; }
+  .lx-stop-ui { margin: 14px 0 0; }
 }
 @media (max-width: 640px) {
   .lx-h1 { font-size: 46px; }
@@ -228,29 +359,39 @@
   .lx-head { margin-bottom: 32px; }
   .lx-actions { margin-top: 28px; }
   .lx-actions .site-button { width: 100%; }
-  .lx-hero-stage { border-radius: 22px; padding: 24px 12px 48px; }
-  .lx-chat { padding: 14px; }
-  .lx-chat-log { min-height: 300px; }
-  .lx-sms { left: 12px; right: 12px; }
-  .lx-ui-spend { padding: 18px 16px; }
-  .lx-ui-spend li { grid-template-columns: 7em minmax(0, 1fr) 6em; gap: 10px; }
-  .lx-ui-wealth th, .lx-ui-wealth td { padding: 10px 8px; font-size: 13px; }
-  .lx-ui-wealth thead th:nth-child(5), .lx-ui-wealth td:nth-child(5) { display: none; }
-  .lx-response { margin-left: 0; }
-  .lx-exchange + .lx-exchange { margin-top: 56px; }
-  .lx-step { font-size: 20px; }
-  .lx-result { padding: 20px; }
-  .lx-receipt-amount { font-size: 32px; }
-  #check { min-height: 84svh; }
-  .lx-figure { font-size: 25vw; }
+  .lx-hero-stage { border-radius: 24px; }
+  .lx-hero-stage .lx-chat { width: 74%; padding: 10px; border-radius: 18px; }
+  .lx-hero-stage .lx-chat-log { min-height: 214px; gap: 7px; }
+  .lx-hero-stage .lx-bubble { font-size: 12.5px; padding: 7px 11px; }
+  .lx-hero-stage .lx-confirm { padding: 8px 10px; }
+  .lx-hero-stage .lx-confirm-head { min-height: 32px; }
+  .lx-hero-stage .lx-confirm dl > div { font-size: 11.5px; padding: 2px 0; }
+  .lx-hero-stage .lx-chat-input { margin-top: 8px; font-size: 12px; }
+  .lx-hero-stage .lx-sms { right: 3%; bottom: 3%; width: 64%; font-size: 11.5px; padding: 8px 10px; }
+  .lx-orb-icon { scale: .78; } .lx-orb-icon.is-lit { scale: 1; }
+  .lx-say { padding-top: 48px; }
+  .lx-bento { grid-template-columns: 1fr; grid-auto-rows: auto; }
+  .lx-tile.is-wide, .lx-tile.is-wider { grid-column: auto; }
+  .lx-tile-ui { padding: 18px 16px 0; }
+  .lx-tile-copy { padding: 18px 16px 20px; }
+  .lx-stop { grid-template-columns: 64px minmax(0, 1fr); column-gap: 16px; }
+  .lx-stop-badge { width: 64px; height: 64px; border-radius: 20px; }
+  .lx-stop-badge svg { width: 28px; height: 28px; }
+  .lx-path { left: 30px; top: 32px; bottom: 32px; }
+  .lx-ask { border-radius: 28px; }
+  .lx-ask-floaters { display: none; }
   .lx-askbox { flex-wrap: wrap; border-radius: 22px; padding: 8px; }
   .lx-askbox input { padding: 0 12px; }
   .lx-askbox .site-button { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .lx-line > span, .lx-hero .lx-lede, .lx-hero .lx-actions, .lx-hero .lx-small, .lx-hero-stage, .lx-bubble, .lx-confirm { animation: none; }
-  .lx-hero-stage > .lx-chat { transform: none; }
-  .lx-sms { transition: none; }
+  .lx-line > span, .lx-hero .lx-lede, .lx-hero .lx-actions, .lx-hero .lx-small, .lx-hero-stage, .lx-bubble, .lx-confirm, .lx-figure,
+  .lx-hero-wrap::before, .lx-ring, .lx-orb-icon, .lx-orb-icon.is-lit::after, .lx-ui-plastic::after, .lx-ui-bar i, .lx-donut circle.is-share,
+  .lx-ask-floaters svg, .lx-caret, .lx-ui-bill-stamp, .lx-cursor { animation: none; }
+  .lx-sms, .lx-reveal, .lx-frost, .lx-frost svg, .lx-needle, .lx-save, .lx-stop-badge, .lx-stop-ui, .lx-tile, .lx-wordmark span { transition: none; }
+  .lx-marquee { -webkit-mask-image: none; mask-image: none; }
+  .lx-marquee-track { animation: none; width: auto; flex-wrap: wrap; justify-content: center; padding: 0 var(--gutter); }
+  .lx-say-chip[aria-hidden] { display: none; }
 }
 
 /* How it stays safe */
