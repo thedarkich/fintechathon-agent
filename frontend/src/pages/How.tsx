@@ -79,7 +79,7 @@ export default function How() {
               <p className="terminal-comment">{tr('The AI may only return this shape. Any extra field, unknown action or bad value is rejected.', 'AI 只能返回这种格式，多出的字段、未知操作或错误的值都会被拒绝。')}</p>
               <pre><span className="terminal-prompt">{'>'} {tr('pay my landlord 3200 for rent', '给房东转3200房租')}{'\n'}</span>{plan}</pre>
             </> : view === 'rules' ? <div className="terminal-checks">
-              <p>✓ {tr('“房东” matched to your payee: Zhao Jianhua (landlord), ABC ****7722', '“房东”匹配到你的收款人：赵建华（房东）中国农业银行 ****7722')}</p>
+              <p>✓ {tr('“landlord” matched to your payee: Zhao Jianhua (landlord), ABC ****7722', '“房东”匹配到你的收款人：赵建华（房东）中国农业银行 ****7722')}</p>
               <p>✓ {tr('Balance and the ¥50,000 single-transfer limit checked', '已核对余额和单笔 ¥50,000 上限')}</p>
               <p>✓ {tr('Nothing in the request tries to get around the rules', '请求中没有绕过规则的内容')}</p>
               <p>● {tr('Today’s payments would be ¥3,200, over ¥1,000: needs your PIN and an SMS code', '当天累计将达 ¥3,200，超过 ¥1,000：需要交易密码和短信验证码')}</p>

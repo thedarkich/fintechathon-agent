@@ -170,7 +170,7 @@ export default function Wechat() {
                 <button type="button" className="btn btn-line text-cinnabar" disabled={linking} onClick={() => void unlinkNow()}>{tr('Unlink', '解除绑定')}</button>
               </> : <form onSubmit={linkNow} className="grid gap-2">
                 <p className="text-sm text-ink2">{link.data?.linked
-                  ? tr('Another device is linked. Linking here replaces it.', '已在其他设备绑定；在这里绑定会替换它。')
+                  ? tr('Linked in another tab or on another device. Linking here replaces it.', '已在其他标签页或设备上绑定；在这里绑定会替换它。')
                   : tr('Linking lets this WeChat ask about your account. Enter your transaction PIN to allow it.', '绑定后，这个微信可以查询你的账户。请输入交易密码确认。')}</p>
                 <input className="field num tracking-[0.4em]" type="password" inputMode="numeric" maxLength={6} value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} placeholder={tr('Transaction PIN', '交易密码')} aria-label={tr('Transaction PIN', '交易密码')} />
