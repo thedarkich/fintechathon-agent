@@ -268,7 +268,7 @@ function HowToPay({ category }: { category: string }) {
       <ol className="mt-4 space-y-3">
         {steps.map(([title, text], i) => (
           <li key={title} className="flex gap-3 rounded-[16px] bg-white/15 px-4 py-3">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-[#008060]">{i + 1}</span>
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-sm font-bold text-[color:var(--hero)]">{i + 1}</span>
             <span><b className="block">{title}</b><span className="block text-sm">{text}</span></span>
           </li>
         ))}

@@ -435,14 +435,14 @@
 .lp-pills { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-top: 28px; padding: 4px; border-radius: 980px; background: var(--field); }
 .lp-pills button { padding: 8px 16px; border-radius: 980px; font-size: 15px; color: var(--ink-2); }
 .lp-pills button[aria-pressed=true] { background: var(--ink); color: var(--paper); }
-.terminal-card { border-radius: 22px; background: #1d1d1f; color: #f5f5f7; overflow: hidden; }
-.terminal-bar { display: flex; align-items: center; gap: 12px; padding: 16px 22px 0; font-size: 14px; color: #a1a1a6; }
+.terminal-card { border-radius: 22px; background: var(--night); color: var(--night-ink); overflow: hidden; }
+.terminal-bar { display: flex; align-items: center; gap: 12px; padding: 16px 22px 0; font-size: 14px; color: #9fb0a8; }
 .terminal-lights { display: none; }
-.terminal-badge { margin-left: auto; font-size: 13px; color: #a1a1a6; }
+.terminal-badge { margin-left: auto; font-size: 13px; color: #9fb0a8; }
 .terminal-body { padding: 16px 22px 24px; min-height: 260px; font-size: 15px; line-height: 1.7; }
-.terminal-comment { color: #a1a1a6; margin-bottom: 12px; }
-.terminal-body pre { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 13px; color: #f5f5f7; white-space: pre-wrap; overflow-wrap: anywhere; }
-.terminal-prompt { color: #4be3a8; }
+.terminal-comment { color: #9fb0a8; margin-bottom: 12px; }
+.terminal-body pre { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 13px; color: var(--night-ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.terminal-prompt { color: #34c78f; }
 .terminal-checks p + p { margin-top: 8px; }
 .lp-cta { margin-top: 140px; padding: 72px 32px; border-radius: 28px; background: var(--field); text-align: center; }
 .lp-cta h2 { font-size: clamp(32px, 3.6vw, 48px); font-weight: 600; letter-spacing: -.03em; }

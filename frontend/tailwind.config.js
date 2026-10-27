@@ -17,13 +17,13 @@ export default {
         cta: 'var(--cta)',
         'cta-ink': 'var(--cta-ink)',
       },
-      // one face everywhere, the system one (San Francisco on Apple devices); `font-mono` is kept as a name
-      // for figures but set in the same face with aligned digits, so nothing on screen is monospace
+      // one face everywhere, Manrope (bundled from npm), with the system's Chinese face for Chinese; `font-mono`
+      // is kept as a name for figures but set in the same face with aligned digits, so nothing on screen is monospace
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI Variable Text"', '"Segoe UI"', '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', 'sans-serif'],
-        mono: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI Variable Text"', '"Segoe UI"', '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', 'sans-serif'],
+        sans: ['"Manrope Variable"', '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+        mono: ['"Manrope Variable"', '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
       },
-      borderRadius: { box: '12px', panel: '18px' },
+      borderRadius: { box: '14px', panel: '22px' },
     },
   },
   plugins: [],

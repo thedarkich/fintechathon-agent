@@ -261,7 +261,7 @@ export function Result({ card }: { card: Card }) {
           </div>
           <details className="agent-detail !mt-0">
             <summary>{tr('The generated code and the sandbox limits', '生成的代码与沙箱限制')}</summary>
-            <pre className="mt-2 max-h-64 overflow-auto rounded-box bg-[#0f1114] p-3 font-mono text-[11px] leading-relaxed text-[#eef6f1]">{card.code}</pre>
+            <pre className="mt-2 max-h-64 overflow-auto rounded-box bg-[color:var(--night)] p-3 font-mono text-[11px] leading-relaxed text-[color:var(--night-ink)]">{card.code}</pre>
             <p>
               {tr(`Ran in ${card.ms} ms in a separate process: ${card.limits.memory_mb} MB memory, ${card.limits.cpu_seconds} s CPU, no files, imports limited to ${card.limits.imports.join(', ')}.`,
                 `在独立进程中运行 ${card.ms} 毫秒：内存 ${card.limits.memory_mb} MB，CPU ${card.limits.cpu_seconds} 秒，不能读写文件，仅允许导入 ${card.limits.imports.join('、')}。`)}

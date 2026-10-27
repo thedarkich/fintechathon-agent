@@ -2,33 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
-/* One visual system for the site and the app: a white page, light grey surfaces, near-black type in the
-   system face. The palette is "jade pop": the brand green for actions (deep enough for white text), a bright
-   mint for whole fields of colour, electric violet as the second field, and sun and coral as sparks.
+/* One visual system for the site and the app, warm and cinematic: a cream page, slightly deeper cream
+   surfaces, deep green-black type in Manrope, one deep jade for actions (dark enough for white text and
+   for links on cream). The dark theme is the night sky of the landing page: night-blue surfaces, cream
+   type, the bright jade. --night is a field of night sky in either theme; --pop is a soft green field.
    No lines between surfaces, no shadows on things at rest. */
 :root {
-  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', 'Segoe UI Variable Text', 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  --paper: #ffffff; --paper-2: #e8e8ed; --field: #f5f5f7; --sheet: #fbfbfd;
-  --ink: #1d1d1f; --ink-2: #6e6e73; --ink-hover: #000000; --ink-off: #a1a1a6;
-  --rule: #e3e3e8; --rule-strong: #d2d2d7; --cinnabar: #c9302c; --cinnabar-wash: #fff2f1;
-  --jade: #008060; --row-new: #dcfaee; --wave-1: #f5f5f7; --shadow: rgba(0,0,0,.1);
-  --action: #008060; --action-ink: #ffffff; --accent-wash: #dcfaee; --ring: #008060; --radius: 18px;
-  --cta: #008060; --cta-ink: #ffffff; --dot: #f5a623;
-  --hero: #0f9e6e;
-  --pop: #6cf0bf; --pop-ink: #04241a; --violet: #4b3cf0; --violet-ink: #ffffff; --sun: #ffd84d; --coral: #ff7a59;
+  --font: 'Manrope Variable', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --paper: #f7f5f0; --paper-2: #e6e1d6; --field: #efebe2; --sheet: #fbfaf6;
+  --ink: #1b2a23; --ink-2: #5d6b63; --ink-hover: #0c1712; --ink-off: #9aa59e;
+  --rule: #e3ded2; --rule-strong: #d3cdbf; --cinnabar: #b93a31; --cinnabar-wash: #fbe9e5;
+  --jade: #1c7350; --row-new: #dcebe1; --wave-1: #efebe2; --shadow: rgba(27,42,35,.12);
+  --action: #1c7350; --action-ink: #ffffff; --accent-wash: #dcebe1; --ring: #1c7350; --radius: 22px;
+  --cta: #1c7350; --cta-ink: #ffffff; --dot: #f5a623;
+  --hero: #1f5f47;
+  --night: #0d1a22; --night-2: #172733; --night-ink: #f3efe6;
+  --pop: #dfeadf; --pop-ink: #1b2a23; --violet: #0d1a22; --violet-ink: #f3efe6; --sun: #f5a623; --coral: #e07a5a;
   --ease: cubic-bezier(.22, .61, .36, 1);
   --ease-out: cubic-bezier(.16, 1, .3, 1);
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --paper: #000000; --paper-2: #2c2c2e; --field: #1c1c1e; --sheet: #111112;
-  --ink: #f5f5f7; --ink-2: #a1a1a6; --ink-hover: #ffffff; --ink-off: #636366;
-  --rule: #2c2c2e; --rule-strong: #3a3a3c; --cinnabar: #ff6961; --cinnabar-wash: #3a1d1b;
-  --jade: #4be3a8; --row-new: #0e2e22; --wave-1: #1c1c1e; --shadow: rgba(0,0,0,.5);
-  --action: #4be3a8; --action-ink: #00140d; --accent-wash: #0e2e22; --ring: #4be3a8;
-  --cta: #4be3a8; --cta-ink: #00140d; --dot: #f5a623;
-  --hero: #0f7a57;
-  --pop: #3fd6a0; --pop-ink: #03231a; --violet: #4b3cf0; --violet-ink: #ffffff; --sun: #ffd84d; --coral: #ff8a6b;
+  --paper: #0d1a22; --paper-2: #26363f; --field: #15252f; --sheet: #112029;
+  --ink: #f3efe6; --ink-2: #a8b4ad; --ink-hover: #ffffff; --ink-off: #66756e;
+  --rule: #213139; --rule-strong: #2d3e47; --cinnabar: #ff7b6e; --cinnabar-wash: #3a2220;
+  --jade: #34c78f; --row-new: #12322a; --wave-1: #15252f; --shadow: rgba(0,0,0,.5);
+  --action: #34c78f; --action-ink: #00140d; --accent-wash: #12322a; --ring: #34c78f;
+  --cta: #34c78f; --cta-ink: #00140d; --dot: #f5a623;
+  --hero: #1f6b4f;
+  --night: #060f14; --night-2: #0f1d26; --night-ink: #f3efe6;
+  --pop: #8fcfb0; --pop-ink: #062018; --violet: #1e3644; --violet-ink: #f3efe6; --sun: #f5c04d; --coral: #ff8a6b;
   color-scheme: dark;
 }
 
@@ -55,7 +58,7 @@ body {
   font-feature-settings: 'tnum' 1;
 }
 
-/* Headings in the system face: tight tracking, as on apple.com */
+/* Headings: tight tracking */
 .cond {
   letter-spacing: -0.022em;
 }
@@ -302,7 +305,7 @@ button {
 .qr-frame::after { content: ''; position: absolute; left: 14px; right: 14px; top: 50%; height: 2px; border-radius: 2px; background: #ffffff; animation: qr-scan 2.4s ease-in-out infinite alternate; }
 @keyframes qr-scan { from { transform: translateY(-62px); } to { transform: translateY(62px); } }
 @media (prefers-reduced-motion: reduce) { .qr-frame::after { animation: none; } }
-.qr-scanner .btn-ink { background: #ffffff; color: #1d1d1f; }
+.qr-scanner .btn-ink { background: #ffffff; color: #1b2a23; }
 
 /* on a grey card, the pill tabs' track is white */
 .ruled [role=tablist] { background-color: var(--paper); }

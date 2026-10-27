@@ -83,11 +83,11 @@ export default function Controls() {
 }
 
 /** One card: its state and limit, the four switches (tap to change), and what you can do with it. */
-/** The card itself, small: green for the debit card, dark for the virtual one, grey with a lock when it can't be used. */
+/** The card itself, small: green for the debit card, night blue for the virtual one, grey with a lock when it can't be used. */
 function CardFace({ card: c }: { card: BankCard }) {
   const { tr } = useLang()
   const off = c.status === 'frozen' || c.status === 'lost'
-  const face = off ? '#8e8e93' : c.kind === 'virtual' ? '#1d1d1f' : 'var(--hero)'
+  const face = off ? 'var(--ink-off)' : c.kind === 'virtual' ? 'var(--night)' : 'var(--hero)'
   return (
     <div className="relative flex h-[76px] w-[120px] shrink-0 flex-col justify-between overflow-hidden rounded-[12px] p-2.5 text-white" style={{ background: face }} aria-hidden>
       <span className="flex items-center justify-between text-[0.62rem] font-bold opacity-90">{tr('Bank Agent', '银行代办')}<span>{c.kind === 'virtual' ? tr('Virtual', '虚拟') : tr('Debit', '借记')}</span></span>

@@ -65,7 +65,7 @@ export function Seal({ kind, size = 168, animate = true, rotate = -8 }: { kind: 
             {CENTER[kind]}
           </text>
           <line x1="52" y1="132" x2="148" y2="132" strokeWidth="1.6" />
-          <text x="100" y="152" textAnchor="middle" fontSize={BOTTOM[kind].length > 8 ? 12 : 15} fontWeight="700" letterSpacing="3" stroke="none" style={{ fontFamily: '"Geist Variable",sans-serif' }}>
+          <text x="100" y="152" textAnchor="middle" fontSize={BOTTOM[kind].length > 8 ? 12 : 15} fontWeight="700" letterSpacing="3" stroke="none" style={{ fontFamily: '"Manrope Variable",sans-serif' }}>
             {BOTTOM[kind]}
           </text>
         </g>
