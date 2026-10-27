@@ -12,7 +12,9 @@ times, t = [], 0.0
 while t <= meta["end"] - meta["start"]:
     times.append(t)
     t += step
-cols, w, h = 13, 150, 325
+width, height = Image.open(scene / frames[0][0]).size
+cols, w = (13, 150) if height > width else (6, 330)   # phone frames are tall, PC frames wide
+h = round(w * height / width)
 rows = (len(times) + cols - 1) // cols
 sheet = Image.new("RGB", (cols * (w + 6) + 6, rows * (h + 26) + 6), "white")
 draw = ImageDraw.Draw(sheet)

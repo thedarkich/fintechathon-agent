@@ -14,6 +14,8 @@ from PIL import Image, ImageDraw
 video, out = sys.argv[1], Path(sys.argv[2])
 out.mkdir(parents=True, exist_ok=True)
 work = Path(os.environ.get("VIDEO_WORK", Path(__file__).resolve().parent / "work"))
+if os.environ.get("DEMO") == "pc":
+    work = work / "pc"
 page = (work / "project" / "index.html").read_text()
 data = json.loads(re.search(r"const D = (\{.*?\});\n", page).group(1))
 ffmpeg = os.environ.get("HYPERFRAMES_FFMPEG_PATH", "ffmpeg")

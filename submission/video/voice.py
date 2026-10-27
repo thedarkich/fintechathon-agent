@@ -9,8 +9,7 @@ import subprocess
 
 import edge_tts
 
-from build_edit import VOICES, write_lines
-from scenes import VOICE
+from build_edit import VOICE, VOICES, write_lines
 
 FFMPEG = os.environ.get("HYPERFRAMES_FFMPEG_PATH", "ffmpeg")
 # the silence the service leaves at either end goes: the edit spaces the lines itself

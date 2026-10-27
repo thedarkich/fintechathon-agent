@@ -8,7 +8,7 @@ What the competition asks for (submission deadline 2 November; online review 3�
 | 答辩 PPT: a talk of at most 10 minutes | [slides/](slides): `zh-submission` (more text, for reading), `zh-live` (for presenting), `en-live`; 17 slides each, speaker notes totalling 9:40 |
 | 源代码: README, repository, deployment guide, tests | [README.zh.md](../README.zh.md) / [README.md](../README.md), [deploy/](../deploy), [backend/tests](../backend/tests), [evals/](../evals) |
 | 安全自评: permission tiers, known risks | [docs/SECURITY.zh.md](../docs/SECURITY.zh.md) §2.1 (tiers) and §四 (known risks) |
-| 演示视频 (optional): at most 5 minutes | script: [docs/DEMO.md](../docs/DEMO.md); the recorded 2:59 narrated explainer is made from [video/](video) (recorder, captions, narration, music, edit) |
+| 演示视频 (optional): at most 5 minutes | script: [docs/DEMO.md](../docs/DEMO.md); two narrated explainers, phone (2:59) and PC (3:32), are made from [video/](video) (recorders, captions, narration, music, edit) |
 
 ## Build the PDFs
 

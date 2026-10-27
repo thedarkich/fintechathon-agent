@@ -1,4 +1,5 @@
-"""Builds the demo video's Hyperframes project from the recorded scenes and the narration (scenes.py has both).
+"""Builds a demo video's Hyperframes project from the recorded scenes and the narration (scenes.py has both for the
+phone demo, scenes_pc.py for the PC one, which DEMO=pc picks along with template-pc.html and work/pc).
 
 Each scene becomes a clip of its recorded frames at their real timing, except: the model's thinking time is squeezed to
 about a second (and marked on screen as sped up), the rate-limit pauses are dropped, listed stretches play faster, and
@@ -14,6 +15,7 @@ $VIDEO_WORK moves work/.
 """
 import hashlib
 import html
+import importlib
 import json
 import math
 import os
@@ -23,10 +25,15 @@ import sys
 import wave
 from pathlib import Path
 
-from scenes import INTRO_VOICE, OUTRO_VOICE, SCENES, TIERS, TIMED_ON, VOICE
+PC = os.environ.get("DEMO") == "pc"
+_script = importlib.import_module("scenes_pc" if PC else "scenes")
+INTRO_VOICE, OUTRO_VOICE, SCENES, TIERS, TIMED_ON, VOICE = (getattr(_script, name) for name in
+                                                            ("INTRO_VOICE", "OUTRO_VOICE", "SCENES", "TIERS", "TIMED_ON", "VOICE"))
 
 HERE = Path(__file__).resolve().parent
-WORK = Path(os.environ.get("VIDEO_WORK", HERE / "work"))
+TEMPLATE = HERE / ("template-pc.html" if PC else "template.html")
+CLIP = "1320:836" if PC else "780:1688"   # the clips' size: the page at 1:1 in the browser, or the phone screen at 1.875x
+WORK = Path(os.environ.get("VIDEO_WORK", HERE / "work")) / ("pc" if PC else "")
 RAW = WORK / "raw"
 PROJECT = WORK / "project"
 VOICES = WORK / "voice"
@@ -185,7 +192,7 @@ def encode(cfg, frames):
     lines.append(f"file '{RAW / cfg['raw'] / frames[-1][0]}'")
     listing.write_text("\n".join(lines) + "\n")
     subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(listing),
-                    "-vf", "scale=780:1688:flags=lanczos,fps=30,format=yuv420p", "-c:v", "libx264", "-preset", "slow",
+                    "-vf", f"scale={CLIP}:flags=lanczos,fps=30,format=yuv420p", "-c:v", "libx264", "-preset", "slow",
                     "-crf", "16", "-r", "30", "-movflags", "+faststart", "-an",
                     str(PROJECT / "clips" / f"{cfg['raw']}.mp4")], check=True)
     listing.unlink()
@@ -305,7 +312,7 @@ def main():
     tiers = "".join(f'<div id="tier{k}" class="tier tier-{k}"><span class="hl"></span><span class="pill">{esc(name)}</span>'
                     f'<span class="tier-text"><span class="zh">{esc(zh)}</span><span class="en">{esc(en)}</span></span></div>'
                     for k, (name, zh, en) in enumerate(TIERS))
-    page = (HERE / "template.html").read_text()
+    page = TEMPLATE.read_text()
     for key, value in {
         "__DURATION__": f"{data['duration']:.3f}",
         "__INTRO_DURATION__": f"{intro + 0.1:.3f}",

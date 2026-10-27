@@ -1,5 +1,6 @@
 #!/bin/bash
-# The demo video, from the running app to an MP4: ./video.sh <step> [args]. The steps, in order:
+# The demo videos, from the running app to an MP4: ./video.sh <step> [args] makes the phone demo, and
+# DEMO=pc ./video.sh <step> [args] the PC one (its files in work/pc rather than work). The steps, in order:
 #   install  the recorder's and the editor's packages (Playwright, Hyperframes, GSAP), Hyperframes' headless Chrome, and
 #            edge-tts for the narration (in work/edge)
 #   chrome   headless Chrome with a DevTools port for the recorder, at $CDP (skip it when one is already running there)
@@ -18,17 +19,20 @@ set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
 export VIDEO_WORK=${VIDEO_WORK:-$HERE/work}
-export BASE=${BASE:-http://localhost:8000} CDP=${CDP:-http://localhost:9335}
+export BASE=${BASE:-http://localhost:8000} CDP=${CDP:-http://localhost:9335} DEMO=${DEMO:-phone}
+TOOLS=$VIDEO_WORK  # FFmpeg and edge-tts, shared by both demos
 WORK=$VIDEO_WORK
+RECORDER=record.mjs
+if [ "$DEMO" = pc ]; then WORK=$VIDEO_WORK/pc RECORDER=record-pc.mjs; fi
 PROJECT=$WORK/project
 PY=$REPO/backend/.venv/bin/python  # the backend's, which has Pillow
 mkdir -p "$WORK"
 
 # FFmpeg: the one `./video.sh ffmpeg` unpacked, or the system's
 with_ffmpeg() {
-  if [ -f "$WORK/ffroot/libpath" ]; then
-    LD_LIBRARY_PATH=$(cat "$WORK/ffroot/libpath")
-    export LD_LIBRARY_PATH PATH=$WORK/ffroot/usr/bin:$PATH
+  if [ -f "$TOOLS/ffroot/libpath" ]; then
+    LD_LIBRARY_PATH=$(cat "$TOOLS/ffroot/libpath")
+    export LD_LIBRARY_PATH PATH=$TOOLS/ffroot/usr/bin:$PATH
   fi
   command -v ffmpeg >/dev/null || return 1
   HYPERFRAMES_FFMPEG_PATH=$(command -v ffmpeg)
@@ -52,8 +56,8 @@ case "$step" in
     (cd "$HERE" && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci --no-audit --no-fund)
     hyperframes browser ensure
     PATH=$HOME/.local/bin:$PATH  # where uv installs itself
-    uv venv -q --allow-existing --python 3.11 "$WORK/edge"
-    uv pip install -q --python "$WORK/edge/bin/python" edge-tts==7.3.1
+    uv venv -q --allow-existing --python 3.11 "$TOOLS/edge"
+    uv pip install -q --python "$TOOLS/edge/bin/python" edge-tts==7.3.1
     ;;
   chrome)
     chrome=${CHROME:-$(command -v google-chrome || command -v chromium || echo '/mnt/c/Program Files/Google/Chrome/Application/chrome.exe')}
@@ -68,7 +72,7 @@ case "$step" in
   record)
     curl -sf -o /dev/null "$BASE/" || { echo "The app isn't answering at $BASE"; exit 1; }
     curl -sf -o /dev/null "$CDP/json/version" || { echo "No Chrome at $CDP: run ./video.sh chrome"; exit 1; }
-    node "$HERE/record.mjs" "$WORK/raw" "$@"
+    node "$HERE/$RECORDER" "$WORK/raw" "$@"
     ;;
   grids)
     mkdir -p "$WORK/grids"
@@ -77,7 +81,7 @@ case "$step" in
     ;;
   voice)
     need_ffmpeg
-    "$WORK/edge/bin/python" "$HERE/voice.py"
+    "$TOOLS/edge/bin/python" "$HERE/voice.py"
     ;;
   build)
     # everything the page loads is local: GSAP from npm, the app's own font and logo
@@ -101,8 +105,8 @@ case "$step" in
   ffmpeg)
     # Ubuntu's packages fetched with apt-get download (checked against apt's signed package lists) and unpacked:
     # nothing is installed system-wide, and the .deb files stay in work/debs for the next unpacking
-    mkdir -p "$WORK/debs" "$WORK/ffroot"
-    cd "$WORK/debs"
+    mkdir -p "$TOOLS/debs" "$TOOLS/ffroot"
+    cd "$TOOLS/debs"
     if [ ! -f .done ]; then
       wanted=$(apt-cache depends --recurse --no-recommends --no-suggests --no-conflicts --no-breaks --no-replaces --no-enhances \
         ffmpeg libnss3 libnspr4 libasound2t64 2>/dev/null | grep '^[a-z0-9]' | sort -u)
@@ -117,8 +121,8 @@ case "$step" in
       apt-get download "${get[@]}" 2>&1 | grep -v '^Get:' | tail -5
       touch .done
     fi
-    for deb in *.deb; do dpkg -x "$deb" "$WORK/ffroot"; done
-    find "$WORK/ffroot" -name '*.so*' -printf '%h\n' | sort -u | paste -sd: > "$WORK/ffroot/libpath"
+    for deb in *.deb; do dpkg -x "$deb" "$TOOLS/ffroot"; done
+    find "$TOOLS/ffroot" -name '*.so*' -printf '%h\n' | sort -u | paste -sd: > "$TOOLS/ffroot/libpath"
     need_ffmpeg
     ffmpeg -hide_banner -version | head -1
     ;;
