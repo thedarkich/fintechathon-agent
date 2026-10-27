@@ -32,6 +32,8 @@ const DATA_CARDS = new Set(['balances', 'transactions', 'spending', 'report', 'a
 
 const WIDE = '(min-width: 1024px)'  // from here the chat list sits beside the chat; below, it is a drawer
 const SIDEBAR_KEY = 'chat-history'
+/** The customer scrolling, tapping or typing: from then on the chat stays where they put it. */
+const TAKE_OVER = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const
 
 function useWide() {
   const [wide, setWide] = useState(() => window.matchMedia(WIDE).matches)
@@ -72,7 +74,9 @@ export default function Assistant() {
   const [hint, setHint] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
   const box = useRef<HTMLTextAreaElement>(null)
-  const end = useRef<HTMLDivElement>(null)
+  const log = useRef<HTMLDivElement>(null)
+  const bar = useRef<HTMLDivElement>(null)
+  const seen = useRef<string>()  // the last message the chat has been brought to
   const asked = useRef(false)
 
   // a sentence tapped on the landing page arrives as ?ask=… and is sent; a page's action arrives as ?hint=…,
@@ -90,7 +94,37 @@ export default function Assistant() {
       box.current?.focus()
     }
   }, [params, setParams, send])
-  useEffect(() => { if (messages.length || pending) end.current?.scrollIntoView({ block: 'end' }) }, [messages.length, pending])
+  // a message sent or a reply arriving brings the chat down to it and keeps it there while its cards load and grow; a reply
+  // taller than the screen stops with its first line under the title bar (the confirm card's buttons stay in reach anyway)
+  useEffect(() => {
+    const last = messages[messages.length - 1]
+    const at = messages.findIndex((m) => m.id === seen.current)
+    seen.current = last?.id
+    if (!last && !pending) return
+    // the newest reply: what came in since the last look or, when the whole list is new, what follows the last question
+    const since = at >= 0 ? at + 1 : messages.map((m) => m.role).lastIndexOf('user') + 1
+    const reply = pending ? undefined : messages.slice(since).find((m) => m.role !== 'user') ?? last
+    const place = () => {
+      const end = document.documentElement.scrollHeight - window.innerHeight
+      const shown = reply && log.current?.querySelector<HTMLElement>(`[data-msg="${CSS.escape(reply.id)}"]`)
+      if (!shown) return window.scrollTo(0, end)
+      // where it sits in the layout, not on screen: messages and the page itself rise into place as they appear
+      let top = 0
+      for (let node: HTMLElement | null = shown; node; node = node.offsetParent as HTMLElement | null) top += node.offsetTop
+      const head = bar.current ? parseFloat(getComputedStyle(bar.current).top) + bar.current.offsetHeight : 0
+      window.scrollTo(0, Math.min(end, top - head - 12))
+    }
+    place()
+    const watcher = new ResizeObserver(place)
+    if (log.current) watcher.observe(log.current)
+    // capture, so the key or tap that sent this message, still on its way up, doesn't end the following at once
+    const stop = () => {
+      watcher.disconnect()
+      for (const name of TAKE_OVER) window.removeEventListener(name, stop, true)
+    }
+    for (const name of TAKE_OVER) window.addEventListener(name, stop, { capture: true, passive: true })
+    return stop
+  }, [messages, pending])
 
   // the phone drawer: focus moves in, Escape closes it, the page behind stays still
   useEffect(() => {
@@ -189,7 +223,7 @@ export default function Assistant() {
 
       <div className="mx-auto flex min-h-[calc(100dvh-210px)] w-full min-w-0 max-w-3xl flex-1 flex-col">
         {(!open || messages.length > 0) && (
-          <div className="sticky top-[var(--header-h)] z-10 -mx-1 flex min-h-[52px] items-center gap-2 bg-bg px-1 py-2">
+          <div ref={bar} className="sticky top-[var(--header-h)] z-10 -mx-1 flex min-h-[52px] items-center gap-2 bg-bg px-1 py-2">
             {!open && (
               <button type="button" onClick={() => showHistory(true)} aria-expanded={false} aria-label={tr('Show chat history', '展开对话记录')} title={tr('Chat history', '对话记录')}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-box border border-rule text-ink2 hover:bg-paper2">
@@ -205,7 +239,7 @@ export default function Assistant() {
           </div>
         )}
 
-        <div className="flex-1 space-y-5 py-5" aria-live="polite">
+        <div ref={log} className="flex-1 space-y-5 py-5" aria-live="polite">
           {messages.length === 0 && !pending && (
             <div className="pt-6">
               <h1 className="cond keep text-[2rem] font-semibold leading-tight">{name ? tr(`Hi ${name}. What can I do for you?`, `${name}，你好。今天想办点什么？`) : tr('What can I do for you?', '今天想办点什么？')}</h1>
@@ -234,15 +268,15 @@ export default function Assistant() {
             if (m.role === 'user') {
               const file = m.cards.find((c) => c.type === 'attachment')
               return (
-                <div key={m.id} className="msg-in-user ml-auto flex w-fit max-w-[85%] flex-col items-end gap-1.5" title={stamp(m.at)}>
+                <div key={m.id} data-msg={m.id} className="msg-in-user ml-auto flex w-fit max-w-[85%] flex-col items-end gap-1.5" title={stamp(m.at)}>
                   {file && <img src={file.preview} alt={tr('Attached receipt', '附带的小票')} className="h-28 ruled bg-white object-contain" />}
                   <p className="keep whitespace-pre-wrap rounded-tile rounded-br-md bg-[var(--action)] px-4 py-2.5 text-body text-[var(--action-ink)]">{m.text}</p>
                 </div>
               )
             }
-            if (m.role === 'system') return <p key={m.id} className="msg-in mx-auto max-w-[90%] text-center text-xs text-ink2">{m.text}</p>
+            if (m.role === 'system') return <p key={m.id} data-msg={m.id} className="msg-in mx-auto max-w-[90%] text-center text-xs text-ink2">{m.text}</p>
             return (
-              <div key={m.id} className="msg-in flex gap-2.5" title={stamp(m.at)}>
+              <div key={m.id} data-msg={m.id} className="msg-in flex gap-2.5" title={stamp(m.at)}>
                 <span className="mt-0.5 shrink-0">{m.role === 'operator' ? <span className="agent-avatar !h-7 !w-7"><Icon name="users" size={14} /></span> : <BrandMark size={28} />}</span>
                 <div className="min-w-0 flex-1 space-y-2.5">
                   {m.role === 'operator' && <p className="text-xs font-semibold text-ink2">{tr('Bank staff', '人工客服')}</p>}
@@ -257,7 +291,6 @@ export default function Assistant() {
             <p className="msg-in flex items-center gap-2.5 text-sm text-ink2" role="status"><span className="typing-dots" aria-hidden><i /><i /><i /></span>{tr('Working on it…', '正在处理…')}</p>
           </>}
           {error && <p role="alert" className="text-sm font-semibold text-cinnabar">{error}</p>}
-          <div ref={end} />
         </div>
 
         <form onSubmit={submit} className="sticky bottom-[var(--tabbar-h)] -mx-1 bg-bg px-1 pb-4 pt-2">

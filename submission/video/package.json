@@ -1,0 +1,14 @@
+{
+  "name": "central-union-bank-demo-video",
+  "private": true,
+  "description": "Records the demo from the running app and edits it into the explainer video (see README.md)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "gsap": "3.13.0",
+    "hyperframes": "0.8.207",
+    "playwright": "1.49.1"
+  }
+}

@@ -20,3 +20,6 @@ deploy/backups/
 
 # PDFs the submission builders write
 submission/pdf/
+
+# the demo video's recordings, clips and renders (submission/video/video.sh)
+submission/video/work/
