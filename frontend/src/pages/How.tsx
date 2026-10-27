@@ -47,7 +47,7 @@ export default function How() {
 
   return <div className="public-site landing-page"><SiteHeader />
     <main className="lp" id="main-content" tabIndex={-1}>
-      <section className="lp-banner">
+      <section className="lp-banner" data-surface="dark">
         <div className="lp-banner-copy">
           <h1>{tr('The AI proposes.', 'AI 只提议，')}<br />{tr('You say yes.', '你来点头。')}</h1>
           <p>{tr('Letting an AI act on a bank account is only safe if it can’t act alone. The bank’s own rules decide what each step needs, and nothing moves until you confirm.', '让 AI 操作银行账户，前提是它不能自作主张。每一步需要什么由银行自己的规则决定，你确认之前，钱一分不动。')}</p>

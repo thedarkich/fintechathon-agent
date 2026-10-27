@@ -63,7 +63,7 @@ export default function AuthPage({ register = false }: { register?: boolean }) {
   const fieldError = (key: string) => errors[key] && <p id={key + '-error'} className="auth-field-error">{errors[key]}</p>
   return <div className="public-site"><SiteHeader />
     <main className="auth-main" tabIndex={-1}>
-      <div className="auth-intro"><h1>{tr('Say it once.', '你说一句，')}<br /><span>{tr('We do it.', '我来办。')}</span></h1><p>{tr('Send money, check your spending or freeze a card by just saying so. Before any money moves, you see exactly what will happen and say yes.', '转账、查账、冻结卡片，说一句就行。动钱之前，你会看清楚要办什么，由你来点头。')}</p>
+      <div className="auth-intro" data-surface="dark"><h1>{tr('Say it once.', '你说一句，')}<br /><span>{tr('We do it.', '我来办。')}</span></h1><p>{tr('Send money, check your spending or freeze a card by just saying so. Before any money moves, you see exactly what will happen and say yes.', '转账、查账、冻结卡片，说一句就行。动钱之前，你会看清楚要办什么，由你来点头。')}</p>
         <div className="auth-flow">{[
           [tr('Say what you need', '说出你要办的事'), tr('In Chinese or English, typed, spoken or with a receipt photo', '中文英文都行，打字、语音或拍小票')],
           [tr('Check the details', '核对内容'), tr('Who, how much and when it arrives, shown before anything happens', '收款人、金额、到账时间，办之前先给你看')],

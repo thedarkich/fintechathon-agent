@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  ArrowLeftRight, ArrowUp, Banknote, Bell, CalendarCheck, ChartPie, Check, CreditCard, Gift, Globe, HandCoins, Landmark,
-  Lock, Mic, PiggyBank, QrCode, Receipt, Repeat, Send, ShieldCheck, Smartphone, Snowflake, TrendingUp, Wallet, type LucideIcon,
+  ArrowLeftRight, ChartPie, Check, CreditCard, Gift, Globe, Lock, MessageCircle, Mic, PiggyBank, Receipt, Repeat, Send,
+  ShieldCheck, Snowflake, Wallet, type LucideIcon,
 } from 'lucide-react'
+import '@fontsource-variable/geist-mono'
 import { useLang } from '../i18n'
 import { SiteFooter, SiteHeader } from '../components/SiteChrome'
-import { Seal } from '../components/Seal'
 import { getAdminToken } from '../api/client'
 import { useAuth, useStartDemo } from '../lib/auth'
 import { reduceMotion, useRise } from '../lib/motion'
@@ -15,7 +15,30 @@ import '../landing.css'
 // hash routes own the URL fragment, so in-page links scroll instead of changing location.hash
 const scrollToId = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth' })
 const yuan = (v: number) => '¥' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 const wait = (ms: number) => new Promise((done) => window.setTimeout(done, ms))
+const IMG = import.meta.env.BASE_URL + 'img/'
+const PHOTO = {
+  tram: IMG + 'wuhan-optics-valley-modern-tram-5.jpg',
+  metro: IMG + 'passengers-exit-or-enter-wuhan-metro-system.jpg',
+  lunch: IMG + 'sz-shenzhen-guangming-songbai-road-yonghe-fast.jpg',
+}
+const css = (vars: Record<string, string | number>) => vars as CSSProperties
+
+/** Runs `effect` on every scroll and resize frame (and once at the start), with the screen's height. */
+function useOnScroll(effect: (vh: number) => void) {
+  const latest = useRef(effect)
+  latest.current = effect
+  useEffect(() => {
+    let frame = 0
+    const run = () => { frame = 0; latest.current(window.innerHeight) }
+    const later = () => { if (!frame) frame = requestAnimationFrame(run) }
+    run()
+    window.addEventListener('scroll', later, { passive: true })
+    window.addEventListener('resize', later)
+    return () => { window.removeEventListener('scroll', later); window.removeEventListener('resize', later); cancelAnimationFrame(frame) }
+  }, [])
+}
 
 /** True while the element is on screen, so loops only run where someone can see them. */
 function useOnScreen<T extends Element>() {
@@ -24,47 +47,26 @@ function useOnScreen<T extends Element>() {
   useEffect(() => {
     const el = ref.current
     if (!el || !('IntersectionObserver' in window)) { setOn(true); return }
-    const io = new IntersectionObserver(([e]) => setOn(e.isIntersecting), { threshold: 0.2 })
+    const io = new IntersectionObserver(([e]) => setOn(e.isIntersecting), { threshold: 0.25 })
     io.observe(el)
     return () => io.disconnect()
   }, [])
   return [ref, on] as const
 }
 
-/** A demo's playhead: each step waits its pause, then the next; after the last, a new round starts at 0.
- *  It runs only while `on`, stops for good once the visitor takes over (`held`), and with reduced motion
- *  rests on the step `rest` (the finished picture, by default). */
-function useLoop(pauses: number[], on: boolean, held = false, rest = pauses.length - 1) {
+/** A demo's playhead: each step waits its pause, then the next; after the last a new round starts at 0. It runs
+ *  only while `on`, and with reduced motion rests on the step `rest` (the finished picture, by default). */
+function useLoop(pauses: number[], on: boolean, rest = pauses.length - 1) {
   const [step, setStep] = useState(reduceMotion() ? rest : 0)
   const [round, setRound] = useState(0)
   useEffect(() => {
-    if (!on || held || reduceMotion()) return
+    if (!on || reduceMotion()) return
     const timer = window.setTimeout(() => {
       if (step >= pauses.length - 1) { setStep(0); setRound((r) => r + 1) } else setStep(step + 1)
     }, pauses[step])
     return () => window.clearTimeout(timer)
-  }, [step, round, on, held])
+  }, [step, round, on])
   return { step, round }
-}
-
-/** A number that glides to its new value instead of jumping, rounded to `grain`. */
-function useTween(value: number, grain = 1, ms = 700) {
-  const [shown, setShown] = useState(value)
-  const from = useRef(value)
-  useEffect(() => {
-    if (reduceMotion()) { from.current = value; setShown(value); return }
-    const start = from.current, t0 = performance.now()
-    let frame = 0
-    const tick = (t: number) => {
-      const k = Math.min(1, (t - t0) / ms)
-      from.current = start + (value - start) * (1 - (1 - k) ** 3)
-      setShown(Math.round(from.current / grain) * grain)
-      if (k < 1) frame = requestAnimationFrame(tick)
-    }
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
-  }, [value, grain, ms])
-  return shown
 }
 
 /** Counts up from zero once `run` turns on. */
@@ -83,421 +85,6 @@ function CountUp({ to, run }: { to: number; run: boolean }) {
     return () => cancelAnimationFrame(frame)
   }, [run, to])
   return <>{yuan(v)}</>
-}
-
-/** Types its text out, one character at a time. */
-function Typed({ text }: { text: string }) {
-  const [n, setN] = useState(0)
-  useEffect(() => {
-    if (n >= text.length) return
-    const timer = window.setTimeout(() => setN(n + 1), 70)
-    return () => window.clearTimeout(timer)
-  }, [n, text])
-  return <>{text.slice(0, n)}<i className="lx-caret" aria-hidden /></>
-}
-
-/* ---------- hero ---------- */
-
-type Scene = { icon: LucideIcon; ask: string; title: string; rows: [string, string][]; big: number; done: string; confirm: boolean; sms?: boolean }
-
-/** Four real requests on a loop: ask, check the card, confirm, done. The icon each one uses lights up in the orbit. */
-function HeroStage() {
-  const { tr } = useLang()
-  const [ref, on] = useOnScreen<HTMLDivElement>()
-  const scenes: Scene[] = [
-    { icon: Send, ask: tr('Send Mom 200', '给妈妈转200'), title: tr('Please confirm', '请确认'), big: 2, confirm: true, sms: true,
-      rows: [[tr('To', '收款人'), tr('Wang Xiuying (Mom)', '王秀英（妈妈）')], [tr('Account', '收款账户'), tr('ICBC ****7801', '中国工商银行 ****7801')], [tr('Amount', '金额'), '¥200.00']],
-      done: tr('Sent ¥200.00 to Wang Xiuying. It has arrived.', '已向 王秀英 转账 ¥200.00，已到账。') },
-    { icon: Snowflake, ask: tr('Freeze my online card', '冻结我的网购卡'), title: tr('Please confirm', '请确认'), big: -1, confirm: true,
-      rows: [[tr('Card', '卡片'), tr('Online shopping card •••• 8831', '网购虚拟卡 •••• 8831')], [tr('Effect', '效果'), tr('All payments stop', '所有交易暂停')], [tr('Undo', '恢复'), tr('Any time, in one sentence', '随时一句话解冻')]],
-      done: tr('Card •••• 8831 is frozen.', '尾号 8831 的卡已冻结。') },
-    { icon: Receipt, ask: tr('Pay the electricity bill', '把电费交了'), title: tr('Please confirm', '请确认'), big: 2, confirm: true,
-      rows: [[tr('To', '缴费单位'), tr('State Grid · electricity', '国家电网 · 电费')], [tr('Period', '账期'), tr('September', '9 月')], [tr('Amount', '金额'), '¥186.40']],
-      done: tr('Paid ¥186.40 to State Grid.', '已向国家电网缴费 ¥186.40。') },
-    { icon: ChartPie, ask: tr('Where did my money go last month?', '上个月钱都花哪了'), title: tr('September · spent', '9 月 · 支出'), big: 0, confirm: false,
-      rows: [[tr('Total', '合计'), '¥10,879.70'], [tr('Housing', '住房'), '¥3,200.00'], [tr('Dining', '餐饮'), '¥2,516.00']],
-      done: tr('The largest is the rent: ¥3,200.00 to Zhao Jianhua, 29% of the month.', '最大一笔是房租：转给赵建华 ¥3,200.00，占当月 29%。') },
-  ]
-  const { step, round } = useLoop([700, 1000, 1500, 300, 900, 2800], on)
-  const sc = scenes[round % scenes.length]
-  const inner: LucideIcon[] = [Send, Snowflake, Receipt, ChartPie, QrCode, PiggyBank, ShieldCheck, ArrowLeftRight]
-  const outer: LucideIcon[] = [Wallet, CreditCard, Banknote, Landmark, HandCoins, Globe, Bell, CalendarCheck, TrendingUp, Smartphone, Lock, Gift]
-  const ring = (icons: LucideIcon[], which: string) => (
-    <div className={`lx-ring ${which}`} aria-hidden>
-      {icons.map((Icon, k) => (
-        <span key={k} className="lx-orb" style={{ ['--a' as string]: `${(360 / icons.length) * k}deg` }}>
-          <span className={`lx-orb-icon ${Icon === sc.icon ? 'is-lit' : ''}`}><Icon /></span>
-        </span>
-      ))}
-    </div>
-  )
-  return (
-    <div className="lx-hero-stage" ref={ref}>
-      {ring(outer, 'is-outer')}
-      {ring(inner, 'is-inner')}
-      <div className="lx-chat" data-ui aria-label={tr('Examples of requests, playing on a loop', '请求示例，循环播放')}>
-        <div className="lx-chat-log">
-          <p className="lx-bubble lx-me" key={`ask${round}`}>{sc.ask}</p>
-          {step === 1 && <p className="lx-typing" aria-hidden><i /><i /><i /></p>}
-          {step >= 2 && (
-            <div className={`lx-confirm ${sc.confirm && step >= 4 ? 'is-done' : ''}`} key={`card${round}`}>
-              <div className="lx-confirm-head">
-                <b>{sc.confirm && step >= 4 ? tr('Done', '已办好') : sc.title}</b>
-                {sc.confirm && (step < 4 ? <span className="lx-tag">{tr('Needs your OK', '需确认')}</span> : <Seal kind="done" size={44} />)}
-              </div>
-              <dl>{sc.rows.map(([k, v], i) => <div key={k}><dt>{k}</dt><dd className={i === sc.big ? 'lx-amount' : ''}>{v}</dd></div>)}</dl>
-              {sc.confirm && step < 4 && <div className="lx-confirm-actions"><span className={`lx-ui-btn ${step === 3 ? 'is-pressed' : ''}`}>{tr('Confirm', '确认')}</span><span className="lx-ui-btn lx-ui-line">{tr('Cancel', '取消')}</span></div>}
-            </div>
-          )}
-          {step >= 4 && <p className="lx-bubble lx-bot" key={`done${round}`}>{sc.done}</p>}
-        </div>
-        <div className="lx-chat-input"><span>{tr('What do you need?', '说说你要办的事…')}</span><i aria-hidden><Mic size={15} /></i></div>
-      </div>
-      <div className={`lx-sms ${sc.sms && step >= 5 ? 'is-shown' : ''}`} aria-hidden={!(sc.sms && step >= 5)}>
-        <p className="lx-sms-who">{tr('Mom’s phone · Messages', '妈妈的手机 · 短信')}</p>
-        <p>{tr('[ICBC] Your account ending 7801 received RMB 200.00 from Li Ming.', '【中国工商银行】您尾号7801的账户收到李明转账人民币200.00元。')}</p>
-      </div>
-    </div>
-  )
-}
-
-/** Real requests scrolling past in two rows, each in both languages. Tap one to send it. */
-function SayStrip({ tryIt, busy }: { tryIt: (s: string) => void; busy: boolean }) {
-  const { tr } = useLang()
-  const says: [LucideIcon, string, string][] = [
-    [Send, 'Send Mom 200', '给妈妈转200'], [Snowflake, 'I lost my card', '我的卡丢了'], [ChartPie, 'Where did my money go last month?', '上个月钱都花哪了'],
-    [Receipt, 'Pay the electricity bill', '把电费交了'], [Repeat, 'What am I paying for every month?', '我有哪些自动续费'], [PiggyBank, '100000 for a year: what should I buy?', '有10万一年不用，推荐个理财'],
-    [ShieldCheck, 'Anything suspicious this month?', '这个月有没有可疑交易'], [Wallet, "What's my balance?", '我卡里还有多少钱'], [Globe, 'Turn on overseas payments', '开通境外支付'],
-    [ArrowLeftRight, 'Send Zhang Wei 300', '给张伟转300'], [CreditCard, 'Freeze my virtual card', '冻结我的虚拟卡'], [Gift, 'My wife’s birthday is next month, help me prepare', '下个月老婆生日，帮我准备一下'],
-  ]
-  const rows = [says.slice(0, 6), says.slice(6)]
-  return (
-    <section className="lx-say" aria-label={tr('Things you can say', '可以这样说')}>
-      <p className="lx-say-head">{tr('Say it your way, in either language', '中文英文，怎么说都行')}</p>
-      {rows.map((row, r) => (
-        <div key={r} className={`lx-marquee ${r ? 'is-reverse' : ''}`}>
-          <div className="lx-marquee-track">
-            {[0, 1].map((copy) => row.map(([Icon, en, zh]) => (
-              <button key={`${copy}${en}`} type="button" className="lx-say-chip" disabled={busy} onClick={() => tryIt(tr(en, zh))}
-                tabIndex={copy ? -1 : undefined} aria-hidden={copy ? true : undefined}>
-                <span className="lx-say-icon"><Icon size={15} /></span>{tr(en, zh)}<span className="lx-say-other">{tr(zh, en)}</span>
-              </button>
-            )))}
-          </div>
-        </div>
-      ))}
-    </section>
-  )
-}
-
-/* ---------- the tiles: each one plays its request on a loop, and the interactive ones hand over to the visitor ---------- */
-
-/** A tile of the grid: the product doing it on top, the claim and a sentence to try below. */
-function Tile({ id, size = '', title, text, say, tryIt, busy, children }: {
-  id?: string; size?: string; title: string; text: string; say: string; tryIt: (s: string) => void; busy: boolean; children: (on: boolean) => ReactNode
-}) {
-  const { tr } = useLang()
-  const [ref, on] = useOnScreen<HTMLElement>()
-  // React owns this element's class list (is-live changes), so the rise's `in` is kept here instead of by useRise
-  const seen = useRef(false)
-  if (on) seen.current = true
-  const spot = (e: PointerEvent<HTMLElement>) => {
-    const r = e.currentTarget.getBoundingClientRect()
-    e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`)
-    e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`)
-  }
-  return (
-    <article id={id} ref={ref} className={`lx-tile ${size} ${on ? 'is-live' : ''} ${seen.current ? 'in' : ''}`} onPointerMove={spot} data-rise>
-      <div className="lx-tile-ui" data-ui>{children(on)}</div>
-      <div className="lx-tile-copy">
-        <h3>{title}</h3>
-        <p>{text}</p>
-        <button type="button" className="lx-link" disabled={busy} onClick={() => tryIt(say)}>{tr('Try', '试试')} “{say}”<span aria-hidden> ›</span></button>
-      </div>
-    </article>
-  )
-}
-
-/** Two contacts share a name: the request types itself, the bank asks, a pointer picks. Tap one to take over. */
-function TransferDemo({ on }: { on: boolean }) {
-  const { tr } = useLang()
-  const [mine, setMine] = useState<number | null>(null)
-  const ask = tr('Send Zhang Wei 300', '给张伟转300')
-  const { step } = useLoop([500, ask.length * 70 + 500, 900, 1100, 3200], on, mine !== null)
-  const options: [string, string, string][] = [
-    [tr('Zhang Wei', '张伟'), tr('university friend', '大学同学'), tr('China Construction Bank ****5678', '中国建设银行 ****5678')],
-    [tr('Zhang Wei', '张薇'), tr('colleague, finance', '同事（财务）'), tr('Bank of Communications ****9876', '交通银行 ****9876')],
-  ]
-  const typed = mine !== null || step >= 2
-  const picked = mine ?? (step >= 4 ? 0 : -1)
-  return (
-    <div className="lx-ui lx-ui-question">
-      <p className="lx-bubble lx-me lx-typed">{typed ? ask : step === 1 ? <Typed text={ask} /> : <i className="lx-caret" aria-hidden />}</p>
-      <div className={`lx-ui-card lx-reveal ${typed ? 'is-shown' : ''}`}>
-        <p className="lx-ui-title">{tr('“Zhang Wei” matches two contacts. Which one?', '“张伟”对应两位联系人，是哪一位？')}</p>
-        <div className="lx-ui-options is-pair" role="radiogroup" aria-label={tr('Choose a contact', '选择联系人')}>
-          {options.map(([name, who, bank], i) => (
-            <button key={i} type="button" role="radio" aria-checked={picked === i} className={picked === i ? 'is-on' : ''} onClick={() => setMine(i)}>
-              <b>{name} · {who}</b><span>{bank}</span>
-              {i === 0 && mine === null && <span className={`lx-cursor ${step === 3 ? 'is-moving' : step === 4 ? 'is-there' : ''}`} aria-hidden />}
-            </button>
-          ))}
-        </div>
-        <p className={`lx-ui-note is-ok ${picked >= 0 ? 'is-shown' : ''}`}><Check size={14} aria-hidden /> {picked >= 0
-          ? tr(`¥300.00 to ${options[picked][0]} (${options[picked][1]}), waiting for your OK`, `向 ${options[picked][0]}（${options[picked][1]}）转账 ¥300.00，等你确认`)
-          : ' '}</p>
-      </div>
-    </div>
-  )
-}
-
-/** The online card's switches. They work; until someone touches them, the card freezes and thaws on its own. */
-function CardDemo({ on: live }: { on: boolean }) {
-  const { tr } = useLang()
-  type Switches = { online: boolean; overseas: boolean; atm: boolean; contactless: boolean }
-  const [mine, setMine] = useState<{ frozen: boolean; on: Switches } | null>(null)
-  const { step } = useLoop([1800, 2800], live, mine !== null, 0)
-  const auto = { frozen: step === 1, on: { online: true, overseas: false, atm: false, contactless: false } }
-  const { frozen, on } = mine ?? auto
-  const labels: [keyof Switches, string][] = [['online', tr('Online payments', '网上支付')], ['overseas', tr('Overseas', '境外交易')], ['atm', tr('ATM', 'ATM 取现')], ['contactless', tr('Contactless', '闪付')]]
-  return (
-    <div className={`lx-ui lx-ui-card-controls ${frozen ? 'is-frozen' : ''}`}>
-      <div className="lx-ui-plastic">
-        <b>{tr('Online shopping card', '网购虚拟卡')}</b>
-        <span>•••• 8831</span>
-        <em>{frozen ? tr('Frozen', '已冻结') : tr('Active · ¥3,000.00 a day', '正常 · 每日 ¥3,000.00')}</em>
-        <i className="lx-frost" aria-hidden><Snowflake /></i>
-      </div>
-      <ul>
-        {labels.map(([key, label]) => (
-          <li key={key}>
-            <span>{label}</span>
-            <button type="button" role="switch" aria-checked={on[key] && !frozen} disabled={frozen} aria-label={label}
-              className={`lx-switch ${on[key] && !frozen ? 'is-on' : ''}`} onClick={() => setMine({ frozen, on: { ...on, [key]: !on[key] } })}><i /></button>
-          </li>
-        ))}
-      </ul>
-      <button type="button" className="lx-ui-btn lx-ui-wide" onClick={() => setMine({ frozen: !frozen, on })}>{frozen ? tr('Unfreeze', '解冻') : tr('Freeze card', '冻结卡片')}</button>
-    </div>
-  )
-}
-
-/** Last month by category, as the demo bank answers it: the total counts up, the bars and the share of rent grow. */
-function SpendingDemo({ on }: { on: boolean }) {
-  const { tr } = useLang()
-  const { round } = useLoop([9000], on)
-  const rows: [string, number][] = [
-    [tr('Housing', '住房'), 3200], [tr('Dining', '餐饮'), 2516], [tr('Travel', '出行旅游'), 1753],
-    [tr('Groceries', '日用超市'), 1096], [tr('Family', '家人'), 800],
-  ]
-  const max = Math.max(...rows.map(([, v]) => v))
-  return (
-    <div className="lx-ui lx-ui-spend" key={round}>
-      <div className="lx-ui-head">
-        <div><b>{tr('September · spent', '9 月 · 支出')}</b><p className="lx-ui-total"><CountUp to={10879.7} run={on} /></p></div>
-        <div className="lx-donut">
-          <svg viewBox="0 0 160 160" aria-hidden><circle cx="80" cy="80" r="64" /><circle cx="80" cy="80" r="64" className="is-share" /></svg>
-          <p><b>29%</b>{tr('rent', '房租')}</p>
-        </div>
-      </div>
-      <ul>
-        {rows.map(([name, v], i) => (
-          <li key={name} style={{ ['--k' as string]: i }}>
-            <span className="lx-ui-name">{name}</span>
-            <span className="lx-ui-bar"><i style={{ width: `${(v / max) * 100}%` }} className={i === 0 ? 'is-top' : ''} /></span>
-            <span className="lx-ui-val">{yuan(v)}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="lx-ui-note">{tr('The largest is the rent: ¥3,200.00 to Zhao Jianhua.', '最大一笔是房租：转给赵建华 ¥3,200.00。')}</p>
-    </div>
-  )
-}
-
-/** Every automatic charge, read one by one, until the two music memberships turn up side by side. */
-function SubscriptionsDemo({ on }: { on: boolean }) {
-  const { tr } = useLang()
-  const rows: [string, string, boolean][] = [
-    [tr('Ledongli Fitness', '乐动力健身'), '¥199.00', false],
-    [tr('China Telecom broadband', '中国电信 宽带'), '¥99.00', false],
-    [tr('Tencent Video VIP', '腾讯视频VIP会员'), '¥30.00', false],
-    [tr('iQIYI VIP', '爱奇艺VIP会员'), '¥25.00', false],
-    [tr('NetEase Cloud Music', '网易云音乐 黑胶VIP'), '¥15.00', true],
-    [tr('QQ Music', 'QQ音乐 绿钻'), '¥15.00', true],
-  ]
-  const { step } = useLoop([500, ...rows.map(() => 380), 3200], on)
-  const found = step > rows.length
-  return (
-    <div className="lx-ui lx-ui-subs">
-      <ul>{rows.map(([name, fen, dup], i) => (
-        <li key={name} className={`${step === i + 1 ? 'is-reading' : ''} ${dup && step > i + 1 ? 'is-flag' : ''}`}><b>{name}</b><span className="lx-ui-val">{fen}</span></li>
-      ))}</ul>
-      <p className={`lx-save ${found ? 'is-shown' : ''}`}>{tr('Two music memberships. Cancel one to save ¥180.00 a year.', '有两个音乐会员，取消一个每年省 ¥180.00。')}</p>
-    </div>
-  )
-}
-
-/** One sentence, three steps across three kinds of banking, ticked off in turn. */
-function PlanDemo({ on }: { on: boolean }) {
-  const { tr } = useLang()
-  const steps: [string, string, 'done' | 'set' | 'wait'][] = [
-    [tr('Look up Chen Jing’s birthday', '查找陈静的生日'), tr('In 35 days', '还有 35 天'), 'done'],
-    [tr('Set aside ¥1,000.00 for the gift', '预留 ¥1,000.00 买礼物'), tr('From the current account', '从活期账户'), 'set'],
-    [tr('Order flowers and a cake', '订鲜花和蛋糕'), tr('Two days before, delivered home', '提前两天，送货到家'), 'wait'],
-  ]
-  const state = { done: tr('Done', '已完成'), set: tr('Set aside', '已预留'), wait: tr('Scheduled', '已安排') }
-  const { step } = useLoop([700, 1100, 1100, 2800], on)
-  return (
-    <div className="lx-ui lx-ui-plan">
-      <p className="lx-bubble lx-me">{tr('My wife’s birthday is next month, help me prepare', '下个月老婆生日，帮我准备一下')}</p>
-      <ol style={{ ['--p' as string]: Math.max(0, step - 1) / (steps.length - 1) }}>
-        {steps.map(([what, detail, s], i) => (
-          <li key={what} className={step > i ? 'is-on' : ''}>
-            <span className="lx-ui-dot" aria-hidden><Check size={13} /></span>
-            <span><b>{what}</b><small>{detail}</small></span>
-            <em>{state[s]}</em>
-          </li>
-        ))}
-      </ol>
-    </div>
-  )
-}
-
-/** The risk scale: the needle sweeps up and settles on the customer's level, and what lies above it drops out. */
-function WealthDemo({ on }: { on: boolean }) {
-  const { tr } = useLang()
-  const { step } = useLoop([600, 900, 3600], on)
-  const angle = [-90, 70, -36][step]
-  const products: [string, string, string, boolean][] = [
-    [tr('Steady Money Market A', '稳享货币A'), 'R1', '1.62%', false],
-    [tr('Anying Short-term Bond', '安盈短债'), 'R2', '2.45%', false],
-    [tr('Tech Growth Equity', '科技成长股票'), 'R4', '', true],
-  ]
-  const arcs: [string, string][] = [
-    ['M20 100 A80 80 0 0 1 35.3 53', 'r1'], ['M37.5 49.5 A80 80 0 0 1 75.3 24', 'r2'], ['M79.5 22.7 A80 80 0 0 1 120.5 22.7', 'r3'],
-    ['M124.7 24 A80 80 0 0 1 162.5 49.5', 'r4'], ['M164.7 53 A80 80 0 0 1 180 100', 'r5'],
-  ]
-  return (
-    <div className="lx-ui lx-ui-gauge">
-      <svg viewBox="0 0 200 108" aria-hidden>
-        {arcs.map(([d, c]) => <path key={c} d={d} className={`lx-arc is-${c}`} />)}
-        <g className="lx-needle" style={{ transform: `rotate(${angle}deg)` }}><line x1="100" y1="100" x2="100" y2="36" /><circle cx="100" cy="100" r="7" /></g>
-      </svg>
-      <p className="lx-gauge-label">{tr('Your risk test', '你的风险测评')} <b>R2</b></p>
-      <ul>{products.map(([name, risk, y, above]) => (
-        <li key={name} className={above && step === 2 ? 'is-out' : ''}>
-          <span>{name} · {risk}</span>{above ? <Lock size={14} aria-label={tr('Above your level', '超出你的等级')} /> : <span className="lx-ui-yield">{y}</span>}
-        </li>
-      ))}</ul>
-    </div>
-  )
-}
-
-/** A bill found by name: the amount appears, the confirm is pressed, the paid stamp lands. */
-function BillDemo({ on }: { on: boolean }) {
-  const { tr } = useLang()
-  const { step } = useLoop([1400, 400, 3400], on)
-  return (
-    <div className={`lx-ui lx-ui-bill ${step === 2 ? 'is-paid' : ''}`}>
-      <div className="lx-ui-bill-head"><span className="lx-ui-bill-icon"><Receipt size={18} /></span><span><b>{tr('State Grid', '国家电网')}</b><small>{tr('Electricity · September', '电费 · 9 月')}</small></span></div>
-      <p className="lx-ui-bill-amount">¥186.40</p>
-      {step === 2
-        ? <div className="lx-ui-bill-stamp"><Seal kind="done" size={64} /><span>{tr('Paid from the current account', '已从活期账户缴清')}</span></div>
-        : <span className={`lx-ui-btn lx-ui-wide ${step === 1 ? 'is-pressed' : ''}`}>{tr('Confirm', '确认')}</span>}
-    </div>
-  )
-}
-
-/** Drag an amount and see which of the bank's rules applies. Until someone does, it walks through all three.
- *  The thresholds are the bank's own. */
-function RuleDemo({ on }: { on: boolean }) {
-  const { tr } = useLang()
-  const [mine, setMine] = useState<{ amount: number; fresh: boolean } | null>(null)
-  const tiers = [{ amount: 200, fresh: false }, { amount: 1500, fresh: false }, { amount: 700, fresh: true }]
-  const { step } = useLoop([3200, 3200, 3600], on, mine !== null, 0)
-  const glide = useTween(tiers[step].amount, 50)
-  const amount = mine ? mine.amount : glide
-  const fresh = mine ? mine.fresh : tiers[step].fresh
-  const strong = amount > 1000 || (fresh && amount > 500)
-  const waits = fresh && amount > 500
-  const tone = waits ? 'is-wait' : strong ? 'is-strong' : 'is-tap'
-  const figure = waits ? tr('2 hrs', '2 小时') : strong ? tr('PIN + code', '密码+验证码') : tr('1 tap', '点一下')
-  const result = waits
-    ? tr('It needs your PIN and a code, then arrives two hours later, so you can still cancel it.', '需要交易密码和验证码，并在 2 小时后到账，到账前还能撤销。')
-    : strong
-      ? tr('Over ¥1,000 today: your PIN and an SMS code, or a passkey. Then it arrives now.', '今天超过 ¥1,000：需要交易密码加短信验证码，或通行密钥，然后实时到账。')
-      : tr('Your tap on Confirm is enough. It arrives now.', '你点“确认”就行，实时到账。')
-  return (
-    <div className="lx-check">
-      <div className="lx-check-control">
-        <label htmlFor="lx-amount">
-          <span>{tr('Today’s payments', '今日累计付款')}</span>
-          <output htmlFor="lx-amount">¥{amount.toLocaleString('en-US')}.00</output>
-        </label>
-        <input id="lx-amount" type="range" min={50} max={3000} step={50} value={amount} onChange={(e) => setMine({ amount: Number(e.target.value), fresh })}
-          style={{ ['--fill' as string]: `${((amount - 50) / 2950) * 100}%` }} />
-        <div className="lx-check-row">
-          <span id="lx-fresh-label">{tr('To someone added today', '收款人是今天新加的')}</span>
-          <button type="button" role="switch" aria-checked={fresh} aria-labelledby="lx-fresh-label" className={`lx-switch ${fresh ? 'is-on' : ''}`} onClick={() => setMine({ amount, fresh: !fresh })}><i /></button>
-        </div>
-      </div>
-      <div className="lx-check-result">
-        <p className={`lx-figure ${tone}`} aria-live="polite" key={figure}>{figure}</p>
-        <p className="lx-check-why">{result} {tr('Up to ¥1,000 a day, and up to ¥500 to a new contact, needs only your tap.', '每天累计 ¥1,000 以内、给新联系人 ¥500 以内，只需你点一下。')}</p>
-      </div>
-    </div>
-  )
-}
-
-/* ---------- ask, check, done ---------- */
-
-/** The three steps of a payment in a row; a coin travels along them as the page scrolls, lighting each it reaches. */
-function Journey() {
-  const { tr } = useLang()
-  const ref = useRef<HTMLDivElement>(null)
-  const [reached, setReached] = useState(reduceMotion() ? 3 : 1)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    if (reduceMotion()) { el.style.setProperty('--jp', '1'); return }
-    let frame = 0
-    const update = () => {
-      frame = 0
-      // 0 when the row's top is 85% down the screen, 1 once it has climbed to 25%
-      const p = Math.max(0, Math.min(1, (window.innerHeight * 0.85 - el.getBoundingClientRect().top) / (window.innerHeight * 0.6)))
-      el.style.setProperty('--jp', p.toFixed(3))
-      setReached(1 + Number(p >= 0.5) + Number(p >= 0.98))
-    }
-    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update) }
-    update()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(frame) }
-  }, [])
-  const stops: [LucideIcon, string, string, ReactNode][] = [
-    [Mic, tr('First, you say it.', '首先，你说一句。'), tr('In your own words, Chinese or English.', '用你自己的话，中文英文都行。'),
-      <><p>{tr('Transfer ¥200.00 to Wang Xiuying (Mom), ICBC ****7801', '向 王秀英（妈妈）转账 ¥200.00，中国工商银行 ****7801')}</p><small>{tr('The AI only proposes this. It cannot move money.', 'AI 只能提议，自己动不了钱。')}</small></>],
-    [ShieldCheck, tr('Then, the bank’s rules check it.', '然后，银行的规则来检查。'), tr('Limits, new contacts and odd patterns, checked in code, not by the AI.', '限额、新联系人、异常模式，由代码检查，不由 AI 决定。'),
-      <><div className="lx-meter"><span>{tr('Today’s payments', '今日累计')}</span><b>¥200.00 / ¥1,000.00</b><span className="lx-meter-track"><i style={{ width: '20%' }} /></span></div>
-        <small>{tr('Under the daily limit, to a saved contact: your OK is enough.', '未超过每日额度，收款人是老联系人：你点头就行。')}</small></>],
-    [Check, tr('Finally, you say yes.', '最后，由你点头。'), tr('Then it moves, and both of you get the proof.', '然后钱才动，双方都收到凭证。'),
-      <><div className="lx-receipt"><Seal kind="done" size={56} animate={false} /><div><p className="lx-receipt-amount">¥200.00</p><p>{tr('Sent to Wang Xiuying · arrived 12:41', '已转给 王秀英 · 12:41 到账')}</p></div></div>
-        <div className="lx-sms is-shown is-static"><p className="lx-sms-who">{tr('Mom’s phone · Messages', '妈妈的手机 · 短信')}</p><p>{tr('[ICBC] Your account ending 7801 received RMB 200.00 from Li Ming.', '【中国工商银行】您尾号7801的账户收到李明转账人民币200.00元。')}</p></div></>],
-  ]
-  return (
-    <div className="lx-journey" ref={ref}>
-      <div className="lx-path" aria-hidden><span className="lx-path-fill" /><span className="lx-coin"><Banknote size={20} /></span></div>
-      <ol className="lx-stops">
-        {stops.map(([Icon, title, text, ui], i) => (
-          <li key={title} className={`lx-stop ${i < reached ? 'is-on' : ''}`}>
-            <span className="lx-stop-badge" aria-hidden><Icon /></span>
-            <h3>{title}</h3>
-            <p>{text}</p>
-            <div className="lx-stop-ui" data-ui>{ui}</div>
-          </li>
-        ))}
-      </ol>
-    </div>
-  )
 }
 
 /** The ask box's placeholder types out example requests while the box is empty and not in use. */
@@ -524,6 +111,377 @@ function useTypedPlaceholder(examples: string[], paused: boolean, fallback: stri
     return () => { stop = true }
   }, [key])
   return text || fallback
+}
+
+/** A phone running the app: the status bar, a conversation, the ask bar and the four tabs. */
+function Phone({ children, className = '', style }: { children: ReactNode; className?: string; style?: CSSProperties }) {
+  const { tr } = useLang()
+  const tabs: [LucideIcon, string][] = [[Send, tr('Send', '转账')], [MessageCircle, tr('Ask', '助手')], [PiggyBank, tr('Save', '理财')], [Receipt, tr('Bills', '缴费')]]
+  return (
+    <div className={`lx-phone ${className}`} style={style} aria-hidden>
+      <div className="lx-screen">
+        <span className="lx-notch" />
+        <div className="lx-status"><span>9:41</span><span>5G</span></div>
+        <div className="lx-convo">{children}</div>
+        <div className="lx-askbar"><span>{tr('Say what you need…', '说说你要办的事…')}</span><Mic size={14} /></div>
+        <div className="lx-tabs">{tabs.map(([Icon, label], i) => <span key={label} className={i === 1 ? 'is-on' : ''}><Icon size={18} />{label}</span>)}</div>
+      </div>
+    </div>
+  )
+}
+
+/** The link under a claim that sends its sentence to the assistant. */
+function TryLink({ say, tryIt, busy, light = false }: { say: string; tryIt: (s: string) => void; busy: boolean; light?: boolean }) {
+  const { tr } = useLang()
+  return <button type="button" className={`lx-try ${light ? 'is-light' : ''}`} disabled={busy} onClick={() => tryIt(say)}>{tr('Try', '试试')} “{say}”<span aria-hidden> →</span></button>
+}
+
+/** A photograph that drifts a little inside its card as the page scrolls. */
+function DriftingPhoto({ src }: { src: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useOnScroll((vh) => {
+    const el = ref.current
+    if (!el || reduceMotion()) return
+    const r = el.parentElement!.getBoundingClientRect()
+    el.style.setProperty('--py', ((r.top + r.height / 2 - vh / 2) * -0.08).toFixed(1) + 'px')
+  })
+  return <div ref={ref} className="lx-photo" style={{ backgroundImage: `url('${src}')` }} />
+}
+
+/* ---------- the night sky, one sentence ---------- */
+
+function Hero({ start, onStart, busy, error }: { start: string; onStart: () => void; busy: boolean; error: string }) {
+  const { tr } = useLang()
+  const dots = [[0, 0, 1, 0, 0], [0, 0, 1, 0, 0], [0, 0, 1, 0, 0], [1, 0, 1, 0, 1], [0, 1, 1, 1, 0], [0, 0, 1, 0, 0]]
+  return (
+    <section className="lx-hero" data-surface="dark" aria-labelledby="lx-title">
+      <span className="lx-cloud" /><span className="lx-cloud" /><span className="lx-cloud" /><span className="lx-cloud" />
+      <div className="lx-hero-copy">
+        <h1 id="lx-title">{[tr('Say it once.', '你说一句，'), tr('We do it.', '我来办。')].map((line, i) => <span key={line} style={css({ '--d': i })}>{line}</span>)}</h1>
+        <p className="lx-hero-sub">{tr('Banking you can talk to, in Chinese or English. The bank checks it, and nothing moves until you say yes.', '能对话的银行，中文英文都行。银行先检查，你点头之前，钱一分不动。')}</p>
+        <div className="lx-hero-actions">
+          <button type="button" className="lx-btn is-light" disabled={busy} onClick={onStart}>{start}</button>
+          <button type="button" className="lx-btn is-glass" onClick={() => scrollToId('features')}>{tr('See what it does', '看看能做什么')}</button>
+        </div>
+        {error && <p role="alert" className="lx-error">{error}</p>}
+        <p className="lx-hero-note">{tr('A simulated bank with made-up money. No real bank is connected.', '模拟银行，演示用的钱，不连接任何真实银行。')}</p>
+      </div>
+      <button type="button" className="lx-scroll-cue" onClick={() => scrollToId('steps')}>
+        {tr('Scroll', '向下看')}
+        <span className="lx-dot-arrow" aria-hidden>{dots.map((row, r) => row.map((on, c) => <i key={`${r}${c}`} className={on ? 'is-on' : ''} style={css({ '--r': r })} />))}</span>
+      </button>
+    </section>
+  )
+}
+
+/** The phone rises through a photograph of the city as the page scrolls, and the request plays out on it. */
+function Rise() {
+  const { tr } = useLang()
+  const box = useRef<HTMLElement>(null)
+  const stage = useRef<HTMLDivElement>(null)
+  const [step, setStep] = useState(reduceMotion() ? 5 : 0)
+  useOnScroll((vh) => {
+    if (!box.current || !stage.current) return
+    const r = box.current.getBoundingClientRect()
+    const p = reduceMotion() ? 1 : clamp01(-r.top / (r.height - vh))
+    stage.current.style.setProperty('--p', p.toFixed(3))
+    setStep([0.3, 0.42, 0.54, 0.7, 0.82].filter((at) => p >= at).length)
+  })
+  const rows: [string, string][] = [[tr('To', '收款人'), tr('Wang Xiuying (Mom)', '王秀英（妈妈）')], [tr('Account', '收款账户'), tr('ICBC ****7801', '工商银行 ****7801')], [tr('Amount', '金额'), '¥200.00']]
+  return (
+    <section ref={box} className="lx-rise" id="steps" data-surface="dark" aria-labelledby="lx-rise-h">
+      <div ref={stage} className="lx-rise-stage">
+        <div className="lx-rise-photo" style={{ backgroundImage: `url('${PHOTO.tram}')` }} />
+        <h2 id="lx-rise-h" className="lx-rise-caption">{tr('Everything you would ask a teller, from your pocket.', '柜台能办的事，口袋里说一句就行。')}</h2>
+        <Phone className="is-rising">
+          <p className={`lx-msg is-me ${step >= 1 ? 'is-shown' : ''}`}>{tr('Send Mom 200', '给妈妈转200')}</p>
+          <p className={`lx-msg is-bot ${step >= 2 ? 'is-shown' : ''}`}>{tr('Please check:', '请核对：')}</p>
+          <div className={`lx-msg is-sheet ${step >= 3 ? 'is-shown' : ''} ${step >= 4 ? 'is-done' : ''}`}>
+            <dl>{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+            <p className="lx-ok">{step >= 4 ? tr('Done ✓', '已办好 ✓') : tr('Confirm', '确认')}</p>
+          </div>
+          <p className={`lx-msg is-bot ${step >= 5 ? 'is-shown' : ''}`}>{tr('Sent ¥200.00. It has arrived.', '已转出 ¥200.00，已到账。')}</p>
+        </Phone>
+      </div>
+    </section>
+  )
+}
+
+/** A sentence that comes into focus word by word (character by character in Chinese) as it scrolls in;
+ *  the second half is in the brand green. */
+function Statement({ first, second, children }: { first: string; second: string; children?: ReactNode }) {
+  const { lang } = useLang()
+  const ref = useRef<HTMLParagraphElement>(null)
+  const split = (s: string) => (lang === 'zh' ? [...s] : s.split(/\s+/)).filter(Boolean)
+  const words: [string, boolean][] = [...split(first).map((w): [string, boolean] => [w, false]), ...split(second).map((w): [string, boolean] => [w, true])]
+  const [lit, setLit] = useState(reduceMotion() ? 999 : 0)
+  useOnScroll((vh) => {
+    if (!ref.current || reduceMotion()) return
+    const k = clamp01((vh * 0.85 - ref.current.getBoundingClientRect().top) / (vh * 0.5))
+    setLit(Math.ceil(k * words.length * 1.15))
+  })
+  return (
+    <section className="lx-statement">
+      <p ref={ref} aria-label={`${first} ${second}`}>
+        {words.map(([w, soft], i) => <span key={i} aria-hidden className={`lx-w ${i < lit ? 'is-lit' : ''} ${soft ? 'is-soft' : ''}`}>{lang === 'en' && i > 0 ? ' ' : ''}{w}</span>)}
+      </p>
+      {children}
+    </section>
+  )
+}
+
+/* ---------- what it does: photographs and the product working on them ---------- */
+
+function TalkCard({ tryIt, busy }: { tryIt: (s: string) => void; busy: boolean }) {
+  const { tr } = useLang()
+  const [ref, on] = useOnScreen<HTMLElement>()
+  const phone = useRef<HTMLDivElement>(null)
+  const { step } = useLoop([600, 1300, 1300, 1300, 3600], on)
+  useOnScroll((vh) => {
+    const r = ref.current?.getBoundingClientRect()
+    if (r && phone.current) phone.current.style.setProperty('--lift', reduceMotion() ? '0' : clamp01(r.top / vh).toFixed(3))
+  })
+  const say = tr('Send Zhang Wei 300', '给张伟转300')
+  return (
+    <article ref={ref} className="lx-card lx-card-big" data-surface="dark" data-rise aria-labelledby="lx-talk-h">
+      <DriftingPhoto src={PHOTO.metro} />
+      <span className="lx-eyebrow">{tr('Banking in your own words', '用自己的话办银行')}</span>
+      <h2 id="lx-talk-h">{tr('Say it the way you would say it to a friend.', '像跟朋友说话一样，说出来就行。')}</h2>
+      <TryLink say={say} tryIt={tryIt} busy={busy} light />
+      <div ref={phone} className="lx-talk-phone">
+        <Phone>
+          <p className={`lx-msg is-me ${step >= 1 ? 'is-shown' : ''}`}>{say}</p>
+          <p className={`lx-msg is-bot ${step >= 2 ? 'is-shown' : ''}`}>{tr('“Zhang Wei” matches two contacts: your university friend at CCB, or your colleague at BoCom?', '“张伟”对应两位联系人：建设银行的大学同学，还是交通银行的同事？')}</p>
+          <p className={`lx-msg is-me ${step >= 3 ? 'is-shown' : ''}`}>{tr('My friend', '大学同学那个')}</p>
+          <div className={`lx-msg is-sheet ${step >= 4 ? 'is-shown' : ''}`}>
+            <dl>
+              <div><dt>{tr('To', '收款人')}</dt><dd>{tr('Zhang Wei · friend', '张伟 · 大学同学')}</dd></div>
+              <div><dt>{tr('Bank', '银行')}</dt><dd>{tr('CCB ****5678', '建设银行 ****5678')}</dd></div>
+              <div><dt>{tr('Amount', '金额')}</dt><dd>¥300.00</dd></div>
+            </dl>
+            <p className="lx-ok">{tr('Waiting for your OK', '等你确认')}</p>
+          </div>
+        </Phone>
+      </div>
+    </article>
+  )
+}
+
+function SpendCard({ tryIt, busy }: { tryIt: (s: string) => void; busy: boolean }) {
+  const { tr } = useLang()
+  const [ref, on] = useOnScreen<HTMLElement>()
+  const rows: [string, number][] = [[tr('Housing', '住房'), 3200], [tr('Dining', '餐饮'), 2516], [tr('Travel', '出行'), 1753], [tr('Groceries', '日用超市'), 1096]]
+  return (
+    // whether it is playing goes in data-on, not the class list: the rise's `in` class lives there and React would wipe it
+    <article ref={ref} className="lx-card lx-card-half" data-on={on} data-surface="dark" data-rise aria-labelledby="lx-spend-h">
+      <DriftingPhoto src={PHOTO.lunch} />
+      <div className="lx-spend" aria-hidden>
+        <span>{tr('September · spent', '9 月 · 支出')}</span>
+        <b><CountUp to={10879.7} run={on} /></b>
+        <ul>{rows.map(([name, v], i) => (
+          <li key={name} style={css({ '--k': i })}><span>{name}</span><span className="lx-bar"><i style={{ width: `${(v / 3200) * 100}%` }} /></span><span>{yuan(v)}</span></li>
+        ))}</ul>
+      </div>
+      <h3 id="lx-spend-h">{tr('See where the money went.', '看清钱花在哪了。')}</h3>
+      <p>{tr('Every lunch, every ride, every rent day, sorted by category, with the odd ones flagged.', '每顿午饭、每趟出行、每次交房租，都按类别归好，异常的会被标出来。')}</p>
+      <TryLink say={tr('Where did my money go last month?', '上个月钱都花哪了')} tryIt={tryIt} busy={busy} light />
+    </article>
+  )
+}
+
+function VoiceCard({ tryIt, busy }: { tryIt: (s: string) => void; busy: boolean }) {
+  const { tr } = useLang()
+  return (
+    <article className="lx-card lx-card-half lx-card-green" data-surface="dark" data-rise aria-labelledby="lx-voice-h">
+      <div className="lx-voice" aria-hidden>
+        <p className="lx-msg is-me is-shown">把电费交了</p>
+        <div className="lx-wave">{Array.from({ length: 12 }, (_, k) => <i key={k} style={css({ '--k': k })} />)}</div>
+        <p className="lx-msg is-bot is-shown">{tr('State Grid, September: ¥186.40. Pay it now?', '国家电网 9 月电费 ¥186.40，现在缴吗？')}</p>
+      </div>
+      <h3 id="lx-voice-h">{tr('Chinese or English. Typed or spoken.', '中文英文，打字说话，都行。')}</h3>
+      <p>{tr('Type it, say it, or show it a receipt photo.', '打字、说话，或者拍一张小票给它看。')}</p>
+      <TryLink say={tr('Pay the electricity bill', '把电费交了')} tryIt={tryIt} busy={busy} light />
+    </article>
+  )
+}
+
+function PlanCard({ tryIt, busy }: { tryIt: (s: string) => void; busy: boolean }) {
+  const { tr } = useLang()
+  const [ref, on] = useOnScreen<HTMLElement>()
+  const { step } = useLoop([700, 1000, 1000, 3200], on)
+  const steps: [string, string, string][] = [
+    [tr('Look up Chen Jing’s birthday', '查找陈静的生日'), tr('In 35 days', '还有 35 天'), tr('Done', '已完成')],
+    [tr('Set aside ¥1,000.00 for the gift', '预留 ¥1,000.00 买礼物'), tr('From the current account', '从活期账户'), tr('Set aside', '已预留')],
+    [tr('Order flowers and a cake', '订鲜花和蛋糕'), tr('Two days before, delivered home', '提前两天，送货到家'), tr('Scheduled', '已安排')],
+  ]
+  const say = tr('My wife’s birthday is next month, help me prepare', '下个月老婆生日，帮我准备一下')
+  return (
+    <article ref={ref} className="lx-card lx-card-night" id="plans" data-surface="dark" data-rise aria-labelledby="lx-plans-h">
+      <span className="lx-cloud" /><span className="lx-cloud" />
+      <div>
+        <span className="lx-eyebrow">{tr('One sentence, several steps', '一句话，办好几步')}</span>
+        <h2 id="lx-plans-h">{tr('Hand it the whole errand.', '整件事，交给它。')}</h2>
+        <p className="lx-lead">{tr('It plans across contacts, savings and shopping, shows you every step, and asks once for the whole plan.', '跨联系人、预留资金和下单统一规划，每一步都给你看，整个计划只问你一次。')}</p>
+        <TryLink say={say} tryIt={tryIt} busy={busy} light />
+      </div>
+      <div className="lx-plan" aria-hidden>
+        <p className="lx-msg is-me is-shown">{say}</p>
+        <ol>{steps.map(([what, detail, state], i) => (
+          <li key={what} className={step > i ? 'is-on' : ''}><span className="lx-tick"><Check size={15} /></span><span><b>{what}</b><small>{detail}</small></span><em>{state}</em></li>
+        ))}</ol>
+      </div>
+    </article>
+  )
+}
+
+function CardFeature({ tryIt, busy }: { tryIt: (s: string) => void; busy: boolean }) {
+  const { tr } = useLang()
+  const [ref, on] = useOnScreen<HTMLElement>()
+  const { step } = useLoop([1800, 2800], on, 0)
+  const frozen = step === 1
+  return (
+    <article ref={ref} className="lx-feature" data-rise aria-labelledby="lx-f1">
+      <h3 id="lx-f1">{tr('Lost your card? Say so.', '卡丢了？说一声。')}</h3>
+      <p>{tr('“I lost my card” freezes it on the spot. Unfreeze it the same way.', '说一句“我的卡丢了”，马上冻结；解冻也一样简单。')}</p>
+      <TryLink say={tr('I lost my card', '我的卡丢了')} tryIt={tryIt} busy={busy} />
+      <div className={`lx-feature-ui ${frozen ? 'is-frozen' : ''}`} aria-hidden>
+        <div className="lx-plastic"><span>{tr('Online shopping card', '网购虚拟卡')}</span><span>•••• 8831</span><span>{frozen ? tr('Frozen', '已冻结') : tr('Active', '正常')}</span><i className="lx-frost"><Snowflake /></i></div>
+        <div className="lx-toggle"><span>{tr('Online payments', '网上支付')}</span><span className={`lx-sw ${frozen ? '' : 'is-on'}`} /></div>
+        <div className="lx-toggle"><span>{tr('Overseas', '境外交易')}</span><span className={`lx-sw ${frozen ? '' : 'is-on'}`} /></div>
+      </div>
+    </article>
+  )
+}
+
+function SubsFeature({ tryIt, busy }: { tryIt: (s: string) => void; busy: boolean }) {
+  const { tr } = useLang()
+  const [ref, on] = useOnScreen<HTMLElement>()
+  const { step } = useLoop([900, 450, 450, 3400], on)
+  const rows: [string, string, number][] = [
+    [tr('Fitness club', '乐动力健身'), '¥199.00', 0], [tr('Tencent Video', '腾讯视频VIP'), '¥30.00', 0],
+    [tr('NetEase Cloud Music', '网易云音乐'), '¥15.00', 1], [tr('QQ Music', 'QQ音乐'), '¥15.00', 2],
+  ]
+  return (
+    <article ref={ref} className="lx-feature" data-rise aria-labelledby="lx-f2">
+      <h3 id="lx-f2">{tr('Find the memberships you forgot.', '找出你忘了的会员。')}</h3>
+      <p>{tr('Every automatic charge in one list, including the ones you pay for twice.', '所有自动扣费一张清单，连重复付费的也找出来。')}</p>
+      <TryLink say={tr('What am I paying for every month?', '我有哪些自动续费')} tryIt={tryIt} busy={busy} />
+      <div className="lx-feature-ui" aria-hidden>
+        <ul className="lx-subs">{rows.map(([name, fen, dup]) => <li key={name} className={dup && step >= dup ? 'is-flag' : ''}><span>{name}</span><span>{fen}</span></li>)}</ul>
+        <p className={`lx-save ${step >= 3 ? 'is-shown' : ''}`}>{tr('Cancel one, save ¥180.00 a year', '取消一个，每年省 ¥180.00')}</p>
+      </div>
+    </article>
+  )
+}
+
+function GaugeFeature({ tryIt, busy }: { tryIt: (s: string) => void; busy: boolean }) {
+  const { tr } = useLang()
+  const [ref, on] = useOnScreen<HTMLElement>()
+  const { step } = useLoop([700, 1000, 3800], on)
+  const arcs = ['M20 100 A80 80 0 0 1 35.3 53', 'M37.5 49.5 A80 80 0 0 1 75.3 24', 'M79.5 22.7 A80 80 0 0 1 120.5 22.7', 'M124.7 24 A80 80 0 0 1 162.5 49.5', 'M164.7 53 A80 80 0 0 1 180 100']
+  return (
+    <article ref={ref} className="lx-feature" data-rise aria-labelledby="lx-f3">
+      <h3 id="lx-f3">{tr('Savings that match your nerve.', '理财，按你的胆量来。')}</h3>
+      <p>{tr('It never suggests a product above your risk test.', '不会推荐超出你风险测评的产品。')}</p>
+      <TryLink say={tr('100000 for a year: what should I buy?', '有10万一年不用，推荐个理财')} tryIt={tryIt} busy={busy} />
+      <div className="lx-feature-ui lx-gauge" aria-hidden>
+        <svg viewBox="0 0 200 108">
+          {arcs.map((d, i) => <path key={d} d={d} className={`lx-arc is-r${i + 1}`} />)}
+          <g className="lx-needle" style={{ transform: `rotate(${[-90, 70, -36][step]}deg)` }}><line x1="100" y1="100" x2="100" y2="36" /><circle cx="100" cy="100" r="7" /></g>
+        </svg>
+        <div className="lx-prod"><span>{tr('Steady Money Market A', '稳享货币A')} · R1</span><span>1.62%</span></div>
+        <div className="lx-prod"><span>{tr('Anying Short-term Bond', '安盈短债')} · R2</span><span>2.45%</span></div>
+        <div className={`lx-prod ${step === 2 ? 'is-out' : ''}`}><span>{tr('Tech Growth Equity', '科技成长股票')} · R4</span><Lock size={13} /></div>
+      </div>
+    </article>
+  )
+}
+
+/** Real requests, scrolling up the page in four columns, each in both languages. Tap one to send it. */
+function RequestWall({ tryIt, busy }: { tryIt: (s: string) => void; busy: boolean }) {
+  const { tr } = useLang()
+  const says: [LucideIcon, string, string, string][] = [
+    [Send, 'Send Mom 200', '给妈妈转200', tr('Transfers', '转账')], [Snowflake, 'I lost my card', '我的卡丢了', tr('Cards', '卡片')],
+    [ChartPie, 'Where did my money go last month?', '上个月钱都花哪了', tr('Spending', '账单')], [Receipt, 'Pay the electricity bill', '把电费交了', tr('Bills', '缴费')],
+    [Repeat, 'What am I paying for every month?', '我有哪些自动续费', tr('Subscriptions', '订阅')], [PiggyBank, '100000 for a year: what should I buy?', '有10万一年不用，推荐个理财', tr('Savings', '理财')],
+    [ShieldCheck, 'Anything suspicious this month?', '这个月有没有可疑交易', tr('Security', '安全')], [Wallet, "What's my balance?", '我卡里还有多少钱', tr('Accounts', '账户')],
+    [ArrowLeftRight, 'Send Zhang Wei 300', '给张伟转300', tr('Transfers', '转账')], [CreditCard, 'Freeze my virtual card', '冻结我的虚拟卡', tr('Cards', '卡片')],
+    [Globe, 'Turn on overseas payments', '开通境外支付', tr('Cards', '卡片')], [Gift, 'My wife’s birthday is next month, help me prepare', '下个月老婆生日，帮我准备一下', tr('Plans', '计划')],
+  ]
+  const columns = [0, 1, 2, 3].map((c) => says.filter((_, i) => i % 4 === c))
+  return (
+    <div className="lx-wall">
+      {columns.map((list, c) => (
+        <div key={c} className="lx-col">
+          {[0, 1].map((copy) => list.map(([Icon, en, zh, tag]) => (
+            <button key={`${copy}${en}`} type="button" className="lx-say" disabled={busy} onClick={() => tryIt(tr(en, zh))}
+              tabIndex={copy ? -1 : undefined} aria-hidden={copy ? true : undefined}>
+              <q>{tr(en, zh)}</q>
+              <small><Icon size={13} />{tag}<span>{tr(zh, en)}</span></small>
+            </button>
+          )))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Drag an amount and see which of the bank's rules applies. The thresholds are the bank's own. */
+function RuleCheck() {
+  const { tr } = useLang()
+  const [amount, setAmount] = useState(800)
+  const [fresh, setFresh] = useState(false)
+  const strong = amount > 1000 || (fresh && amount > 500)
+  const waits = fresh && amount > 500
+  const tone = waits ? 'is-wait' : strong ? 'is-strong' : 'is-tap'
+  const figure = waits ? tr('2 hrs', '2 小时') : strong ? tr('PIN + code', '密码+验证码') : tr('1 tap', '点一下')
+  const result = waits
+    ? tr('It needs your PIN and a code, then arrives two hours later, so you can still cancel it.', '需要交易密码和验证码，并在 2 小时后到账，到账前还能撤销。')
+    : strong
+      ? tr('Over ¥1,000 today: your PIN and an SMS code, or a passkey. Then it arrives now.', '今天超过 ¥1,000：需要交易密码加短信验证码，或通行密钥，然后实时到账。')
+      : tr('Your tap on Confirm is enough. It arrives now.', '你点“确认”就行，实时到账。')
+  return (
+    <div className="lx-check" data-ui>
+      <div className="lx-check-control">
+        <label htmlFor="lx-amount">
+          <span>{tr('How much are you sending today?', '今天一共要转多少？')}</span>
+          <output htmlFor="lx-amount">¥{amount.toLocaleString('en-US')}.00</output>
+        </label>
+        <input id="lx-amount" type="range" min={50} max={3000} step={50} value={amount} onChange={(e) => setAmount(Number(e.target.value))}
+          style={css({ '--fill': `${((amount - 50) / 2950) * 100}%` })} />
+        <div className="lx-check-row">
+          <span id="lx-fresh-label">{tr('To someone added today', '收款人是今天新加的')}</span>
+          <button type="button" role="switch" aria-checked={fresh} aria-labelledby="lx-fresh-label" className={`lx-sw is-button ${fresh ? 'is-on' : ''}`} onClick={() => setFresh(!fresh)} />
+        </div>
+      </div>
+      <div className="lx-check-result">
+        <p className={`lx-figure ${tone}`} aria-live="polite" key={figure}>{figure}</p>
+        <p className="lx-check-why">{result} {tr('Up to ¥1,000 a day, and up to ¥500 to a new contact, needs only your tap.', '每天累计 ¥1,000 以内、给新联系人 ¥500 以内，只需你点一下。')}</p>
+      </div>
+    </div>
+  )
+}
+
+function Faq() {
+  const { tr } = useLang()
+  const [open, setOpen] = useState(-1)
+  const items: [string, string][] = [
+    [tr('Is this a real bank?', '这是真的银行吗？'), tr('No. It is a simulated bank built for a competition, with made-up money and two years of made-up history. No real bank is connected.', '不是。这是为比赛搭建的模拟银行，钱和近两年的流水都是演示数据，不连接任何真实银行。')],
+    [tr('Can the AI move my money by itself?', 'AI 能自己动我的钱吗？'), tr('No. It can only propose a plan. The bank’s rules check it, and nothing moves until you confirm. Larger or new payments also need your PIN and an SMS code, or a passkey.', '不能。它只能提出计划，由银行规则检查，你确认之前什么都不会发生。大额或给新联系人的付款，还需要交易密码加短信验证码，或通行密钥。')],
+    [tr('Which languages does it understand?', '它听得懂哪些语言？'), tr('Chinese and English, typed or spoken, and a receipt photo works too.', '中文和英文，打字、语音都行，也可以拍小票。')],
+    [tr('What if I pick the wrong person?', '如果选错了收款人怎么办？'), tr('When a name matches more than one contact, it asks which one. Payments over ¥500 to someone added today wait two hours, so you can still cancel them.', '一个名字对应多位联系人时，它会先问你是哪一位。给今天新加的联系人付款超过 ¥500，会等 2 小时再到账，期间还能撤销。')],
+  ]
+  return (
+    <section className="lx-faq" id="faq" aria-labelledby="lx-faq-h">
+      <h2 id="lx-faq-h">{tr('Questions', '常见问题')}</h2>
+      {items.map(([q, a], i) => (
+        <div key={q} className={`lx-qa ${open === i ? 'is-open' : ''}`}>
+          <button type="button" aria-expanded={open === i} aria-controls={`lx-qa-${i}`} onClick={() => setOpen(open === i ? -1 : i)}>{q}<span className="lx-plus" aria-hidden>+</span></button>
+          <div className="lx-a" id={`lx-qa-${i}`} role="region"><div><p>{a}</p></div></div>
+        </div>
+      ))}
+    </section>
+  )
 }
 
 export default function LandingPage() {
@@ -554,90 +512,78 @@ export default function LandingPage() {
   const placeholder = useTypedPlaceholder(
     [tr('Send Mom 200', '给妈妈转200'), tr('I lost my card', '我的卡丢了'), tr('Where did my money go last month?', '上个月钱都花哪了'), tr('Pay the electricity bill', '把电费交了'), tr('Cancel iQIYI', '取消爱奇艺会员')],
     askFocus || !!ask, tr('e.g. Send Mom 200', '例如：给妈妈转200'))
-  const wordmark = tr(t.brand_en, t.brand)
+  const credits = tr(
+    'Photographs: “Wuhan Optics Valley Modern Tram (5)” and “Passengers exit or enter Wuhan Metro system by QR code (1)” by Painjet, CC BY-SA 4.0; “Shenzhen Guangming Songbai Road, Yonghe Fast Food Restaurant” by LemAIEOPLLY 223 Liuam, CC0; all via Wikimedia Commons.',
+    '照片：Painjet 拍摄的《武汉光谷现代有轨电车 (5)》与《乘客扫码进出武汉地铁 (1)》，CC BY-SA 4.0；LemAIEOPLLY 223 Liuam 拍摄的《深圳光明松白路永和快餐》，CC0；均来自维基共享资源。')
 
   return <div className="public-site lx">
     <SiteHeader />
-    <main id="main-content" tabIndex={-1}>
-      <div className="lx-hero-wrap">
-        <section className="lx-hero" aria-labelledby="lx-title">
-          <div className="lx-hero-copy">
-            <h1 id="lx-title" className="lx-h1">
-              <span className="lx-line"><span>{tr('Say it once.', '你说一句，')}</span></span>
-              <span className="lx-line"><span className="lx-accent">{tr('We do it.', '我来办。')}</span></span>
-            </h1>
-            <p className="lx-lede">{tr('Banking you can talk to. Say what you need in Chinese or English; the bank checks it, and nothing moves until you say yes.', '能对话的银行。中文英文都行，说出你要办的事；银行先检查，你点头之前，钱一分不动。')}</p>
-            <div className="lx-actions">
-              <button type="button" className="site-button" disabled={demo.busy} onClick={() => void go('/home')}>{start}</button>
-              <button type="button" className="lx-link" onClick={() => scrollToId('features')}>{tr('See what it does', '看看能做什么')}<span aria-hidden> ›</span></button>
-            </div>
-            {demo.error && <p role="alert" className="lx-error">{demo.error}</p>}
-            <p className="lx-small">{tr('A simulated bank with made-up money. No real bank is connected.', '模拟银行，演示用的钱，不连接任何真实银行。')}</p>
-          </div>
-          <HeroStage />
-        </section>
+    <main id="main-content" tabIndex={-1} className="lx-main">
+      <Hero start={start} onStart={() => void go('/home')} busy={demo.busy} error={demo.error} />
+      <Rise />
+      <Statement first={tr('It reads your spending,', '它看得懂你的开销，')} second={tr('flags what looks wrong, and never moves a yuan without your yes.', '会标出不对劲的地方，没有你点头，一分钱也不动。')}>
+        <button type="button" className="lx-btn is-white" onClick={() => scrollToId('features')}>{tr('See it work', '看看怎么办')} <span aria-hidden>→</span></button>
+      </Statement>
+
+      <div className="lx-cards" id="features">
+        <TalkCard tryIt={tryIt} busy={demo.busy} />
+        <div className="lx-pair">
+          <SpendCard tryIt={tryIt} busy={demo.busy} />
+          <VoiceCard tryIt={tryIt} busy={demo.busy} />
+        </div>
       </div>
 
-      <SayStrip tryIt={tryIt} busy={demo.busy} />
+      <Statement first={tr('The AI only proposes.', 'AI 只负责提议。')} second={tr('The bank’s own rules decide what moves, and you have the last word.', '动不动钱，由银行自己的规则决定，最后由你点头。')} />
 
-      <section className="lx-section" id="features" aria-labelledby="features-h">
-        <header className="lx-head" data-rise>
-          <h2 id="features-h" className="lx-h2">{tr('Six kinds of banking. One sentence each.', '六类业务，一句话就办。')}</h2>
-          <p className="lx-lede">{tr('Each tile is a real request and the demo bank’s real answer, playing on its own. Tap Try to send it yourself.', '每一格都是真实请求和演示银行的真实回答，自动播放。点“试试”，自己发一次。')}</p>
-        </header>
-        <div className="lx-bento">
-          <Tile size="is-wide" title={tr('Pay people by the name you call them.', '按你平时的叫法转账。')} text={tr('Name, nickname, phone number, or what they are to you. When two contacts share a name, it asks which one.', '姓名、昵称、手机号，或者“妈妈”“房东”都行。重名时，它会问你是哪一位。')}
-            say={tr('Send Zhang Wei 300', '给张伟转300')} tryIt={tryIt} busy={demo.busy}>{(on) => <TransferDemo on={on} />}</Tile>
-          <Tile title={tr('Freeze a card in one sentence.', '一句话冻结卡片。')} text={tr('Switch payment types on and off, or report a card lost.', '开关各类支付，或者挂失。')}
-            say={tr('I lost my card', '我的卡丢了')} tryIt={tryIt} busy={demo.busy}>{(on) => <CardDemo on={on} />}</Tile>
-          <Tile title={tr('See where the money went.', '看清钱花在哪了。')} text={tr('Spending by category, unusual charges flagged, and a report for any month or year.', '按类别看支出，异常消费会被标出，任意月份、年份都能出报告。')}
-            say={tr('Where did my money go last month?', '上个月钱都花哪了')} tryIt={tryIt} busy={demo.busy}>{(on) => <SpendingDemo on={on} />}</Tile>
-          <Tile title={tr('Find every automatic charge.', '找出每一笔自动扣费。')} text={tr('Memberships and direct debits in one list, with the ones you pay for twice.', '会员和代扣一张清单看完，重复订阅一眼就能发现。')}
-            say={tr('What am I paying for every month?', '我有哪些自动续费')} tryIt={tryIt} busy={demo.busy}>{(on) => <SubscriptionsDemo on={on} />}</Tile>
-          <Tile size="is-wide" title={tr('Several steps from one sentence.', '一句话，跨业务办好几步。')} text={tr('It plans across contacts, savings and shopping, and asks you once for the whole plan.', '跨联系人、预留资金和下单统一规划，整个计划只问你一次。')}
-            say={tr('My wife’s birthday is next month, help me prepare', '下个月老婆生日，帮我准备一下')} tryIt={tryIt} busy={demo.busy}>{(on) => <PlanDemo on={on} />}</Tile>
-          <Tile title={tr('Savings, at your risk level.', '理财，按你的风险等级来。')} text={tr('It never suggests a product above your risk test.', '不会推荐超出你风险测评的产品。')}
-            say={tr('100000 for a year: what should I buy?', '有10万一年不用，推荐个理财')} tryIt={tryIt} busy={demo.busy}>{(on) => <WealthDemo on={on} />}</Tile>
-          <Tile title={tr('Pay a bill by naming it.', '说一声，账单就交了。')} text={tr('Electricity, water, gas, phone and broadband. It finds the bill and the amount.', '电费、水费、燃气、话费、宽带，它会找到账单和金额。')}
-            say={tr('Pay the electricity bill', '把电费交了')} tryIt={tryIt} busy={demo.busy}>{(on) => <BillDemo on={on} />}</Tile>
-          <Tile id="check" size="is-wider" title={tr('The AI proposes. The bank’s rules decide.', 'AI 只提议，银行规则来定。')} text={tr('Drag the amount: bigger or newer payments ask for more.', '拖动金额试试：金额越大、收款人越新，要求越多。')}
-            say={tr('Send Mom 1500', '给妈妈转1500')} tryIt={tryIt} busy={demo.busy}>{(on) => <RuleDemo on={on} />}</Tile>
+      <div className="lx-cards"><PlanCard tryIt={tryIt} busy={demo.busy} /></div>
+
+      <section aria-labelledby="lx-trio-h">
+        <h2 id="lx-trio-h" className="lx-center-h">{tr('Small sentences, big relief.', '一句小话，省一大堆事。')}</h2>
+        <div className="lx-trio">
+          <CardFeature tryIt={tryIt} busy={demo.busy} />
+          <SubsFeature tryIt={tryIt} busy={demo.busy} />
+          <GaugeFeature tryIt={tryIt} busy={demo.busy} />
         </div>
       </section>
 
-      <section className="lx-section" id="steps" aria-labelledby="steps-h">
-        <header className="lx-head" data-rise>
-          <h2 id="steps-h" className="lx-h2">{tr('Ask. Check. Done.', '说。核对。办好。')}</h2>
-          <p className="lx-lede">{tr('Follow the coin. Nothing reaches the next step until the one before it says so.', '跟着这枚硬币走。上一步不放行，下一步就不会发生。')}</p>
-        </header>
-        <Journey />
+      <section aria-labelledby="lx-wall-h">
+        <h2 id="lx-wall-h" className="lx-center-h is-big">{tr('Things people say to their bank, when the bank listens.', '银行肯听，大家就这样说。')}</h2>
+        <RequestWall tryIt={tryIt} busy={demo.busy} />
       </section>
 
-      <section className="lx-section" id="ask" aria-labelledby="ask-h">
-        <div className="lx-ask" data-rise>
-          <span className="lx-ask-floaters" aria-hidden><Wallet /><CreditCard /><PiggyBank /><Landmark /></span>
-          <h2 id="ask-h" className="lx-h2">{tr('Just say it.', '直接说。')}</h2>
-          <p className="lx-lede">{tr('A demo bank opens in a second, with two years of made-up history. Type what you need.', '一秒开好演示银行，自带两年的模拟流水。说说你要办的事。')}</p>
-          <form onSubmit={(e) => { e.preventDefault(); if (ask.trim()) tryIt(ask.trim()) }} className="lx-askbox">
-            <input value={ask} onChange={(e) => setAsk(e.target.value)} onFocus={() => setAskFocus(true)} onBlur={() => setAskFocus(false)}
-              maxLength={200} aria-label={tr('What do you need?', '想办什么')} placeholder={placeholder} />
-            <button type="submit" className="site-button" disabled={!ask.trim() || demo.busy}>{demo.busy ? tr('Opening…', '正在开通…') : tr('Go', '去办')}</button>
-          </form>
-          <div className="lx-chips">
-            {[tr("What's my balance?", '我卡里还有多少钱'), tr('Anything suspicious this month?', '这个月有没有可疑交易'), tr('Freeze my virtual card', '冻结我的虚拟卡'), tr('Cancel iQIYI', '取消爱奇艺会员'), tr('Pay the electricity bill', '把电费交了')].map((text) => (
-              <button key={text} type="button" disabled={demo.busy} onClick={() => tryIt(text)}><span>{text}</span><span aria-hidden>›</span></button>
-            ))}
-          </div>
-          <p className="lx-small">{signedIn ? tr('A simulated bank for the competition. No real money moves.', '参赛演示用的模拟银行，不涉及真实资金。')
-            : <>{tr('Opens a demo account with its own simulated bank. ', '会为你开一个自带模拟银行的演示账户。')}<Link to="/signup">{tr('Or create your own account', '或者注册自己的账户')}</Link></>}</p>
+      <section className="lx-safe" id="check" data-surface="dark" aria-labelledby="lx-safe-h">
+        <span className="lx-cloud" /><span className="lx-cloud" />
+        <h2 id="lx-safe-h">{tr('An assistant that can’t move money on its own.', '一个自己动不了钱的助手。')}</h2>
+        <div className="lx-safe-grid">
+          {([
+            [tr('Proposes', '提议'), tr('The AI only drafts.', 'AI 只写草稿。'), tr('It writes the plan. It has no way to send, approve or skip a step.', '它只负责写计划，没有办法转账、批准或跳过任何一步。')],
+            [tr('Checks', '检查'), tr('The bank’s rules decide.', '银行规则来定。'), tr('Limits, new contacts and odd patterns are checked in code, outside the AI.', '限额、新联系人、异常模式，都由 AI 之外的代码检查。')],
+            [tr('Confirms', '确认'), tr('You say yes.', '由你点头。'), tr('Large or new payments need your PIN and a code, which the AI never sees.', '大额或新联系人的付款要交易密码和验证码，AI 看不到。')],
+          ] as [string, string, string][]).map(([n, title, text]) => <div key={n}><span className="lx-n">{n}</span><b>{title}</b><p>{text}</p></div>)}
         </div>
+        <RuleCheck />
+        <Link className="lx-try is-light" to="/how">{tr('How it stays safe', '安全原理')}<span aria-hidden> →</span></Link>
       </section>
 
-      <div className="lx-close">
-        <button type="button" className="lx-top" onClick={() => window.scrollTo({ top: 0, behavior: reduceMotion() ? 'auto' : 'smooth' })}><ArrowUp size={18} aria-hidden />{tr('Top', '顶部')}</button>
-        <p className="lx-wordmark" aria-hidden>{[...wordmark].map((ch, k) => <span key={k} style={{ ['--k' as string]: k }}>{ch === ' ' ? ' ' : ch}</span>)}</p>
-      </div>
+      <section className="lx-ask" id="ask" aria-labelledby="lx-ask-h">
+        <h2 id="lx-ask-h">{tr('Just say it.', '直接说。')}</h2>
+        <p>{tr('A demo bank opens in a second, with two years of made-up history. Type what you need.', '一秒开好演示银行，自带两年的模拟流水。说说你要办的事。')}</p>
+        <form onSubmit={(e) => { e.preventDefault(); if (ask.trim()) tryIt(ask.trim()) }} className="lx-askbox">
+          <input value={ask} onChange={(e) => setAsk(e.target.value)} onFocus={() => setAskFocus(true)} onBlur={() => setAskFocus(false)}
+            maxLength={200} aria-label={tr('What do you need?', '想办什么')} placeholder={placeholder} />
+          <button type="submit" className="lx-btn is-dark" disabled={!ask.trim() || demo.busy}>{demo.busy ? tr('Opening…', '正在开通…') : tr('Go', '去办')}</button>
+        </form>
+        <div className="lx-chips">
+          {[tr("What's my balance?", '我卡里还有多少钱'), tr('Anything suspicious this month?', '这个月有没有可疑交易'), tr('Freeze my virtual card', '冻结我的虚拟卡'), tr('Cancel iQIYI', '取消爱奇艺会员'), tr('Pay the electricity bill', '把电费交了')].map((text) => (
+            <button key={text} type="button" disabled={demo.busy} onClick={() => tryIt(text)}>{text}<span aria-hidden>›</span></button>
+          ))}
+        </div>
+        <p className="lx-small">{signedIn ? tr('A simulated bank for the competition. No real money moves.', '参赛演示用的模拟银行，不涉及真实资金。')
+          : <>{tr('Opens a demo account with its own simulated bank. ', '会为你开一个自带模拟银行的演示账户。')}<Link to="/signup">{tr('Or create your own account', '或者注册自己的账户')}</Link></>}</p>
+      </section>
+
+      <Faq />
     </main>
-    <SiteFooter />
+    <SiteFooter credits={credits} />
   </div>
 }

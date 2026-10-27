@@ -7,7 +7,7 @@ export function LangSwitch({ size = 'md' }: { size?: 'md' | 'lg' }) {
   const { lang, setLang } = useLang()
   const pad = size === 'lg' ? 'px-3 py-1.5' : 'px-2 py-1'
   return (
-    <div role="group" aria-label="语言 Language" className="flex shrink-0 rounded-full bg-[var(--field)] p-0.5 text-sm font-medium leading-none">
+    <div role="group" aria-label="语言 Language" className="lang-switch flex shrink-0 rounded-full bg-[var(--field)] p-0.5 text-sm font-medium leading-none">
       {(
         [
           ['zh', '中文', '中'],
@@ -41,7 +41,7 @@ export function ThemeSwitch() {
       onClick={() => setTheme(dark ? 'light' : 'dark')}
       aria-label={label}
       title={label}
-      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink2 hover:bg-[var(--field)] hover:text-ink"
+      className="theme-switch inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink2 hover:bg-[var(--field)] hover:text-ink"
     >
       {dark ? <Sun size={17} /> : <Moon size={17} />}
     </button>
