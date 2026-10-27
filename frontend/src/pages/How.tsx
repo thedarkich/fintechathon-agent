@@ -98,7 +98,7 @@ export default function How() {
               <p>{tr('“房东” matched to your contact: Zhao Jianhua (landlord), ABC ****7722', '“房东”匹配到你的联系人：赵建华（房东）中国农业银行 ****7722')}</p>
               <p>{tr('Balance and the ¥50,000 single-transfer limit checked', '已核对余额和单笔 ¥50,000 上限')}</p>
               <p>{tr('Nothing in the request tries to get around the rules', '请求中没有绕过规则的内容')}</p>
-              <p className="text-[#34c78f]">{tr('Today’s payments would be ¥3,200, over ¥1,000: needs your PIN and an SMS code', '当天累计将达 ¥3,200，超过 ¥1,000：需要交易密码和短信验证码')}</p>
+              <p className="text-[#4be3a8]">{tr('Today’s payments would be ¥3,200, over ¥1,000: needs your PIN and an SMS code', '当天累计将达 ¥3,200，超过 ¥1,000：需要交易密码和短信验证码')}</p>
             </div> : <div className="terminal-checks">
               <p>{tr('You checked the card and entered your PIN and the code', '你核对了确认卡，并输入了交易密码和验证码')}</p>
               <p>{tr('¥3,200.00 sent to Zhao Jianhua through the interbank system; arrived', '¥3,200.00 经超级网银转给赵建华，已到账')}</p>

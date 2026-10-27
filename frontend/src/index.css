@@ -2,18 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* One visual system for the site and the app, in the manner of apple.com: a white page, light grey
-   surfaces, near-black type in the system face, one brand green for actions. No gradients, no lines
-   between surfaces, no shadows on things at rest. */
+/* One visual system for the site and the app: a white page, light grey surfaces, near-black type in the
+   system face. The palette is "jade pop": the brand green for actions (deep enough for white text), a bright
+   mint for whole fields of colour, electric violet as the second field, and sun and coral as sparks.
+   No lines between surfaces, no shadows on things at rest. */
 :root {
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', 'Segoe UI Variable Text', 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --paper: #ffffff; --paper-2: #e8e8ed; --field: #f5f5f7; --sheet: #fbfbfd;
   --ink: #1d1d1f; --ink-2: #6e6e73; --ink-hover: #000000; --ink-off: #a1a1a6;
   --rule: #e3e3e8; --rule-strong: #d2d2d7; --cinnabar: #c9302c; --cinnabar-wash: #fff2f1;
-  --jade: #007a5a; --row-new: #e6f4ee; --wave-1: #f5f5f7; --shadow: rgba(0,0,0,.1);
-  --action: #007a5a; --action-ink: #ffffff; --accent-wash: #e6f4ee; --ring: #007a5a; --radius: 18px;
-  --cta: #007a5a; --cta-ink: #ffffff; --dot: #f5a623;
-  --hero: #007a5a;
+  --jade: #008060; --row-new: #dcfaee; --wave-1: #f5f5f7; --shadow: rgba(0,0,0,.1);
+  --action: #008060; --action-ink: #ffffff; --accent-wash: #dcfaee; --ring: #008060; --radius: 18px;
+  --cta: #008060; --cta-ink: #ffffff; --dot: #f5a623;
+  --hero: #0f9e6e;
+  --pop: #6cf0bf; --pop-ink: #04241a; --violet: #4b3cf0; --violet-ink: #ffffff; --sun: #ffd84d; --coral: #ff7a59;
   --ease: cubic-bezier(.22, .61, .36, 1);
   --ease-out: cubic-bezier(.16, 1, .3, 1);
   color-scheme: light;
@@ -22,10 +24,11 @@
   --paper: #000000; --paper-2: #2c2c2e; --field: #1c1c1e; --sheet: #111112;
   --ink: #f5f5f7; --ink-2: #a1a1a6; --ink-hover: #ffffff; --ink-off: #636366;
   --rule: #2c2c2e; --rule-strong: #3a3a3c; --cinnabar: #ff6961; --cinnabar-wash: #3a1d1b;
-  --jade: #34c78f; --row-new: #10291f; --wave-1: #1c1c1e; --shadow: rgba(0,0,0,.5);
-  --action: #34c78f; --action-ink: #00140d; --accent-wash: #10291f; --ring: #34c78f;
-  --cta: #34c78f; --cta-ink: #00140d; --dot: #f5a623;
-  --hero: #0b5c45;
+  --jade: #4be3a8; --row-new: #0e2e22; --wave-1: #1c1c1e; --shadow: rgba(0,0,0,.5);
+  --action: #4be3a8; --action-ink: #00140d; --accent-wash: #0e2e22; --ring: #4be3a8;
+  --cta: #4be3a8; --cta-ink: #00140d; --dot: #f5a623;
+  --hero: #0f7a57;
+  --pop: #3fd6a0; --pop-ink: #03231a; --violet: #4b3cf0; --violet-ink: #ffffff; --sun: #ffd84d; --coral: #ff8a6b;
   color-scheme: dark;
 }
 
