@@ -6,6 +6,7 @@ from datetime import date
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from app.agent import screening
 from app.agent.actions import REGISTRY
 from app.agent.executor import REF, PlanError, order
 from app.llm import ModelGateway, ModelUnavailable
@@ -88,6 +89,8 @@ def validate(plan: PlanOut, user_text: str, *, screen: bool = False) -> list[str
             if any(n not in allowed for n in re.findall(r"\d+", text)):
                 errors.append("ASK_WITH_NUMBERS")  # the model may not state facts, even in a question
                 break
+        if screening.unsafe_reply(f"{plan.ask.zh}\n{plan.ask.en}"):
+            errors.append("ASK_UNSAFE")  # nor ask for a secret or send a link, e.g. if a receipt told it to
     return errors
 
 

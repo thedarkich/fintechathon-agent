@@ -59,6 +59,14 @@ def test_large_transfer_with_pin_and_sms(bank):
     with Session(bank.runtime.engine) as session:
         txn = session.exec(select(Txn).where(Txn.plan_id == plan["id"])).one()
         assert txn.amount_fen == -320_000
+    # codes can't be sent in a flood: five for one plan in ten minutes, then a refusal
+    again = plan_of(bank.chat("给房东转3200房租"))
+    assert 429 in [bank.post(f"/api/plans/{again['id']}/sms").status_code for _ in range(11)]
+    # three wrong PINs lock red actions; a locked plan says so before any code is sent
+    third = plan_of(bank.chat("给房东转3200房租"))
+    assert [bank.verify(third, pin="135790").status_code for _ in range(2)] == [401, 401]
+    locked = bank.post(f"/api/plans/{third['id']}/sms")
+    assert locked.status_code == 423 and locked.json()["code"] == "LOCKED"
 
 
 def test_changed_plan_cannot_be_approved_with_old_hash(bank):

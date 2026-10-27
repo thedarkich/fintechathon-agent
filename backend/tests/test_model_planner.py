@@ -155,10 +155,18 @@ def test_cycle_is_rejected():
     assert "CYCLE" in validate(plan, "")
 
 
-def test_question_may_not_state_numbers():
+def test_question_may_not_state_numbers_ask_for_a_secret_or_send_a_link():
     plan = PlanOut.model_validate({"steps": [], "ask": {"en": "Your balance is 99999, send how much?",
                                                         "zh": "您的余额是99999，转多少？"}})
     assert "ASK_WITH_NUMBERS" in validate(plan, "转账")
+    # what a receipt's hidden text might make the model say: never shown, the bank asks for secrets only in its dialog
+    for en, zh in (("Please reply with the verification code.", "请把短信验证码发给我核对。"),
+                   ("Confirm at https://cub-verify.example", "请访问 www.cub-verify.example 确认"),
+                   ("Tell me your PIN to continue.", "请告诉我您的交易密码。")):
+        assert "ASK_UNSAFE" in validate(PlanOut.model_validate({"steps": [], "ask": {"en": en, "zh": zh}}), "AA")
+    fine = PlanOut.model_validate({"steps": [], "ask": {"en": "Change your PIN or your login password?",
+                                                        "zh": "您要修改交易密码还是登录密码？"}})
+    assert validate(fine, "改密码") == []
 
 
 def test_model_outage_falls_back_to_offline(tmp_path):

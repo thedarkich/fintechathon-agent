@@ -82,3 +82,25 @@ Checked and fine: every route with an id in its path checks that the record belo
 ### SBP-9 · Build-tool advisories in the frontend (REACT-SUPPLY-001) · Informational, not fixed
 - `npm audit`: Vite 5.4.21 (high; and esbuild through it), tailwindcss 3 with postcss-nested and postcss-selector-parser (moderate), react-router 6 (moderate; kept on 6.x by the team's decision of 22 October).
 - Vite's and esbuild's advisories concern the development server (`npm run dev`), which the deployed app never runs: the backend serves the built files. Tailwind's and PostCSS's are CPU cost while building. Each fix is a major upgrade (Vite 8, Tailwind 4). Left for the team to decide; until then, don't expose `npm run dev` on a shared network.
+
+## Fourth review (27 October)
+
+Method: the procedures of eight skills from the Anthropic Cybersecurity Skills library (github.com/mukul975/Anthropic-Cybersecurity-Skills, Apache-2.0; community-made, not Anthropic's): securing agentic AI tool invocation, OWASP API Top 10 testing, LLM guardrails, indirect prompt injection, system prompt leakage, race conditions, XSS, and DevSecOps scanning. Applied to this app against a local server; nothing from the library is in the repository.
+
+Checked and fine: another customer's plans, conversations and audit trail on 10 id routes (404); every account route without a session (401); session cookie flags; mass assignment on sign-up (ignored); staff routes with a customer session (403); no CORS grant; malformed JSON (422, no internals); 7 MB body (413); page size (422); sign-in brute force (429 at the 11th try); races (two approvals at the same instant, one plan approved five times at once: money moved once, the daily limit held); 16 sandbox escapes beyond the tests (all refused or stopped); 16 new attack phrasings with Qwen (none ran without approval, all flagged); a secret scan of every commit (none); Bandit 1.9.4 (4 medium and 5 low, each a false positive or intended: fixed table names, a fixed health-check URL, the container's own bind, the sandbox's checked `exec`); `pip-audit` of the 45 locked packages (none); `npm audit --omit=dev` (the 2 react-router advisories of SBP-9).
+
+### SBP-10 · Chat messages had no per-customer limit (OWASP API4) · Medium
+- 80 messages in a row were all answered. Each can be a paid model call and always writes to the audit log.
+- **Fixed:** 30 a minute and 400 an hour per customer (`backend/app/api/agent.py`), tested in `test_sign_in_attempts_and_chat_are_limited`.
+
+### SBP-11 · SMS codes could be requested without limit (OWASP API6, SMS pumping) · Medium
+- 25 code requests for one plan were all sent.
+- **Fixed:** 5 per plan and 10 per customer in ten minutes, shared with the unlock code (`agent.py`, `bank.py`), tested in `test_large_transfer_with_pin_and_sms`.
+
+### SBP-12 · A locked plan still asked for the PIN and a code · Low
+- After three wrong PINs the plan did fail with “a safety lock is on” and no money moved, but only after the customer had typed the PIN and a fresh code.
+- **Fixed:** the code request answers 423 with the lock's message, before any code is sent (same test).
+
+### SBP-13 · The model's clarifying question wasn't checked for phishing (OWASP LLM risks: improper output handling) · Low
+- The only model-written text a customer sees is its question. Hidden text in a receipt (indirect prompt injection, ATLAS AML.T0051.001) could try to make it ask for a code or send a link.
+- **Fixed:** `validate()` rejects a question that asks for a PIN, code or password, or contains a link (`ASK_UNSAFE`, `backend/app/agent/screening.py`): it is recorded, counts towards the safety lock and the offline planner answers instead. Caught 12 of 12 phishing-style questions with no false alarm on 12 normal ones; tested in `test_question_may_not_state_numbers_ask_for_a_secret_or_send_a_link`.

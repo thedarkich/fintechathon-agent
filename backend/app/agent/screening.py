@@ -85,6 +85,21 @@ SECRET_PATTERNS = [
 ]
 
 
+# What the model may never say to the customer (improper output handling, in OWASP's LLM risks): asking for a secret,
+# or a link.
+# The bank asks for the PIN, codes and passwords only in its own verification dialog, never in the chat.
+UNSAFE_REPLY = re.compile(
+    r"(告诉|提供|发送|发给|发我|输入|告知|填写|回复|报给|share|send|tell|give|provide|enter|type|reply with|text)"
+    r"(?:\W{0,2}[\w']{0,8}){0,4}?\W{0,2}"
+    r"(密码|验证码|口令|安全码|cvv|pin\b|password|passcode|(?:verification|one-time|sms|security) code|the code|your code)"
+    r"|(密码|验证码|口令|安全码)\W{0,2}\w{0,3}?(发给我|发我|告诉我|报给我|给我)"
+    r"|https?://|www\.")
+
+
+def unsafe_reply(text: str) -> bool:
+    return bool(UNSAFE_REPLY.search(normalized(text)))
+
+
 def normalized(text: str) -> str:
     return unicodedata.normalize("NFKC", text).casefold()
 

@@ -15,6 +15,7 @@ from app.agent.actions.subscriptions import subscriptions_run
 from app.agent.actions.wealth import holdings_run, products_run
 from app.agent.core import Ctx
 from app.agent.verify import VerifyError
+from app.api.accounts import throttle
 from app.api.security import problem, require_user
 from app.bank import analysis, transfers
 from app.models import (
@@ -310,6 +311,7 @@ async def get_locks(request: Request, lang: Lang = "zh", user_id: str = Depends(
 
 @router.post("/unlock/sms")
 async def unlock_sms(request: Request, user_id: str = Depends(require_user)):
+    throttle(request, [("sms-user", user_id, 600, 10)])  # the same per-customer cap on codes as for plans
     with Session(request.app.state.runtime.engine) as session:
         user = session.get(UserAccount, user_id)
         challenge = verify.send_sms(session, user, plan_id=None, purpose="unlock", summary_zh="解除安全锁",

@@ -43,7 +43,12 @@ def logins(client, count, ip=None):
                         headers=headers).status_code for i in range(count)]
 
 
-def test_sign_in_attempts_are_limited_per_visitor_ip(tmp_path):
+def test_sign_in_attempts_and_chat_are_limited(tmp_path):
+    # a signed-in customer's chat is limited too (30 messages a minute); 61 tries cross at most one window edge
+    with app_client(tmp_path / "chat") as client:
+        client.post("/api/register", json=CUSTOMER, headers=ORIGIN)
+        codes = [client.post("/api/chat", json={"message": "余额", "lang": "zh"}, headers=ORIGIN).status_code for _ in range(61)]
+        assert 429 in codes and set(codes) == {200, 429}
     # SBP-5: behind the proxy, the visitor's address (the proxy's last X-Forwarded-For entry) is limited,
     # however many emails or device ids are tried
     with app_client(tmp_path / "proxy", behind_proxy=True) as client:

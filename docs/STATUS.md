@@ -9,7 +9,9 @@ change it here too.
   the entry is 中联银行 / Central Union Bank.
 - **Submission deadline: 2 November 2026.** Until then the entry can be improved and resubmitted; the last valid
   submission counts.
-- **Online review: 3–8 November 2026**; the top ten go on to the final.
+- **Online review: 3–8 November 2026** (automated evaluation and expert blind review, per Xinhua's launch article); the top ten are announced on
+  10 November and go on to the on-site AI hackathon on **28–29 November** in Shenzhen; the finale and awards are on
+  30 November (the official site's schedule as of 27 October; it was moved from 21–23 November).
 - The team has four members; the pitch is in Chinese. 韩晨 (武汉大学), team leader; 熊金生 (武汉大学), frontend;
   霍以恒 (武汉理工大学), the Chinese presentation; 余梁毅 (浙大宁波理工学院 / NingboTech University), testing.
 
@@ -143,6 +145,16 @@ changes, `git grep` the old value and update every place.
   each entry in small type, as recorded. `GET /api/audit` sends the bank's own texts for the codes (`labels`), so the
   log matches the confirm cards; a test checks that every code those entries carry, and every screening flag, has one.
   The market slide's 10.17 亿 online-payment users (90.3%) was checked against the 57th CNNIC report itself (page 35).
+- **Stress test and security review (27 October):** 56 held-out cases worded unlike the evaluation sets
+  (offline: 28/40 requests, 16/16 attacks safe but 5 unflagged; Qwen: 16/16 attacks safe and flagged, 36/40 requests
+  after two wrong expectations were corrected, the 4 misses all implied intent), races, OWASP API Top 10 probes,
+  sandbox escapes, a git-history secret scan, Bandit, `pip-audit`, and a fresh clone built and run from the README.
+  Method from the Anthropic Cybersecurity Skills library (community-made, Apache-2.0; not copied into the repo).
+  Fixed: chat messages and SMS codes are rate-limited; a locked plan says so before any code is sent; the model's
+  clarifying question may not ask for a secret or carry a link (`ASK_UNSAFE`). SECURITY (both languages) now maps the
+  controls to OWASP LLM01/LLM02/LLM07:2025, the OWASP agentic AI threats, OWASP API1/4/5/6 and MITRE ATLAS; the review
+  is SBP-10 to SBP-13 in `docs/security_best_practices_report.md`. Test count unchanged (187): the new checks extend
+  existing tests.
 
 ## Still to do
 

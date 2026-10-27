@@ -8,11 +8,12 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session, func, select
 
 from app import clock
-from app.agent import audit, executor, service, verify
+from app.agent import audit, executor, locks, service, verify
 from app.agent.actions import REGISTRY
 from app.agent.core import Ctx
 from app.agent.executor import PlanError
 from app.agent.verify import VerifyError
+from app.api.accounts import throttle
 from app.api.security import problem, require_user
 from app.api.views import message_view, plan_view
 from app.models import Conversation, Message, Plan, UserAccount
@@ -94,6 +95,9 @@ def plan_error(exc: PlanError | VerifyError):
 
 @router.post("/chat")
 async def chat(request: Request, body: ChatIn, user_id: str = Depends(require_user)):
+    # security best practice (OWASP API4, unrestricted resource consumption): each message can be a paid model call
+    # and always writes to the audit log, so one customer can't flood the chat
+    throttle(request, [("chat-minute", user_id, 60, 30), ("chat-hour", user_id, 3600, 400)])
     with Session(runtime(request).engine) as session:
         user = session.get(UserAccount, user_id)
         conversation, messages, plan = await service.handle(
@@ -194,10 +198,17 @@ def shorten(text: str, limit: int) -> str:
 
 @router.post("/plans/{plan_id}/sms")
 async def plan_sms(request: Request, plan_id: str, user_id: str = Depends(require_user)):
+    # security best practice (OWASP API6, sensitive business flows): codes can't be sent in a flood (SMS pumping)
+    throttle(request, [("sms-plan", plan_id, 600, 5), ("sms-user", user_id, 600, 10)])
     with Session(runtime(request).engine) as session:
         user, plan = load(session, user_id, plan_id)
         if plan.status != "awaiting_approval" or plan.tier != "red":
             raise problem(409, "This plan does not need a code.", "该计划不需要验证码。")
+        # a safety lock that would stop the plan is said now, before the customer types a PIN and a code for nothing
+        payment = any(REGISTRY[s["action"]].payment for s in plan.steps)
+        lock = locks.blocks(locks.active(session, user_id), tier="red", payment=payment)
+        if lock:
+            raise problem(423, locks.describe(lock, "en"), locks.describe(lock, "zh"), "LOCKED")
         zh, en = summary(context(session, user, plan, "zh"), plan)
         challenge = verify.send_sms(session, user, plan_id=plan.id, purpose="plan", summary_zh=zh, summary_en=en)
         session.commit()
