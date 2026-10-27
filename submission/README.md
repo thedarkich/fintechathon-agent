@@ -29,5 +29,5 @@ claude.ai. Images are referenced as `/_blob/<id>`; [slides/images.json](slides/i
 [slides/images](slides/images). Each slide's speaker notes are its `<aside>`, which the PDFs leave out. A change made
 here doesn't reach the decks on claude.ai (or the other way round), so make it in both.
 
-Still to fill in, on the cover, team and closing slides of all three decks: the team name (`[队名]`, `[team name]`), the
-three members' names and one-line roles, and the school (`[学校]`).
+The four members, their roles and schools are on the cover, team and closing slides of all three decks. Still to fill
+in: the team name, in the cover slide's speaker notes (`[队名]`, `[team name]`).

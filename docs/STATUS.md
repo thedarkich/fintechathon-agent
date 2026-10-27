@@ -10,7 +10,8 @@ change it here too.
 - **Submission deadline: 2 November 2026.** Until then the entry can be improved and resubmitted; the last valid
   submission counts.
 - **Online review: 3–8 November 2026**; the top ten go on to the final.
-- The team has three members; the pitch is in Chinese.
+- The team has four members; the pitch is in Chinese. 韩晨 (武汉大学), team leader; 熊金生 (武汉大学), frontend;
+  霍以恒 (武汉理工大学), the Chinese presentation; 余梁毅 (浙大宁波理工学院 / NingboTech University), testing.
 
 ## The required materials: read this before changing anything
 
@@ -145,9 +146,10 @@ changes, `git grep` the old value and update every place.
 
 ## Still to do
 
-1. **Team details in the slides** (all three decks: cover, team and closing slides): the team name, the three members'
-   names and one-line roles, and the school. Only the team can supply these; don't invent them. Then rebuild the PDFs
-   (`submission/build_slides.py`) and make the same change in the decks on claude.ai.
+1. **The team name**: the four members, their roles and schools are on the cover, team and closing slides of all three
+   decks (27 October). Only the team name is missing, in the cover slide's speaker notes (`[队名]`, `[team name]`).
+   Only the team can supply it; don't invent it. Then rebuild the PDFs (`submission/build_slides.py`) and make the same
+   change in the decks on claude.ai.
 2. **WeChat Mini Program** (later, for the final if the entry gets there): a real Mini Program on the same channel
    endpoint, with WeChat's signature check in place of the simulated credential. Needs WeChat DevTools and an AppID
    (the team's); publishing a bank Mini Program likely needs company qualifications.

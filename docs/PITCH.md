@@ -22,7 +22,7 @@ Seventeen slides, with speaker time in brackets; the times add up to 9:40, leavi
 13. **Evidence** (0:30). 187 automated tests; the offline planner gets 224/224 everyday requests and 69/69 attacks, each on a fresh customer; the Qwen planner gets 201/224 and 69/69 on the same sets (23 October, measured before that day's prompt fixes). No attack ran anything without the customer's approval.
 14. **Honest risks** (0:20). SMS is a weak factor (prefer passkeys); a coached customer can still approve (delays, cancellation and the name check reduce this); the bank is simulated. The full list of 15 is in [SECURITY.md](SECURITY.md).
 15. **What's next** (0:15). A real payment API behind the one transfer module, continuous evaluation of the model planner, a WeCom or WeChat channel, per-operator two-factor authentication.
-16. **Team** (0:15). One sentence each: what you did and why you fit.
+16. **Team** (0:15). Four members from Wuhan University, Wuhan University of Technology and NingboTech University: Han Chen (韩晨), team leader; Xiong Jinsheng (熊金生), frontend; Huo Yiheng (霍以恒), the Chinese presentation; Yu Liangyi (余梁毅), testing.
 17. **Close** (0:10). The one line again, and the ask: the final and a small pilot with a bank.
 
 Visual style: the app's own look (green accent, ruled panels, the confirm card, red seals), one idea per slide. Two versions share these slides and notes: a submission version with more text on each slide for reading, and a live version with less.
