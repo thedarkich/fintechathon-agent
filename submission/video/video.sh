@@ -1,11 +1,14 @@
 #!/bin/bash
 # The demo video, from the running app to an MP4: ./video.sh <step> [args]. The steps, in order:
-#   install  the recorder's and the editor's packages (Playwright, Hyperframes, GSAP) and Hyperframes' headless Chrome
+#   install  the recorder's and the editor's packages (Playwright, Hyperframes, GSAP), Hyperframes' headless Chrome, and
+#            edge-tts for the narration (in work/edge)
 #   chrome   headless Chrome with a DevTools port for the recorder, at $CDP (skip it when one is already running there)
 #   record   record the scenes from the app at $BASE into work/raw; name scenes to redo only those: record landing injection
 #   grids    a sheet per recorded scene, one frame a second, for reading off the times scenes.py uses
-#   build    encode each scene into a clip and write the composition into work/project (--no-clips: the composition only)
-#   render   render work/out/demo.mp4: 1920x1080, 30 fps, no sound
+#   voice    speak the narration's new or changed lines into work/voice (a Microsoft neural voice, online)
+#   build    encode each scene into a clip, mix the narration over the music, and write the composition into
+#            work/project (--no-clips: everything but the clips; --silent: no narration or music)
+#   render   render work/out/demo.mp4: 1920x1080, 30 fps, with the narration and music
 #   check    frames of the render just after each caption appears and mid-zoom, as sheets in work/check
 # Also: preview (the Hyperframes studio, to scrub through the edit), lint, and ffmpeg (FFmpeg and the libraries headless
 # Chrome needs, from Ubuntu's own packages unpacked into work/, for a machine that lacks them and has no sudo).
@@ -48,6 +51,9 @@ case "$step" in
   install)
     (cd "$HERE" && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm ci --no-audit --no-fund)
     hyperframes browser ensure
+    PATH=$HOME/.local/bin:$PATH  # where uv installs itself
+    uv venv -q --allow-existing --python 3.11 "$WORK/edge"
+    uv pip install -q --python "$WORK/edge/bin/python" edge-tts==7.3.1
     ;;
   chrome)
     chrome=${CHROME:-$(command -v google-chrome || command -v chromium || echo '/mnt/c/Program Files/Google/Chrome/Application/chrome.exe')}
@@ -68,6 +74,10 @@ case "$step" in
     mkdir -p "$WORK/grids"
     for scene in "$WORK"/raw/*/; do "$PY" "$HERE/grid.py" "$scene" 1 "$WORK/grids/$(basename "$scene").jpg"; done
     echo "Sheets in $WORK/grids"
+    ;;
+  voice)
+    need_ffmpeg
+    "$WORK/edge/bin/python" "$HERE/voice.py"
     ;;
   build)
     # everything the page loads is local: GSAP from npm, the app's own font and logo
@@ -113,7 +123,7 @@ case "$step" in
     ffmpeg -hide_banner -version | head -1
     ;;
   *)
-    sed -n '2,11p' "$0"
+    sed -n '2,14p' "$0"
     exit 1
     ;;
 esac

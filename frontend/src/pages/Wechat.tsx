@@ -45,12 +45,14 @@ export default function Wechat() {
   const [pin, setPin] = useState('')
   const [linking, setLinking] = useState(false)
   const [message, setMessage] = useState('')
-  const end = useRef<HTMLDivElement>(null)
+  const log = useRef<HTMLDivElement>(null)
   const ready = !!(link.data?.linked && token)
 
   useEffect(() => { keep(chatKey, lines.slice(-60)) }, [chatKey, lines])
   useEffect(() => { try { localStorage.removeItem(tokenKey) } catch { /* storage unavailable */ } }, [tokenKey])  // a copy an older version left
-  useEffect(() => { end.current?.scrollIntoView({ block: 'end' }) }, [lines, busy])
+  // the chat scrolls inside its box and the page stays put: moving the page would jump it on opening and push the
+  // input you just used under the tab bar
+  useEffect(() => { if (log.current) log.current.scrollTop = log.current.scrollHeight }, [lines, busy])
 
   const add = (...more: Omit<Line, 'id'>[]) => setLines((all) => [...all, ...more.map((l, i) => ({ ...l, id: Date.now() + i }))])
 
@@ -143,11 +145,10 @@ export default function Wechat() {
             <p className="flex-1 font-semibold">{tr('Central Union Bank assistant', '中联银行助手')}</p>
             <Badge tone="grey">{tr('Simulated', '模拟')}</Badge>
           </header>
-          <div className="h-[460px] space-y-3 overflow-y-auto bg-paper2 px-3 py-4" aria-live="polite">
+          <div ref={log} className="h-[460px] space-y-3 overflow-y-auto bg-paper2 px-3 py-4" aria-live="polite">
             {!ready && <p className="mx-auto max-w-[90%] text-center text-xs text-ink2">{tr('Link your bank account first, under “Link WeChat” (in the bank app).', '请先在“绑定微信”里绑定银行账户（在银行 App 里完成）。')}</p>}
             {lines.map((l) => <div key={l.id} className="msg-in">{bubble(l)}</div>)}
             {busy && <p className="flex items-center gap-2 text-sm text-ink2" role="status"><span className="typing-dots" aria-hidden><i /><i /><i /></span>{tr('Replying…', '正在回复…')}</p>}
-            <div ref={end} />
           </div>
           <div className="border-t border-[var(--rule)] p-3">
             <div className="mb-2 flex flex-wrap gap-1.5">
