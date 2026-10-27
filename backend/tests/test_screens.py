@@ -2,6 +2,7 @@
 
 from sqlmodel import Session, select
 
+from app.agent import screening
 from app.agent.planner import PlanOut, StepOut, catalogue, validate
 from app.bank import directory
 from app.models import Payee
@@ -88,6 +89,20 @@ def test_chat_transfer_to_an_unsaved_number_uses_the_phone_directory(bank):
     assert bank.verify(bank.purpose(second, "family")).json()["plan"]["status"] == "done"
     transfer = next(t for t in bank.get("/api/bank/transfers").json()["items"] if t["plan_id"] == second["id"])
     assert transfer["status"] == "accepted" and transfer["arrival_reason"] == "S_NEW_PAYEE_LARGE" and transfer["cancellable"]
+    # the History page's audit log has words for every code these entries carry, and for every screening flag
+    log = bank.get("/api/audit").json()
+    labels, codes = log["labels"], set()
+    for e in log["items"]:
+        d = e["data"]
+        if e["kind"] == "policy":
+            codes |= {("rule", d["rule"]), *(("signal", s) for s in d["signals"])}
+        elif e["kind"] == "transfer":
+            codes |= {("route", d["route"]), ("arrival", d["arrival"]), ("status", d["status"])}
+        elif e["kind"] == "purpose":
+            codes.add(("purpose", d["purpose"]))
+    assert ("signal", "S_NEW_PAYEE_LARGE") in codes and ("purpose", "family") in codes
+    assert [c for c in codes if c[1] not in labels[c[0]]] == []
+    assert {code for code, _ in screening.PATTERNS} <= set(labels["flag"])
 
 
 def test_chat_transfer_over_500_to_a_new_number_is_red_and_delayed(bank):

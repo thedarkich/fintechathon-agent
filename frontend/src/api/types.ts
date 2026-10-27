@@ -283,6 +283,8 @@ export interface Note { id: string; at: string; kind: string; read: boolean; tit
 export interface Sms { id: string; at: string; text: string; text_en: string }
 
 export interface AuditEntry { seq: number; kind: string; plan_id: string | null; data: Record<string, unknown>; at: string; hash: string; prev_hash: string }
+/** What the codes in the audit log mean, [zh, en], by kind of code (rule, signal, flag, lock, purpose, route, arrival, status, return). */
+export type AuditLabels = Record<string, Record<string, [string, string]>>
 
 export interface UploadResult {
   id: string

@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from app import clock
-from app.agent import audit, locks, verify
+from app.agent import audit, locks, policy, screening, verify
 from app.agent.actions.queries import card_view, matching, txn_view
 from app.agent.actions.subscriptions import subscriptions_run
 from app.agent.actions.wealth import holdings_run, products_run
@@ -222,6 +222,15 @@ async def phone(request: Request, user_id: str = Depends(require_user)):
                 "items": [{"id": m.id, "at": m.at, "text": m.text, "text_en": m.text_en} for m in rows]}
 
 
+# What the codes in the audit log mean, [zh, en] by kind of code. The entries keep their codes (they are hashed as
+# written); the History page shows these words next to them.
+AUDIT_LABELS = {
+    "rule": policy.RULE_TEXT, "signal": policy.SIGNAL_TEXT, "flag": screening.FLAG_TEXT, "lock": locks.MESSAGES,
+    "purpose": {key: value[:2] for key, value in policy.PURPOSES.items()},
+    "route": transfers.ROUTES, "arrival": transfers.ARRIVALS, "status": transfers.STATUSES, "return": transfers.RETURN_REASONS,
+}
+
+
 @router.get("/audit")
 async def audit_log(request: Request, plan_id: str | None = Query(None, max_length=36),
                     limit: int = Query(200, ge=1, le=1000), user_id: str = Depends(require_user)):
@@ -231,7 +240,7 @@ async def audit_log(request: Request, plan_id: str | None = Query(None, max_leng
             query = query.where(AuditEntry.plan_id == plan_id)
         rows = session.exec(query.order_by(AuditEntry.seq.desc()).limit(limit)).all()
         return {"items": [{"seq": e.seq, "kind": e.kind, "plan_id": e.plan_id, "data": e.data, "at": e.at,
-                           "hash": e.hash, "prev_hash": e.prev_hash} for e in rows]}
+                           "hash": e.hash, "prev_hash": e.prev_hash} for e in rows], "labels": AUDIT_LABELS}
 
 
 @router.get("/audit/verify")

@@ -59,6 +59,22 @@ PATTERNS = [
     ("SPLIT_TO_EVADE", r"(pay|send|transfer|wire)\b.{0,30}\b(\d+|two|three|four|five|six|seven|eight|nine|ten|several|many) times\b"),
 ]
 
+# What each flag means, in plain words, for the History page's audit log (the log keeps the codes as written). The last
+# three come from elsewhere: the model's own judgement and the receipt reader.
+FLAG_TEXT = {
+    "IGNORE_RULES": ("要求忽略规则或指令", "Asked to ignore the rules or instructions"),
+    "ROLE_PLAY": ("让助手扮演不受限制的角色", "Asked the assistant to play a role without limits"),
+    "SKIP_APPROVAL": ("要求跳过确认或验证", "Asked to skip confirmation or verification"),
+    "FAKE_AUTHORITY": ("自称管理员、员工或开发者，或提到“测试模式”", "Claimed to be an admin, staff or a developer, or a test mode"),
+    "SCAM_SCRIPT": ("用了“安全账户”等常见诈骗说法", "Used a common scam line, such as a “safe account”"),
+    "ALREADY_VERIFIED": ("声称已经验证或确认过", "Claimed it was already verified or approved"),
+    "CHANGE_LIMITS": ("要求修改限额或安全规则", "Asked to change limits or safety rules"),
+    "SPLIT_TO_EVADE": ("要求把付款拆开以避开限额", "Asked to split a payment to stay under a limit"),
+    "MODEL_SUSPICIOUS": ("AI 模型判断这条请求可疑", "The AI model judged the request suspicious"),
+    "HIDDEN_TEXT": ("小票里有隐藏文字", "The receipt has hidden text"),
+    "INSTRUCTIONS_IN_RECEIPT": ("小票里有给机器的指令", "The receipt has instructions aimed at a machine"),
+}
+
 SECRET_WORDS = re.compile(r"(?i)(password|passcode|\bpin\b|密码|口令|验证码|\bcode\b)")
 SECRET_PATTERNS = [
     # the word stays ('交易密码改成…'), the value after it goes

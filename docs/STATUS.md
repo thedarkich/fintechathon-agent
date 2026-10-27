@@ -134,6 +134,14 @@ changes, `git grep` the old value and update every place.
   had written 生日礼物 in an English plan).
   The three decks on claude.ai now match the repo (the same 17 slides and notes; the new screenshots uploaded to
   each deck, so `images.json` has their new ids).
+- **Review and audit log in plain words (26 October):** the 24 October work reread; fixed the How page's English
+  example, the risk count in PITCH.md (15), the WeChat page's wording for a link made in another tab, and the evidence
+  slide's box colour (a 185→187 replace had changed `#185A2B`; restored in the repo, on claude.ai and in the PDFs).
+  The audit log (History → 审计日志) and the request dialog now say each entry in words: the rule and signals that set
+  a tier, the flags, the purpose chosen, the transfer's route and arrival, how it was approved. The codes stay under
+  each entry in small type, as recorded. `GET /api/audit` sends the bank's own texts for the codes (`labels`), so the
+  log matches the confirm cards; a test checks that every code those entries carry, and every screening flag, has one.
+  The market slide's 10.17 亿 online-payment users (90.3%) was checked against the 57th CNNIC report itself (page 35).
 
 ## Still to do
 

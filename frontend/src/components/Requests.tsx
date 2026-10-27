@@ -5,6 +5,7 @@ import type { PlanRow } from '../api/types'
 import { useLang } from '../i18n'
 import { usePlans } from '../lib/bank'
 import { useModal } from '../lib/modal'
+import { auditKind, describeAudit } from '../lib/audit'
 import { clock, stamp, yuan } from '../lib/format'
 import { AskButton, LoadError, Section } from './bits'
 import { Icon } from './Icon'
@@ -71,7 +72,7 @@ function RequestList({ rows, loading, selected, onSelect }: { rows: PlanRow[]; l
 }
 
 function RequestModal({ planId, row, onClose }: { planId: string; row?: PlanRow; onClose: () => void }) {
-  const { tr } = useLang()
+  const { tr, lang } = useLang()
   const trail = useQuery({ queryKey: ['audit', 'plan', planId], queryFn: () => api.audit(200, planId) })
   const dialog = useRef<HTMLDivElement>(null)
   useModal(dialog, onClose)
@@ -89,15 +90,19 @@ function RequestModal({ planId, row, onClose }: { planId: string; row?: PlanRow;
           <div className="min-w-0"><ConfirmCard planId={planId} /></div>
           <div className="min-w-0">
             <h3 className="cond text-lg font-semibold">{tr('Every step, as recorded', '每一步的记录')}</h3>
-            <p className="mb-2 text-xs text-ink2">{tr('Technical record from the audit log, oldest first.', '审计日志中的技术记录，按时间先后排列。')}</p>
+            <p className="mb-2 text-xs text-ink2">{tr('From the audit log, oldest first; the small type is the codes as recorded.', '来自审计日志，按时间先后排列；小字是原样记录的代码。')}</p>
             {!trail.data ? (trail.isError ? <LoadError retry={() => void trail.refetch()} /> : <div className="h-40 animate-pulse rounded-box bg-paper2" />) : (
               <ol className="divide-y divide-rule ruled">
-                {trail.data.items.slice().reverse().map((e) => (
-                  <li key={e.seq} className="px-3 py-2 text-sm">
-                    <p className="flex items-baseline justify-between gap-3"><span className="font-semibold">#{e.seq} {e.kind}</span><span className="num font-mono text-xs text-ink2">{clock(e.at)}</span></p>
-                    <p className="mt-0.5 break-all font-mono text-[0.75rem] text-ink2">{JSON.stringify(e.data).slice(0, 220)}</p>
-                  </li>
-                ))}
+                {trail.data.items.slice().reverse().map((e) => {
+                  const said = describeAudit(e, trail.data.labels, lang)
+                  return (
+                    <li key={e.seq} className="px-3 py-2 text-sm">
+                      <p className="flex items-baseline justify-between gap-3"><span className="font-semibold">#{e.seq} {lang === 'zh' ? auditKind(e.kind).zh : auditKind(e.kind).en}</span><span className="num font-mono text-xs text-ink2">{clock(e.at)}</span></p>
+                      {said.text && <p className="mt-0.5">{said.text}</p>}
+                      {said.codes && <p className="mt-0.5 break-all font-mono text-[0.75rem] text-ink2">{said.codes}</p>}
+                    </li>
+                  )
+                })}
               </ol>
             )}
           </div>

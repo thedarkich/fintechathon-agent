@@ -1,5 +1,6 @@
 import type {
   AuditEntry,
+  AuditLabels,
   ChatResult,
   ConversationItem,
   Directory,
@@ -184,7 +185,7 @@ export const api = {
   screenPlan: (action: ScreenAction, args: Record<string, unknown>, lang: Lang) => post<{ plan: Plan }>('/api/screens/plan', { action, args, lang }),
   directory: (phone: string, lang: Lang) => request<Directory>(`/api/directory?phone=${phone}&lang=${lang}`),
   phone: () => request<{ number: string; items: Sms[] }>('/api/phone'),
-  audit: (limit = 300, planId?: string | null) => request<{ items: AuditEntry[] }>(`/api/audit?limit=${limit}${planId ? `&plan_id=${planId}` : ''}`),
+  audit: (limit = 300, planId?: string | null) => request<{ items: AuditEntry[]; labels: AuditLabels }>(`/api/audit?limit=${limit}${planId ? `&plan_id=${planId}` : ''}`),
   auditVerify: () => request<{ ok: boolean; entries: number; head?: string; broken_at?: number }>('/api/audit/verify'),
 
   // safety and sign-in factors
