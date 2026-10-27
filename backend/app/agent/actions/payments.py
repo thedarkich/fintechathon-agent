@@ -140,16 +140,30 @@ def phone_payee(ctx: Ctx, phone: str) -> dict:
             "name_check": "match", **numbers}  # the directory itself names the account holder
 
 
+def usual_rent_yuan(ctx: Ctx, payee: Payee, memo: str | None) -> float | None:
+    """Rent asked for without an amount ('房租该交了', 'pay the rent'): the last payment to the landlord, from the
+    bank's own records, never the planner's guess. The confirm card says where the amount came from."""
+    if payee.relationship != "landlord" or not re.search(r"房租|租金|\brent\b", memo or "", re.IGNORECASE):
+        return None
+    last = ctx.session.exec(select(Txn).where(Txn.user_id == ctx.user.id, Txn.payee_id == payee.id, Txn.kind == "transfer_out",
+                                              Txn.status == "posted").order_by(Txn.at.desc()).limit(1)).first()
+    return -last.amount_fen / 100 if last else None
+
+
 def transfer_resolve(ctx: Ctx, args: TransferArgs) -> dict:
     phone = full_phone(args.payee)
+    amount, basis = args.amount_yuan, {}
     try:
-        who = payee_fields(ctx, resolve_payee(ctx, args.payee))
+        payee = resolve_payee(ctx, args.payee)
+        who = payee_fields(ctx, payee)
+        if amount is None and (amount := usual_rent_yuan(ctx, payee, args.memo)) is not None:
+            basis = {"amount_basis": "last_rent"}
     except Refuse as missing:
         if phone is None or missing.code != "PAYEE_NOT_FOUND":
             raise
         who = phone_payee(ctx, phone)  # not a saved payee: the phone directory, as on the Transfers screen
-    return {**who, **money_fields(ctx, args.amount_yuan, args.memo, args.from_account),
-            "route": transfers.route_for(who["bank"]), "arrival": args.arrival}
+    return {**who, **money_fields(ctx, amount, args.memo, args.from_account),
+            "route": transfers.route_for(who["bank"]), "arrival": args.arrival, **basis}
 
 
 def directory_payee(ctx: Ctx, r: dict) -> Payee:

@@ -17,7 +17,9 @@ PATTERNS = [
     ("IGNORE_RULES", r"(ignore|forget|disregard)\s*(all|the|your|previous|prior|所有|全部|之前|以上|你的|\s)*的?\s*(rules|instructions|limits|规则|指令|限制)"),
     ("ROLE_PLAY", r"(假设|假装|想象)你是|扮演|(没有|不受|无)(任何)?(限制|约束)的|pretend (you are|to be)|you are now|act as (an?|my) |role-?play"),
     ("SKIP_APPROVAL", r"(without|skip|no need (for|to)|don'?t need|bypass)( the| any)? (confirm|confirmation|verification|verify|approval|sms|pin|code|2fa|mfa)"),
-    ("SKIP_APPROVAL", r"(不用|无需|不需要|跳过|绕过|免)(再)?(确认|验证|短信|验证码|密码|人脸|审批)"),
+    # '不需要我点确认', '不用你再验证': a word or two may sit between
+    ("SKIP_APPROVAL", r"(不用|无需|不需要|跳过|绕过|免)(我|你)?(再)?(点击?|按|走|做)?(确认|验证|短信|验证码|密码|人脸|审批)"),
+    ("SKIP_APPROVAL", r"(别|不要|不用|无需|不需要)(再)?弹(出)?(确认|验证)"),
     ("FAKE_AUTHORITY", r"(i am|i'm|this is) (the |an? )?(admin|administrator|developer|bank staff|system|root|operator)"),
     ("FAKE_AUTHORITY", r"(我是|本人是)(银行的?|系统的?|你们的?)?(管理员|开发者|工作人员|员工|客服|系统|运维)"),
     ("FAKE_AUTHORITY", r"(我是|本人是)你的?(老板|领导|上级|经理|主管)|(i am|i'm) your (boss|manager|supervisor)"),
@@ -25,8 +27,10 @@ PATTERNS = [
     ("FAKE_AUTHORITY", r"\"(approved|tier|verified|approval_hash|status|signals)\"\s*:"),
     ("SCAM_SCRIPT", r"安全账户|涉嫌(洗钱|犯罪|违法)|(公安|警察|检察|法院|反诈).{0,12}(转账|转到|账户)|safe account|money laundering"),
     ("FAKE_AUTHORITY", r"(system prompt|developer mode|jailbreak|dan mode|test mode|debug mode|god mode)"),
-    ("FAKE_AUTHORITY", r"(系统提示|开发者模式|测试模式|调试模式|越狱|管理员授权|最高权限)"),
+    ("FAKE_AUTHORITY", r"(系统提示|开发者模式|测试模式|调试模式|越狱|管理员授权|最高权限|(最高|全部|完全|无限|特别)授权)"),
     ("ALREADY_VERIFIED", r"(already|have) (been )?(verified|confirmed|approved|authorized)"),
+    # '我已经刷过脸了', 'I already did face ID': a check the bank never asked for
+    ("ALREADY_VERIFIED", r"(已经|已)(刷过?脸|刷了脸|做过?人脸|人脸识别|面部识别|按过?指纹)|already (did|done|passed) (the )?(face|fingerprint|touch|biometric)"),
     ("ALREADY_VERIFIED", r"(已经|已)(验证|确认|授权|批准)(过|了)"),
     ("ALREADY_VERIFIED", r"(已经|已)(做过|做了|完成了?|通过了?)(风险)?(测评|评估|验证|认证|审核)"),
     ("CHANGE_LIMITS", r"(set|change|raise|lift|remove|disable|turn off) (the |my |your )?(daily |risk |security |approval )?"
@@ -44,7 +48,8 @@ PATTERNS = [
     ("IGNORE_RULES", r"(forget|disregard) (everything|all of|all that|what)|disregard (your|the|all|any) (guidelines|guardrails|safety|security)"
                      r"|override (the |your |all |any )?(safety|security|bank'?s?)? ?(rules|checks|limits|controls|guardrails)"),
     ("IGNORE_RULES", r"(不再|不用再|无需再)受(任何)?(规则|限制|约束)|(规则|限制|风控)(对你)?(已经)?(无效|失效|作废)"),
-    ("ROLE_PLAY", r"\byou are dan\b|do anything now|no longer (bound|restricted)|without (any )?(rules|restrictions|limits)\b"),
+    ("ROLE_PLAY", r"\byou are dan\b|do anything now|no longer (bound|restricted)|without (any )?(rules|restrictions|limits)\b"
+                  r"|with no (rules|restrictions|limits)\b|let'?s play a game"),
     ("FAKE_AUTHORITY", r"^\s*(system|admin|developer|assistant)\s*:|\[(system|admin|override|developer)[^\]]{0,20}\]|admin override|override code"
                        r"|(new|updated) instructions?\s*:"),
     ("FAKE_AUTHORITY", r"作为(系统|银行|你的)?(管理员|开发者|行长|经理|主管|工作人员)|(我是|本人是)(银行)?(行长|总裁|董事长|经理)"

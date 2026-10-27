@@ -1,15 +1,20 @@
 # Project brief (for the registration system)
 
-Limit: project name plus at most 200 words describing the concept and the AI technologies used. The name is a placeholder until the team chooses one.
+The organisers ask for the project name and a brief of at most 200 characters (作品简介，200 字以内) covering the concept and
+the AI technologies used. The Chinese text below is 187 characters; the English one, for reference, is 127 words.
 
 ## 中文
 
+**队伍名称：** Callisto
+
 **项目名称：** 中联银行 AI 助手
 
-中联银行 AI 助手是“AI 只提议、规则做决定”的银行智能体。用户用中英文、语音或小票照片提需求，大模型把请求拆成有向无环图任务，步骤只能取自 43 个固定银行操作。代码将姓名、卡片、商户与用户记录核对，按绿、黄、红三级权限自动执行、确认，或要求交易密码加短信或通行密钥。分析代码在隔离沙箱运行，回复中的金额和结果由代码写出，模型无法编造。全程哈希链审计，另有注入筛查、熔断锁、风险转账延时与户名核对。
+中联银行 AI 助手：在手机银行或微信里说一句话，就能转账、查账单、买理财、管银行卡和自动续费，还能一次办好“给家人过生日”这样的几件事。我们的理念是“AI 理解和规划，规则守住钱”：通义千问大模型负责听懂你的话、拆成步骤，银行的规则决定怎么办——查询直接回答，小额转账先请你确认，大额操作要交易密码加短信验证码。AI 看不到账户数据，也不能替你确认，每一步都记入防篡改的审计日志。
 
 ## English
 
+**Team:** Callisto
+
 **Project name:** Central Union Bank AI assistant
 
-Central Union Bank's AI assistant is a banking AI agent built on one rule: the AI only proposes; fixed code decides and states the facts. Customers ask in Chinese or English, by text, voice or a receipt photo. A large language model, or a deterministic offline planner, turns the request into a task graph whose steps come from a closed catalogue of 43 bank operations. Code then matches every name, card and merchant to the customer's own records and gives each step a tier: green runs at once, yellow needs confirmation of the exact details, and red needs the transaction PIN plus an SMS code or a passkey. Generated analysis code runs in an isolated sandbox. Replies are written by code, so the model cannot invent balances or results. Every stage goes to a hash-chained audit log, and injection screening, a safety lock, delayed arrival for risky transfers and the payee bank's name check add further protection. It covers transfers, bill analysis, wealth, cards, subscriptions and multi-step plans such as preparing for a family birthday.
+Central Union Bank's AI assistant lets you bank by saying one sentence, in the mobile app or in WeChat: send money, check spending, buy or sell investments, manage cards and subscriptions, or have several things done at once, such as getting ready for a family birthday. Our idea is "the AI understands and plans; the rules guard the money." Qwen, a large language model, works out what you mean and breaks it into steps. The bank's fixed rules then decide what happens: questions are answered at once, small payments wait for your confirmation, and large ones need your PIN plus an SMS code. The AI never sees your account data and can never approve anything for you, and every step is written to a tamper-evident audit log.

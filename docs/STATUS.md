@@ -12,7 +12,7 @@ change it here too.
 - **Online review: 3–8 November 2026** (automated evaluation and expert blind review, per Xinhua's launch article); the top ten are announced on
   10 November and go on to the on-site AI hackathon on **28–29 November** in Shenzhen; the finale and awards are on
   30 November (the official site's schedule as of 27 October; it was moved from 21–23 November).
-- The team has four members; the pitch is in Chinese. 韩晨 (武汉大学), team leader; 熊金生 (武汉大学), frontend;
+- The team, **Callisto**, has four members; the pitch is in Chinese. 韩晨 (武汉大学), team leader; 熊金生 (武汉大学), frontend;
   霍以恒 (武汉理工大学), the Chinese presentation; 余梁毅 (浙大宁波理工学院 / NingboTech University), testing.
 
 ## The required materials: read this before changing anything
@@ -155,22 +155,28 @@ changes, `git grep` the old value and update every place.
   controls to OWASP LLM01/LLM02/LLM07:2025, the OWASP agentic AI threats, OWASP API1/4/5/6 and MITRE ATLAS; the review
   is SBP-10 to SBP-13 in `docs/security_best_practices_report.md`. Test count unchanged (187): the new checks extend
   existing tests.
+- **What the stress test missed, fixed (27 October):** the offline planner (what answers when there is no model key,
+  and what an evaluation run from the README gets) now reads the wordings it missed as general rules: “还剩几个钱”,
+  “还有一百万” (no longer a repayment), “账单给我出一份”, rent said as “房租该交了”, “那笔撤回来”, “先停一下”, using a
+  card abroad, “不看了，退了吧”, a reminder for a subscription called a 卡, “买啥好”. On the same 56 cases: 39/40 requests
+  and 16/16 attacks, all flagged (this set is no longer held-out). Rent with no amount now takes the last rent from the
+  bank's records, shown on the card as “与上次房租相同”. Qwen's prompt has rules for pausing a card, using a card abroad
+  and rent with no amount; checked with Qwen on those four cases (4/4). The five attack phrasings the patterns missed are
+  matched now. The 200-character brief is rewritten in plain words and names 通义千问 and WeChat ([BRIEF.md](BRIEF.md)).
+  The team is **Callisto**: on the cover, team and closing slides and in the notes of all three decks.
 
 ## Still to do
 
-1. **The team name**: the four members, their roles and schools are on the cover, team and closing slides of all three
-   decks (27 October). Only the team name is missing, in the cover slide's speaker notes (`[队名]`, `[team name]`).
-   Only the team can supply it; don't invent it. Then rebuild the PDFs (`submission/build_slides.py`) and make the same
-   change in the decks on claude.ai.
-2. **WeChat Mini Program** (later, for the final if the entry gets there): a real Mini Program on the same channel
+1. **WeChat Mini Program** (later, for the final if the entry gets there): a real Mini Program on the same channel
    endpoint, with WeChat's signature check in place of the simulated credential. Needs WeChat DevTools and an AppID
    (the team's); publishing a bank Mini Program likely needs company qualifications.
-3. **Demo video** (optional, at most 5 minutes): recorded by the team from [DEMO.md](DEMO.md), with Qwen on and at most
+2. **Demo video** (at most 5 minutes; listed with the deck in the official brief, so worth making): recorded by the team from [DEMO.md](DEMO.md), with Qwen on and at most
    five messages a minute (the key's limit).
-4. **Submit** on the competition platform by 2 November (the team does this): the 技术文档 and 安全自评 (as PDFs from
+3. **Submit** on the competition platform by 2 November (the team does this): the team name (Callisto), the project
+   name and the 200-character brief ([BRIEF.md](BRIEF.md), the Chinese text), the 技术文档 and 安全自评 (as PDFs from
    `submission/build_docs.py`, or links), the PPT (PDF from `submission/build_slides.py`; a `.pptx` can be downloaded
    from the deck on claude.ai if a PowerPoint file is required), the repository link and, if made, the video.
-5. Optional: a second full Qwen evaluation on the final prompt (`scripts/eval_model.py`: about 300 paid calls and 80
+4. Optional: a second full Qwen evaluation on the final prompt (`scripts/eval_model.py`: about 300 paid calls and 80
    minutes; ask the team first). If it runs, update its numbers everywhere they appear.
 
 ## Checks

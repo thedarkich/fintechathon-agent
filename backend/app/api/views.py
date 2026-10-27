@@ -38,7 +38,8 @@ def details(ctx: Ctx, action: str, r: dict | None) -> list[dict]:
                             else f"Doesn't match: the account is in the name of {r['holder_masked']}"))
         elif r.get("name_check") == "match":
             rows.append(row("户名核验", "Name check", "一致" if zh else "Matches the account holder"))
-        rows.append(row("金额", "Amount", yuan(r["fen"])))
+        same = ("（与上次房租相同）" if zh else " (same as the last rent)") if r.get("amount_basis") == "last_rent" else ""
+        rows.append(row("金额", "Amount", yuan(r["fen"]) + same))
         if r.get("purpose") in PURPOSES:
             label_zh, label_en, warn_zh, warn_en = PURPOSES[r["purpose"]]
             rows += [row("用途", "For", label_zh if zh else label_en), row("风险提示", "Warning", warn_zh if zh else warn_en)]

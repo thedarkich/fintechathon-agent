@@ -29,5 +29,5 @@ claude.ai. Images are referenced as `/_blob/<id>`; [slides/images.json](slides/i
 [slides/images](slides/images). Each slide's speaker notes are its `<aside>`, which the PDFs leave out. A change made
 here doesn't reach the decks on claude.ai (or the other way round), so make it in both.
 
-The four members, their roles and schools are on the cover, team and closing slides of all three decks. Still to fill
-in: the team name, in the cover slide's speaker notes (`[队名]`, `[team name]`).
+The team, Callisto, and its four members with their roles and schools are on the cover, team and closing slides of all
+three decks. The 200-character project brief for the registration system is [docs/BRIEF.md](../docs/BRIEF.md).

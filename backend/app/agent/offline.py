@@ -192,7 +192,7 @@ def payee_from(text: str) -> str | None:
         if found(word, text.lower()):
             return word
     patterns = [
-        r"(?:给|向|转给|打给|汇给|付给)\s*(?:我的?)?([一-龥]{2,4}?)(?:转|汇|打|付|发|的|\d|[零一二两三四五六七八九十百千万]|，|。|$)",
+        r"(?:给|向|转给|打给|汇给|付给)\s*(?:我的?)?([一-龥]{2,4}?)(?:转|汇|打|付|发|的|那|\d|[零一二两三四五六七八九十百千万]|，|。|$)",
         r"(?:转|汇|打)(?:账)?\s*[\d零一二两三四五六七八九十百千万.]+\s*(?:元|块)?\s*给\s*([一-龥]{2,4})",
         r"([一-龥]{2,3}?)(?:借我|借给我)",  # '孙磊借我的钱还他600'
         r"\bto\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
@@ -221,8 +221,8 @@ def card_hint(text: str) -> str | None:
     if m := re.search(r"(?:尾号|末四位|后四位|ending(?:\s+in)?|last\s+four|cards?|卡号?|\*{2,})\s*(\d{4})(?![\d元块万千])"
                       r"|(?<!\d)(\d{4})\s*的?\s*(?:卡|card)", text, re.IGNORECASE):
         return m.group(1) or m.group(2)
-    if has(text, "虚拟", "virtual", "网购卡"):
-        return "virtual"
+    if has(text, "虚拟", "virtual", "网购卡") or (has(text, "网购", "网上购物", "online shopping") and has(text, "卡", "card")):
+        return "virtual"  # '网购那张卡' too
     if has(text, "借记", "debit", "实体", "工资卡", "储蓄卡"):
         return "debit"
     return None
@@ -459,8 +459,9 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
                                                     "pay_from": "$s2.reserve_id"}, after=["s1", "s2"], run_at=run_at))
         return PlanOut(steps=steps)
 
-    # cards
-    if has(text, "卡", "card"):
+    # cards; '健身卡下次扣钱前提醒我' is a subscription, said with the word 卡
+    if has(text, "卡", "card") and not (any(n in lowered for n in SUB_NAMES)
+                                        and has(text, "提醒", "续费", "扣钱", "扣费", "扣款", "remind", "renew")):
         hint = card_hint(text)
         if has(text, "余额", "多少钱", "还有多少", "balance") and not has(text, "限额", "额度", "limit"):
             return one("balance")
@@ -474,7 +475,7 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
             return one("card_freeze", {"card": hint})  # implicit intent: protect first; the reply offers a loss report
         if has(text, "解冻", "解锁", "unfreeze", "unlock", "unblock"):
             return one("card_unfreeze", {"card": hint})
-        if has(text, "冻结", "锁卡", "锁定", "freeze", "lock", "block"):
+        if has(text, "冻结", "锁卡", "锁定", "停一下", "先停", "暂停", "停一停", "freeze", "lock", "block", "pause"):
             return one("card_freeze", {"card": hint})
         if has(text, "限额", "额度", "limit"):
             if not money and has(text, "多少", "是什么", "查", "看", "what", "how much", "show"):
@@ -483,6 +484,11 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
             return one("card_limit", {"card": hint, "daily_limit_yuan": amount})
         if switches := switches_in(text, card=True):
             return one("card_restrict", {"card": hint, **switches})
+        # implied: '下周出国玩要刷卡' means overseas payments switched on (the card then asks for strong verification)
+        if has(text, "出国", "去国外", "出境", "abroad", "going overseas", "trip overseas") \
+                and has(text, "刷卡", "用卡", "能刷", "能用", "use my card", "use the card", "pay with") \
+                and not has(text, *SWITCH_OFF, "记录", "明细", "花了", "多少", "history", "how much"):
+            return one("card_restrict", {"card": hint, "overseas": True})
         if has(text, "申请", "办", "开一张", "apply", "get a", "new", "need a", "want a"):
             return one("card_apply", {"kind": "debit" if has(text, "实体", "借记", "debit", "physical") else "virtual"})
         if not has(text, "转", "transfer", "send"):
@@ -513,7 +519,8 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         sub = next((kind for kind, words in (("音乐", ("音乐", "music")), ("视频", ("视频", "video", "streaming")))
                     if has(text, *words)), None)
     renewal = has(text, "续费", "扣费", "扣款", "订阅", "会员", "renew", "subscription", "membership", "charge")
-    if sub and has(text, "取消", "退订", "关闭", "不要", "cancel", "unsubscribe", "stop"):
+    if sub and has(text, "取消", "退订", "关闭", "不要", "退了", "退掉", "不看了", "不听了", "不用了", "不续了", "别续",
+                   "cancel", "unsubscribe", "stop"):
         return one("subscription_cancel", {"merchant": sub})
     if has(text, "提醒", "remind") and (sub or renewal):
         days = next((int(m) for m in re.findall(r"(\d+)\s*(?:天|days?)", lowered)), 3)
@@ -589,7 +596,9 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
             return one("wealth_products")
     if has(text, "能买", "可以买", "有什么理财", "有哪些理财", "what can i buy", "what can i invest", "which products", "what products"):
         return one("wealth_products")
-    if has(text, "推荐", "买什么", "适合", "recommend", "suggest", "what should i invest", "where should i put") \
+    if has(text, "推荐", "买什么", "买啥好", "买点啥好", "投啥好", "放哪好", "放哪里好", "怎么理财", "理财建议",
+           "recommend", "suggest", "what should i invest", "where should i put") \
+            or (has(text, "闲钱") and has(text, "放", "买", "投", "理财")) \
             or (money and has(text, "what should i buy", "what to buy", "what to do with")):
         horizon = 12
         if has(text, "三年", "3年", "3 years", "three years", "长期", "long term"):
@@ -613,7 +622,7 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
 
     # stopping a delayed transfer before it arrives: '撤销刚才给周凯的转账', 'cancel the transfer to Zhou Kai'
     if has(text, "撤销", "撤回", "取消", "退回来", "cancel", "recall", "stop", "undo", "take back", "reverse") \
-            and has(text, "转账", "汇款", "transfer") \
+            and (has(text, "转账", "汇款", "transfer") or re.search(r"刚才|刚刚|上一笔|那笔|这笔", text)) \
             and not has(text, "预约", "定时", "每月", "scheduled", "recurring"):
         ref = re.search(r"#([0-9a-f]{6,})", lowered)
         return one("transfer_cancel", {"transfer": ref.group(1) if ref else payee_from(text)})
@@ -632,8 +641,9 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     if "各" in text and money and (people := payees_each(text)):
         return PlanOut(steps=[step(i + 1, "transfer", {"payee": p, "amount_yuan": money[0]}) for i, p in enumerate(people)])
     colloquial = re.search(r"给\s*[一-龥]{1,4}?\s*打\s*[\d零一二两三四五六七八九十百千万]"  # '给王芳打300块'
-                           r"|还(?:给)?\s*(?:他|她|[一-龥]{2,3}?)\s*[\d零一二两三四五六七八九十百千万]", text)  # '还他600'
-    if (colloquial or re.search(r"[交付缴].{0,6}房租", text) or has(text, "转", "汇", "打钱", "打款", "付给", "还钱", "交租",
+                           # '还他600'; '还有一百万', '还剩五千' are not repayments
+                           r"|还(?!有|剩|是|要|在|没|能)(?:给)?\s*(?:他|她|[一-龥]{2,3}?)\s*[\d零一二两三四五六七八九十百千万]", text)
+    if (colloquial or re.search(r"[交付缴].{0,6}房租|房租.{0,3}[交付缴]", text) or has(text, "转", "汇", "打钱", "打款", "付给", "还钱", "交租",
                                                                      "transfer", "send", "pay ", "wire")) \
             and not has(text, "转人工"):
         # '给妈妈转200，再给爸爸转300': one step per clause that names both a person and an amount
@@ -654,8 +664,10 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         if m := (None if by_note else re.search(r"(?:备注|附言|用途)[:：\s]*([一-龥A-Za-z0-9]{1,20})", text)) \
                 or re.search(r"\bfor (rent|dinner|lunch|bills|groceries)\b", lowered):
             memo = m.group(1)
-        elif "房租" in text:
-            memo = "房租"
+        elif has(text, "房租", "交租"):
+            memo = "房租"  # with no amount, the bank fills in the last rent and says so on the card
+        elif re.search(r"\brent\b", lowered):
+            memo = "rent"
         # arrival choice: '普通到账' / '2小时后到账' / '次日到账'; '明天到账' is not a transfer scheduled for tomorrow
         arrival = "instant"
         if m := STANDARD_ARRIVAL.search(lowered):
@@ -683,7 +695,8 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         return one("report", {"period": "month", "offset": 0})  # this month's report compares it with the last
     if has(text, "比前个月", "比前一个月", "比上上个月", "多花了多少", "少花了多少", "than the month before", "compared with the month before"):
         return one("report", {"period": "month", "offset": -1 if has(text, "上个月", "上月", "last month") else 0})
-    if has(text, "报告", "总结", "报表", "月报", "年报", "占比", "比例", "share of", "年度账单", "月度账单", "年账单", "report", "summary", "review"):
+    if has(text, "报告", "总结", "报表", "月报", "年报", "占比", "比例", "share of", "年度账单", "月度账单", "年账单", "report", "summary", "review") \
+            or re.search(r"账单.{0,4}(出|生成|做|整理).{0,2}(份|个|下)|(出|生成|做|整理)(一?份|个).{0,4}账单", text):  # '账单给我出一份'
         return one("report", {"period": "year" if year else "month", "offset": offset if (offset or year or has(text, "本月", "这个月", "this month", "今年", "this year")) else -1})
     if has(text, "习惯", "分析", "花太多", "花得太多", "花多了", "habits", "analyse my", "analyze my", "spending too much",
            "spend too much") and has(text, "花", "消费", "支出", "开销", "spend", "expens", "money"):
@@ -697,7 +710,8 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         return one("spending", {"period": "year" if year else "month", "offset": offset, "category": category})
     if has(text, "交易", "账单", "transactions", "statement", "payments"):
         return transactions(text, category, today)
-    if has(text, "余额", "多少钱", "还有多少", "存款", "balance", "how much money", "how much do i have", "account"):
+    if has(text, "余额", "多少钱", "还有多少", "还剩", "剩多少", "剩下多少", "几个钱", "存款", "balance", "how much money",
+           "how much do i have", "account"):
         return one("balance")
     if has(text, "收款人", "联系人", "payees", "contacts"):
         return one("payees")
