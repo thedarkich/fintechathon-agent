@@ -77,7 +77,7 @@ Checked and fine: every route with an id in its path checks that the record belo
 - **Fixed:** kept in `sessionStorage`, like the operator token (SBP-2); an older copy in `localStorage` is removed. Known risk 15 in the security self-assessment says so.
 
 ### SBP-8 · No `Permissions-Policy` (FASTAPI-HEADERS-001) · Low
-- **Fixed:** pages now send `camera=(), geolocation=(), payment=(), usb=(), microphone=(self), publickey-credentials-get=(self), publickey-credentials-create=(self)` (voice input and passkeys keep working). Tested in `test_pages_carry_a_content_security_policy`.
+- **Fixed:** pages now send `camera=(), geolocation=(), payment=(), usb=(), microphone=(self), publickey-credentials-get=(self), publickey-credentials-create=(self)` (voice input and passkeys keep working). Tested in `test_pages_carry_a_content_security_policy`. Changed on 29 October to `geolocation=(self)`: the places search asks for the visitor's location, and `geolocation=()` had blocked it (the browser still asks the visitor first).
 
 ### SBP-9 · Build-tool advisories in the frontend (REACT-SUPPLY-001) · Informational, not fixed
 - `npm audit`: Vite 5.4.21 (high; and esbuild through it), tailwindcss 3 with postcss-nested and postcss-selector-parser (moderate), react-router 6 (moderate; kept on 6.x by the team's decision of 22 October).

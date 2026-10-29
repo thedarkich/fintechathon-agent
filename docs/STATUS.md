@@ -180,7 +180,9 @@ changes, `git grep` the old value and update every place.
   connections to the map services open (Amap's API closes each one, so on the development machine's slow link every
   Amap call still took about 2.4 s; not measured from a server in China). On the English screen the common categories are in English; names and addresses stay Chinese. The
   offline planner also reads "华强北有什么好吃的火锅", "hot pot near Huaqiangbei" and "where to eat"; florists, cake
-  shops and ATMs aren't offered a table.
+  shops and ATMs aren't offered a table. The site's Permissions-Policy had `geolocation=()`, which blocked the
+  visitor's location outright, so every search fell back to Futian; it is `geolocation=(self)` now (the browser
+  still asks the visitor). Checked in the browser pane only as far as the policy: the pane itself denies location.
 - **Table bookings** ("订第二家，明晚7点，2位", or 订座 on a place): yellow, confirmed by the customer, recorded with a code;
   the restaurant is not told, and every screen says so. "我的订座" lists the upcoming ones; "取消明天的订座" (by day, code
   or place, or the bank asks which) cancels one, yellow like any change, and undoing the plan books it again.

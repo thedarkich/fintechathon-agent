@@ -17,7 +17,8 @@ from app.models import UserAccount, UserSession
 SESSION_COOKIE = "bank_agent_session"
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 MAX_BODY = 6 * 1024 * 1024
-PERMISSIONS = (b"camera=(), geolocation=(), payment=(), usb=(), microphone=(self), "
+# this site alone may ask for the microphone (voice input) and the location (places nearby); the browser still asks
+PERMISSIONS = (b"camera=(), geolocation=(self), payment=(), usb=(), microphone=(self), "
                b"publickey-credentials-get=(self), publickey-credentials-create=(self)")
 
 
