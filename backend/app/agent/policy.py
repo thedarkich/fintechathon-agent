@@ -30,6 +30,7 @@ RULE_TEXT = {
     "Y_SCHEDULE_CANCEL": ("会停止一笔预约转账", "It stops a scheduled transfer"),
     "Y_STOP_PLAN": ("会停止一个还在等待执行的计划", "It stops a plan that is still waiting to run"),
     "Y_BOOKING": ("订座会记在你名下", "A booking is made in your name"),
+    "Y_BOOKING_CANCEL": ("会取消你的一条订座", "It cancels one of your bookings"),
 }
 SIGNAL_TEXT = {
     "S_NEW_PAYEE_LARGE": ("向 24 小时内新加的收款人累计付款超过 ¥500", "Over ¥500 in total to a payee added in the last 24 hours"),

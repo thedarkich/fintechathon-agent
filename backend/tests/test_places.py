@@ -263,6 +263,33 @@ def test_find_and_book_a_table(bank):
     assert ready["status"] == "awaiting_approval" and found["items"][2]["name"] in ready["steps"][0]["text"]
 
 
+def test_bookings_are_listed_and_cancelled(bank):
+    bank.runtime.places = Places(keys(), transport=httpx.MockTransport(maps))
+    tomorrow = (bank_today(bank) + timedelta(days=1)).isoformat()
+    assert bank.chat("取消订座")["plan"]["status"] == "failed"  # nothing booked yet
+    bank.get("/api/places/search", q="火锅", lat=HERE[0], lon=HERE[1])
+    for text in ("订第一家，明晚7点，2位", "订第二家，后天中午，4位"):
+        assert bank.approve(bank.chat(text)["plan"]).json()["plan"]["status"] == "done"
+
+    reply = bank.chat("我的订座")["messages"][-1]
+    assert reply["text"].split("\n")[0] == "你有 2 条待用餐的订座："  # the line the app shows above the card
+    listed = next(c for c in reply["cards"] if c["type"] == "reservations")
+    assert [x["party"] for x in listed["items"]] == [2, 4]
+
+    # two bookings and no hint which: the bank asks
+    asked = bank.chat("取消订座")["plan"]
+    assert asked["status"] == "clarifying" and asked["ask"]["field"] == "booking" and len(asked["ask"]["options"]) == 2
+    # by its day: yellow, confirmed like any change
+    plan = bank.chat("取消明天的订座")["plan"]
+    assert plan["status"] == "awaiting_approval" and plan["tier"] == "yellow" and plan["steps"][0]["rule"] == "Y_BOOKING_CANCEL"
+    assert {"label": "用餐时间", "value": f"{tomorrow} 19:00"} in plan["steps"][0]["details"]
+    assert bank.approve(plan).json()["plan"]["status"] == "done"
+    with Session(bank.runtime.engine) as session:
+        assert sorted(r.status for r in session.exec(select(Reservation))) == ["booked", "cancelled"]
+    left = next(c for c in bank.chat("my bookings", lang="en")["messages"][-1]["cards"] if c["type"] == "reservations")
+    assert [x["party"] for x in left["items"]] == [4]
+
+
 def test_the_latest_list_is_the_newest_card_however_often_an_older_one_loads(bank):
     bank.runtime.places = Places(keys(), transport=httpx.MockTransport(maps))
     hot_pot = bank.chat("附近有什么好吃的火锅")["messages"][-1]["cards"][0]

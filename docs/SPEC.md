@@ -56,6 +56,7 @@ The thresholds match the brief exactly. **Today's agent payments** = transfers +
 | `scheduled_cancel` (a scheduled or monthly transfer) | yellow | `Y_SCHEDULE_CANCEL` |
 | `plan_cancel` (a plan with steps still waiting; `undo` also reverses finished steps) | yellow | `Y_STOP_PLAN` |
 | `book_table` (one of the places just shown; a demonstration, the restaurant is not told) | yellow | `Y_BOOKING` |
+| `cancel_booking` (an upcoming booking, by its code, day or place; undo books it again) | yellow | `Y_BOOKING_CANCEL` |
 | `wealth_subscribe` | red | `R_INVESTMENT` |
 | `password_change`, `pin_change` | red | `R_CREDENTIAL` |
 

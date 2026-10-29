@@ -535,6 +535,16 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
                                                     "pay_from": "$s2.reserve_id"}, after=["s1", "s2"], run_at=run_at))
         return PlanOut(steps=steps)
 
+    # the customer's own bookings: cancelling one ('取消明天的订座', by its code or day), or the list ('我的订座')
+    if has(text, "取消", "不去了", "撤销", "cancel", "call off") and has(
+            text, "订座", "订位", "订的座", "订的位", "订桌", "booking", "reservation", "the table", "my table"):
+        code = re.search(r"(?<![A-Za-z0-9])[A-HJ-NP-Z2-9]{6}(?![A-Za-z0-9])", text)
+        slot = table_slot(text, today)
+        return one("cancel_booking", {"booking": code.group(0) if code else slot[:10] if slot else None})
+    if has(text, "我的订座", "我的订位", "订座记录", "订了哪些", "订的座", "订的位", "my booking", "my reservation",
+           "bookings", "reservations"):
+        return one("reservations")
+
     # a table at one of the places just shown ('订第一家，明晚7点4位'), and real places nearby ('附近有什么好吃的火锅')
     if m := PICK.search(text):
         return one("book_table", {"place": m.group(1).strip(), "at": table_slot(text, today), "party": party_from(text)})

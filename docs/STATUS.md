@@ -37,7 +37,7 @@ Hard limits that come from these criteria:
 
 ## Measured numbers (quote these and nothing else)
 
-- **206 automated tests** (`bash scripts/check.sh` runs them; the decks, both videos and their scripts in
+- **207 automated tests** (`bash scripts/check.sh` runs them; the decks, both videos and their scripts in
   `docs/PITCH.md` and `docs/DEMO.md` still say 187, from before the real-places work).
 - **Offline planner** (18 October 2026): 224/224 everyday requests, 69/69 attacks ([eval/report-offline.md](eval/report-offline.md)).
 - **Qwen planner** (`qwen/qwen3.8-max` through TokenRouter, thinking off), full run on 23 October 2026, before that day's
@@ -182,7 +182,8 @@ changes, `git grep` the old value and update every place.
   offline planner also reads "华强北有什么好吃的火锅", "hot pot near Huaqiangbei" and "where to eat"; florists, cake
   shops and ATMs aren't offered a table.
 - **Table bookings** ("订第二家，明晚7点，2位", or 订座 on a place): yellow, confirmed by the customer, recorded with a code;
-  the restaurant is not told, and every screen says so.
+  the restaurant is not told, and every screen says so. "我的订座" lists the upcoming ones; "取消明天的订座" (by day, code
+  or place, or the bank asks which) cancels one, yellow like any change, and undoing the plan books it again.
 - **The birthday plan with real shops.** On the confirm card, 选一家 swaps the partner florist or cake shop for a real
   one nearby (reference price). Picking a shop or a payment's purpose changes the card in place: no second copy of the
   plan in the chat.

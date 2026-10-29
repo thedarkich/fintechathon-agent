@@ -110,6 +110,9 @@ def details(ctx: Ctx, action: str, r: dict | None) -> list[dict]:
                  row("人数", "People", f"{r['party']} 位" if zh else str(r["party"])),
                  row("说明", "Note", "演示：订座记在银行里，不会发给餐厅" if zh else "A demo: the bank records it; the restaurant isn't told")]
         return rows
+    if action == "cancel_booking":
+        return [row("餐厅", "Restaurant", r["name"]), row("用餐时间", "When", f"{r['date']} {r['time']}"),
+                row("人数", "People", f"{r['party']} 位" if zh else str(r["party"])), row("订座号", "Booking code", r["code"])]
     if action == "transfer_cancel":
         return [row("撤销给", "Transfer to", r["payee"] if zh else r["payee_en"]), row("金额", "Amount", yuan(r["fen"]))]
     return []

@@ -14,7 +14,8 @@ const ACTION: Record<string, [string, string]> = {
   subscription_remind: ['续费提醒', 'Reminder'], wealth_holdings: ['查持仓', 'Holdings'], wealth_products: ['查产品', 'Products'],
   wealth_compare: ['比产品', 'Compare'], wealth_recommend: ['荐产品', 'Recommend'], wealth_subscribe: ['申购', 'Buy'],
   wealth_redeem: ['赎回', 'Redeem'], risk_assessment: ['风险测评', 'Risk profile'], password_change: ['改登录密码', 'Password'],
-  pin_change: ['改交易密码', 'PIN'],
+  pin_change: ['改交易密码', 'PIN'], places_search: ['找地方', 'Places'], book_table: ['订座', 'Book a table'],
+  reservations: ['查订座', 'Bookings'], cancel_booking: ['取消订座', 'Cancel booking'],
 }
 
 export const actionLabel = (action: string, lang: 'zh' | 'en') => ACTION[action]?.[lang === 'zh' ? 0 : 1] ?? action

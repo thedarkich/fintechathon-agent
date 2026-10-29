@@ -213,20 +213,90 @@ register(Action(
 # --- the customer's bookings ---
 
 
-def reservations_run(ctx: Ctx, r: dict) -> dict:
+def upcoming(ctx: Ctx) -> list[Reservation]:
     now = ctx.now.astimezone(CST).strftime("%Y-%m-%dT%H:%M")
-    rows = ctx.session.exec(select(Reservation).where(Reservation.user_id == ctx.user.id, Reservation.status == "booked",
-                                                      Reservation.at >= now).order_by(col(Reservation.at)))
+    return list(ctx.session.exec(select(Reservation).where(Reservation.user_id == ctx.user.id, Reservation.status == "booked",
+                                                           Reservation.at >= now).order_by(col(Reservation.at))))
+
+
+def reservations_reply(ctx: Ctx, r: dict, res: dict) -> str:
+    """A first line the app shows above the card, then the list for where there is no card (WeChat)."""
+    items = res["items"]
+    if not items:
+        return ctx.t("没有待用餐的订座。", "No upcoming bookings.")
+    lines = [ctx.t(f"你有 {len(items)} 条待用餐的订座：", f"You have {len(items)} upcoming booking{'s' * (len(items) > 1)}:")]
+    lines += [ctx.t(f"· {x['date'][5:]} {x['time']} {x['name']}，{x['party']} 位（{x['code']}）",
+                    f"· {x['date'][5:]} {x['time']} {x['name']}, {x['party']} people ({x['code']})") for x in items]
+    return "\n".join(lines)
+
+
+def reservations_run(ctx: Ctx, r: dict) -> dict:
     return {"items": [{"code": x.code, "name": x.name, "address": x.address, "phone": x.phone,
-                       "date": x.at[:10], "time": x.at[11:16], "party": x.party} for x in rows]}
+                       "date": x.at[:10], "time": x.at[11:16], "party": x.party} for x in upcoming(ctx)]}
 
 
 register(Action(
     name="reservations", args=Args, help="List the customer's upcoming table bookings.",
     resolve=lambda ctx, a: {}, run=reservations_run,
     describe=lambda ctx, r: ctx.t("查看订座", "List table bookings"),
-    reply=lambda ctx, r, res: "\n".join(f"· {x['date']} {x['time']} {x['name']}，{x['party']} 位（{x['code']}）" if ctx.lang == "zh"
-                                        else f"· {x['date']} {x['time']} {x['name']}, {x['party']} people ({x['code']})"
-                                        for x in res["items"]) or ctx.t("没有待用餐的订座。", "No upcoming bookings."),
+    reply=reservations_reply,
     card=lambda ctx, r, res: {"type": "reservations", **res},
+))
+
+
+# --- cancelling a booking ---
+
+
+class CancelBookingArgs(Args):
+    booking: str | None = Field(default=None, max_length=60)
+
+
+def cancel_resolve(ctx: Ctx, args: CancelBookingArgs) -> dict:
+    """Which upcoming booking: its code, its day (YYYY-MM-DD) or the place's name; the only one if there is one."""
+    rows = upcoming(ctx)
+    if not rows:
+        raise Refuse("NO_BOOKINGS", "现在没有可以取消的订座。", "There are no upcoming bookings to cancel.")
+    ref = (args.booking or "").strip().casefold()
+    picked = [x for x in rows if ref and (ref == x.code.casefold() or ref == x.at[:10] or ref in x.name.casefold())] \
+        if ref else rows
+    if not picked:
+        picked = rows  # nothing matched what was said: let the customer choose from all of them
+    if len(picked) > 1:
+        raise Ask("booking", "取消哪一个订座？", "Which booking should I cancel?", [
+            {"value": x.code, "label_zh": f"{x.at[:10]} {x.at[11:16]} {x.name}，{x.party} 位",
+             "label_en": f"{x.at[:10]} {x.at[11:16]} {x.name}, {x.party} people"} for x in picked][:6])
+    x = picked[0]
+    return {"reservation_id": x.id, "code": x.code, "name": x.name, "address": x.address, "date": x.at[:10],
+            "time": x.at[11:16], "party": x.party}
+
+
+def cancel_run(ctx: Ctx, r: dict) -> dict:
+    row = ctx.session.get(Reservation, r["reservation_id"])
+    if row is None or row.user_id != ctx.user.id or row.status != "booked":
+        raise Refuse("NOT_BOOKED", "这条订座已经取消了。", "That booking is already cancelled.")
+    row.status = "cancelled"
+    ctx.session.add(row)
+    return {"cancelled": True}
+
+
+def cancel_compensate(ctx: Ctx, r: dict, res: dict) -> dict:
+    # undone with the plan: the table is booked again, if its time hasn't passed
+    row = ctx.session.get(Reservation, r["reservation_id"])
+    if row and row.status == "cancelled" and row.at >= ctx.now.astimezone(CST).strftime("%Y-%m-%dT%H:%M"):
+        row.status = "booked"
+        ctx.session.add(row)
+        return {"restored": True}
+    return {"restored": False}
+
+
+register(Action(
+    name="cancel_booking", args=CancelBookingArgs,
+    help="Cancel one of the customer's upcoming table bookings. booking: its code, its day (YYYY-MM-DD) or the place's "
+         "name, if they said one; the bank asks which when there are several.",
+    resolve=cancel_resolve, run=cancel_run, compensate=cancel_compensate,
+    describe=lambda ctx, r: ctx.t(f"取消{r['name']}的订座：{r['date']} {r['time']}，{r['party']} 位",
+                                  f"Cancel the table at {r['name']}: {r['date']} {r['time']}, {r['party']} people"),
+    reply=lambda ctx, r, res: ctx.t(f"已取消{r['name']} {r['date']} {r['time']} 的订座（{r['code']}）。",
+                                    f"Cancelled the table at {r['name']} on {r['date']} {r['time']} ({r['code']})."),
+    rule="Y_BOOKING_CANCEL",
 ))
