@@ -81,7 +81,7 @@ How it is enforced:
 |---|---|
 | Prompt injection, direct and indirect (OWASP LLM01:2025; ATLAS AML.T0051, AML.T0051.001) | Screening, a closed plan format, tiers and approvals in code; receipts read as data (§2.2) |
 | Jailbreak (ATLAS AML.T0054) | The same layers: a jailbroken plan still lands on a confirm card at the rules' tier |
-| Tool misuse and excessive agency (OWASP agentic AI threats); LLM plugin compromise (ATLAS AML.T0053) | 43 fixed actions with validated arguments; every action needs the customer's yes at its tier |
+| Tool misuse and excessive agency (OWASP agentic AI threats); LLM plugin compromise (ATLAS AML.T0053) | 48 fixed actions with validated arguments; every action needs the customer's yes at its tier |
 | Privilege compromise (OWASP agentic AI threats) | Each action runs as the signed-in customer on their own records; no shared account; operators can't approve |
 | Sensitive information disclosure (OWASP LLM02:2025); LLM data leakage (ATLAS AML.T0057) | The model never sees account data; replies and numbers are written by code |
 | System prompt leakage (OWASP LLM07:2025) | The prompt holds no secrets and no rule that guards money; in the stress test Qwen declined to share it |

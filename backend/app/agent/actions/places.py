@@ -69,7 +69,7 @@ def search_reply(ctx: Ctx, r: dict, res: dict) -> str:
         return ctx.t(f"我来找找{where}的{r['what']}：都是地图上真实的地方。",
                      f"Here are real places for “{r['what']}”{where}, from the maps.")
     return ctx.t(f"我来找找{where}的{r['what']}：都是地图上真实的地方，看中哪家就点“订座”。",
-                 f"Here are real places for “{r['what']}”{where}, from the maps. Pick one and tap Book.")
+                 f"Here are real places for “{r['what']}”{where}, from the maps. Pick one and tap Book a table.")
 
 
 register(Action(

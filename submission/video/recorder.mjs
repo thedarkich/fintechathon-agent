@@ -48,8 +48,9 @@ export async function open(out, { viewport, deviceScaleFactor, mobile }) {
   OUT = out;
   fs.mkdirSync(OUT, { recursive: true });
   browser = await chromium.connectOverCDP(CDP);
+  // the customer shares a location (central Futian, Shenzhen) when the places card asks
   context = await browser.newContext({ viewport, deviceScaleFactor, isMobile: mobile, hasTouch: mobile, locale: 'zh-CN',
-    bypassCSP: true });
+    bypassCSP: true, geolocation: { latitude: 22.5431, longitude: 114.0579 }, permissions: ['geolocation'] });
   await context.addInitScript(mobile ? RIPPLE : RIPPLE + POINTER);
   page = await context.newPage();
   page.setDefaultTimeout(30000);
@@ -130,6 +131,19 @@ export async function tap(locator, pause = 450) {
 export async function scrollBy(dy, ms = 900) {
   await page.evaluate((y) => window.scrollBy({ top: y, behavior: 'smooth' }), dy);
   await sleep(ms);
+}
+
+/** Scroll smoothly until the element's top reaches the top of the screen (less offset, for a fixed header). */
+export async function scrollTo(locator, ms = 1400, offset = 70) {
+  await locator.evaluate((el, off) => window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - off, behavior: 'smooth' }), offset);
+  await sleep(ms);
+}
+
+/** A places card's list, once the maps have answered (its photos come in after it): every place has a 地图 link. */
+export async function placesShown(scope) {
+  await scope.getByText('正在地图上搜索…').last().waitFor({ state: 'hidden', timeout: 60000 }).catch(() => {});
+  await scope.getByRole('link', { name: '地图' }).last().waitFor({ timeout: 60000 });
+  await sleep(1800);
 }
 
 export const main = () => page.locator('main');

@@ -279,7 +279,8 @@ def main():
         beats = []
         for k, (t, zh, en) in enumerate(cfg["beats"]):
             scene["beats"].append({"id": f"b{i}-{k}", "t": max(at(t), start + 0.25)})
-            beats.append(f'<li id="b{i}-{k}" class="beat"><span class="zh">{esc(zh)}</span><span class="en">{esc(en)}</span></li>')
+            english = f'<span class="en">{esc(en)}</span>' if en else ""  # the Chinese videos have none
+            beats.append(f'<li id="b{i}-{k}" class="beat"><span class="zh">{esc(zh)}</span>{english}</li>')
         for x, y, scale, ox, oy in cfg.get("zooms", []):
             scene["zooms"].append({"a": at(x), "b": at(y), "scale": scale, "ox": ox, "oy": oy})
         data["tiers"].append({"t": scene["start"], "tier": None})
@@ -289,12 +290,13 @@ def main():
             a, b = at(x), at(y)
             chips.append(f'<div id="ff{i}-{k}" class="ff clip" data-start="{a:.3f}" data-duration="{max(b - a, 1.4):.3f}" '
                          f'data-track-index="3"><span class="ff-zh">AI 正在规划</span><span class="ff-en">'
-                         f'thinking, shown {factor:.0f}× faster</span></div>')
+                         f'等待时间已加快 {factor:.0f} 倍</span></div>')
         scene_len = scene["end"] - scene["start"] if i < total_scenes else length
         captions.append(
             f'<section id="c{i}" class="cap clip" data-start="{start:.3f}" data-duration="{scene_len:.3f}" data-track-index="2">'
             f'<p class="count">{i:02d} / {total_scenes:02d}</p><h2 class="title">{esc(cfg["title"])}</h2>'
-            f'<p class="title-en">{esc(cfg["title_en"])}</p><ol class="beats">{"".join(beats)}</ol></section>')
+            + (f'<p class="title-en">{esc(cfg["title_en"])}</p>' if cfg.get("title_en") else "")
+            + f'<ol class="beats">{"".join(beats)}</ol></section>')
         data["scenes"].append(scene)
     outro_start = cursor - OVERLAP
     outro = OUTRO if silent else max(OUTRO, 0.8 + durations["outro"] + 2.5)
@@ -310,7 +312,8 @@ def main():
 
     chapters = "".join(f'<span id="ch{i}" class="chap">{esc(c["chapter"])}<i></i></span>' for i, c in enumerate(SCENES, 1))
     tiers = "".join(f'<div id="tier{k}" class="tier tier-{k}"><span class="hl"></span><span class="pill">{esc(name)}</span>'
-                    f'<span class="tier-text"><span class="zh">{esc(zh)}</span><span class="en">{esc(en)}</span></span></div>'
+                    f'<span class="tier-text"><span class="zh">{esc(zh)}</span>'
+                    + (f'<span class="en">{esc(en)}</span>' if en else "") + '</span></div>'
                     for k, (name, zh, en) in enumerate(TIERS))
     page = TEMPLATE.read_text()
     for key, value in {

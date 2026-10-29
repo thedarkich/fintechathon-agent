@@ -95,7 +95,7 @@ The audit log holds every stage; the History page shows it and verifies the chai
 
 ### 3.1 Planning with a closed action catalogue
 
-The catalogue has 43 typed actions (`agent/actions/`). Each declares its argument schema, how to resolve it, its tier rule, its payment amount (if any), whether it can be scheduled, its compensation and how to describe and reply to it. The planner can only choose actions and fill arguments.
+The catalogue has 48 typed actions (`agent/actions/`). Each declares its argument schema, how to resolve it, its tier rule, its payment amount (if any), whether it can be scheduled, its compensation and how to describe and reply to it. The planner can only choose actions and fill arguments.
 
 The model's output must match `PlanOut` exactly (unknown fields rejected). Validation then checks: known actions; arguments valid for each action; at most 8 steps; dependencies exist and form a DAG (topological sort); a step that uses another step's result (`"$s1.birthday"`) must list it as a dependency; only schedulable actions may have `run_at`; and a clarifying question may not contain numbers the customer did not write, so the model cannot state facts even when asking. Five rejected plans in 10 minutes pause the assistant (a model misbehaving).
 

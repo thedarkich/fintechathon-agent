@@ -25,7 +25,7 @@ The organisers list five items. Four are required (必交), one is optional (可
 | **答辩 PPT**: the talk is **at most 10 minutes** | 必交 | Done except the team details | [../submission/slides](../submission/slides) (three decks of 17 slides; speaker notes total **9:40**) and the same decks on claude.ai |
 | **源代码**: README, repository, deployment guide and test cases | 必交 | Done | public repo https://github.com/thedarkich/fintechathon-agent; [../README.zh.md](../README.zh.md) / [../README.md](../README.md) (with 部署 / Deploy); [../deploy](../deploy); [../backend/tests](../backend/tests); [../evals](../evals) |
 | **安全自评**: permission tiers and the list of known risks | 必交 | Done | [SECURITY.zh.md](SECURITY.zh.md) §2.1 (the three tiers) and §四 (16 known risks) |
-| **演示视频**: **at most 5 minutes** | 可选 | Recorded: phone 2:59 and PC 3:32, narrated, made before 小狐 and real places | the MP4s are not in git; [../submission/video](../submission/video) makes them again; script: [DEMO.md](DEMO.md) |
+| **演示视频**: **at most 5 minutes** | 可选 | Recorded 29 October: phone 3:37 and PC 3:54, narrated, the script rewritten in plain Chinese (reviewed by Qwen), with 小狐 and real places | the MP4s are not in git; [../submission/video](../submission/video) makes them again; script: [DEMO.md](DEMO.md) |
 
 Hard limits that come from these criteria:
 
@@ -37,8 +37,8 @@ Hard limits that come from these criteria:
 
 ## Measured numbers (quote these and nothing else)
 
-- **207 automated tests** (`bash scripts/check.sh` runs them; the decks, both videos and their scripts in
-  `docs/PITCH.md` and `docs/DEMO.md` still say 187, from before the real-places work).
+- **207 automated tests** (`bash scripts/check.sh` runs them; the decks, both videos, `docs/PITCH.md` and `docs/DEMO.md` say the
+  same).
 - **Offline planner** (18 October 2026): 224/224 everyday requests, 69/69 attacks ([eval/report-offline.md](eval/report-offline.md)).
 - **Qwen planner** (`qwen/qwen3.8-max` through TokenRouter, thinking off), full run on 23 October 2026, before that day's
   prompt fixes: 201/224 requests, 69/69 attacks, no attack ran anything without approval, a median of 3.7 s per plan
@@ -191,14 +191,22 @@ changes, `git grep` the old value and update every place.
   one nearby (reference price). Picking a shop or a payment's purpose changes the card in place: no second copy of the
   plan in the chat.
 
+- **Demo videos and decks redone (29 October).** Chinese viewers found the first video's script confusing. Qwen
+  diagnosed it (no explanation of what the product is, the three levels used before they were explained, one scene with
+  eight ideas, unexplained terms like 清算, 沙箱 and 哈希链) and reviewed the rewrite line by line. The new script
+  ([DEMO.md](DEMO.md)) explains the three levels first, makes one point a scene, calls the assistant 小狐 throughout and
+  adds the real florist in the birthday plan and a hot pot found and booked nearby; captions are Chinese only. Both
+  videos were re-recorded with Qwen on and the Amap key set (phone 3:37, PC 3:54). The three decks (repo and claude.ai)
+  name 小狐, show finding places on the product slide and the real shops in the demo, and say 207 tests, 48 actions
+  and 16 known risks; the PDFs are rebuilt.
+
 ## Still to do
 
 1. **WeChat Mini Program** (later, for the final if the entry gets there): a real Mini Program on the same channel
    endpoint, with WeChat's signature check in place of the simulated credential. Needs WeChat DevTools and an AppID
    (the team's); publishing a bank Mini Program likely needs company qualifications.
-2. **Demo video and decks, again** (the team's decision, 29 October: once the features are finished). The current
-   videos and decks predate 小狐 and real places and say 187 tests. Re-record from [DEMO.md](DEMO.md) with Qwen on (at
-   most five messages a minute, the key's limit) and the Amap key set, so the birthday scene shows real shops.
+2. **Demo video and decks**: done 29 October (below). The MP4s are not in git; the team uploads one with the
+   submission (both are under 5 minutes).
 3. **Submit** on the competition platform by 2 November (the team does this): the team name (Callisto), the project
    name and the 200-character brief ([BRIEF.md](BRIEF.md), the Chinese text), the 技术文档 and 安全自评 (as PDFs from
    `submission/build_docs.py`, or links), the PPT (PDF from `submission/build_slides.py`; a `.pptx` can be downloaded

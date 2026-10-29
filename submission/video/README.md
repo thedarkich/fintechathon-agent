@@ -4,12 +4,12 @@ Two explainers (1920×1080, 30 fps) recorded from the running app, with the same
 
 | Video | What it shows | Length |
 |---|---|---|
-| Phone | The app in a phone frame | 2:59 |
-| PC | The website in a browser window, with a mouse pointer; it opens on the landing page | 3:32 |
+| Phone | The app in a phone frame | 3:37 |
+| PC | The website in a browser window, with a mouse pointer | 3:54 |
 
-Both tell the same story: an intro, ten scenes and a closing card.
+Both tell the same story: an intro, eleven scenes and a closing card. The script was rewritten on 29 October, after Chinese viewers found the first one confusing: the three ways the assistant works come first, each scene makes one point in plain words, and the assistant is 小狐 throughout. Qwen diagnosed the old script and reviewed the new one line by line ([docs/DEMO.md](../../docs/DEMO.md) has the script).
 
-Captions are in Chinese with English underneath. The permission ladder (直接办 / 需确认 / 需验证) lights the rung each step needs, and a strip shows which feature is on screen. The screen zooms in on key moments.
+Captions are in Chinese only. The permission ladder (直接办 / 需确认 / 需验证) lights the rung each step needs, and a strip shows which feature is on screen. The screen zooms in on key moments.
 
 The videos are shown faster than real time in places, and they say so where it matters:
 - Each wait for the model is cut to about a second, and a chip marks it: "AI 正在规划 / thinking, shown 5× faster".
@@ -22,7 +22,7 @@ The rendered videos are not in git. This folder makes them again.
 
 ## How they are made
 
-1. **Recording.** The recorders drive the app in headless Chrome through the ten scenes. They save each scene as timestamped screenshots in `work/raw/<scene>/`, or `work/pc/raw/<scene>/` for the PC demo. Each scene's `scene.json` also notes the stretches spent waiting for the model and the rate-limit pauses.
+1. **Recording.** The recorders drive the app in headless Chrome through the eleven scenes. The browser shares a location in central Futian, Shenzhen, so the places scenes show real shops nearby. They save each scene as timestamped screenshots in `work/raw/<scene>/`, or `work/pc/raw/<scene>/` for the PC demo. Each scene's `scene.json` also notes the stretches spent waiting for the model and the rate-limit pauses.
    - **Phone.** `record.mjs` records in a phone-sized window: 390×844 at 2.5×.
    - **PC.** `record-pc.mjs` records in a desktop window: 1200×760 at 1.1×, so each frame is 1320×836. It draws a mouse pointer that glides to each click.
 2. **Narration.** `scenes.py` (phone) and `scenes_pc.py` (PC) hold the lines, each timed to a moment in the recording. `voice.py` speaks them with Microsoft's neural voice Yunyang (`zh-CN-YunyangNeural`) through [edge-tts](https://github.com/rany2/edge-tts), one WAV per line, in `work/voice/` or `work/pc/voice/`.
@@ -30,7 +30,7 @@ The rendered videos are not in git. This folder makes them again.
    - **If it stops working.** The same voices are offered officially by Azure Speech, which needs a key.
 3. **Edit.** `build_edit.py` turns each scene into a clip at its real timing, apart from the speed-ups above.
    - **Narration timing.** Each line starts at its moment. Where a line needs longer than its stretch of recording, the screen holds at that stretch's stillest moment (a still screen saves as frames of the same size) until the line is said.
-   - **Sound.** It mixes the lines over a music bed. The bed sits 15 dB under the voice, and dips further whenever the voice speaks. The sound track aims at −16 LUFS, with peaks kept under −1 dB. The build prints what it measured: −17.0 LUFS for both delivered videos.
+   - **Sound.** It mixes the lines over a music bed. The bed sits 15 dB under the voice, and dips further whenever the voice speaks. The sound track aims at −16 LUFS, with peaks kept under −1 dB. The build prints what it measured: −16.9 LUFS for both delivered videos.
    - **Composition.** It writes the [Hyperframes](https://github.com/heygen-com/hyperframes) composition `project/index.html` from `template.html` or `template-pc.html`. Captions, the ladder and the zooms are placed by recorded time, so they stay on their moments whatever the timing.
 4. **Render.** Hyperframes renders the composition, sound included, to `out/demo.mp4`.
 
@@ -45,6 +45,7 @@ The rendered videos are not in git. This folder makes them again.
 | `build_edit.py` | The clips, the sound and the composition |
 | `template.html`, `template-pc.html` | The page: layout (a phone frame, or a browser window with the captions in a column), intro and closing card (including the evaluation figures, test count and team), animation |
 | `check_frames.py` | Frames of the render just after each caption appears and mid-zoom, as sheets for review |
+| `shots.mjs` | The places screenshots on the decks' product slide (`submission/slides/images/*-places.jpg`): one model call each when the model is on |
 | `grid.py` | One frame a second of a recorded scene, as a sheet, for reading off times |
 
 Everything the page loads is local. GSAP comes from npm, and the app's MiSans font and logo come from `frontend/`. Nothing loads from a CDN. Hyperframes runs with its telemetry, update checks and self-installs turned off.
@@ -62,10 +63,10 @@ You need:
 **Start the app with the model on**, on a fresh data folder, as the videos were recorded:
 
 ```bash
-cd backend && DATA_DIR=/tmp/ba-video LLM_ENABLED=true PUBLIC_BASE_URL=http://localhost:8000 PASSKEY_RP_ID=localhost uv run uvicorn app.main:app --port 8000
+cd backend && DATA_DIR=/tmp/ba-video LLM_ENABLED=true LLM_THINKING=false PUBLIC_BASE_URL=http://localhost:8000 PASSKEY_RP_ID=localhost uv run uvicorn app.main:app --port 8000
 ```
 
-The model's settings come from `.env` as usual (see `.env.example`). Recording either video calls the model up to nine times, once for each message the scenes send, so it is a paid run (AGENTS.md, rule 5). The recorders keep the calls 13.5 seconds apart for the key's limit of five a minute, and the edit cuts those pauses.
+The model's settings come from `.env` as usual (see `.env.example`), and so does `AMAP_KEY`, which the places scenes need for real shops with photos. Recording either video calls the model up to eleven times, once for each message the scenes send, so it is a paid run (AGENTS.md, rule 5). The recorders keep the calls 13.5 seconds apart for the key's limit of five a minute, and the edit cuts those pauses.
 
 Recording works with the offline planner too (`LLM_ENABLED=false`, no model calls), and that is how the current recorders were tested. It isn't good enough for the videos: the cards then say 由内置规则拟定（未启用 AI 模型）, and in the coffee scene the analysis code is the model's.
 
@@ -92,7 +93,6 @@ For the PC video, the same steps with `DEMO=pc` in front, such as `DEMO=pc ./vid
 
 **After a UI change, check the times by eye.** Run `./video.sh grids` and look at the sheets in `work/grids` before adjusting the scene file.
 
-**The chat now scrolls a new reply into view itself.** When the reply is taller than the screen, its first line goes under the title bar. The phone take was recorded before that change, so on a new phone take the name-mismatch box in scene 03 will probably sit lower, and the first zoom's point will likely need moving. The PC take was recorded after it.
 
 **Scenes build on each other.** For example, 04 needs the transfer from 03, and every scene needs the demo bank that 01 opens. Re-record from `landing`, naming the scenes you want: `./video.sh record landing red returned`.
 
