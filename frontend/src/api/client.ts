@@ -12,6 +12,7 @@ import type {
   Plan,
   PlanResult,
   PlanRow,
+  PlacesResult,
   QueueItem,
   Report,
   Anomaly,
@@ -151,6 +152,7 @@ export const api = {
   plans: (lang: Lang, limit = 100) => request<{ items: PlanRow[] }>(`/api/plans?lang=${lang}&limit=${limit}`),
   approve: (id: string, approval_hash: string, lang: Lang) => post<PlanResult>(`/api/plans/${id}/approve`, { approval_hash, lang }),
   cancel: (id: string, rollback: boolean, lang: Lang) => post<PlanResult>(`/api/plans/${id}/cancel`, { rollback, lang }),
+  edit: (id: string, step_id: string, args: Record<string, unknown>, lang: Lang) => post<PlanResult>(`/api/plans/${id}/edit`, { step_id, args, lang }),
   purpose: (id: string, step_id: string, purpose: string, lang: Lang) => post<PlanResult>(`/api/plans/${id}/purpose`, { step_id, purpose, lang }),
   answer: (id: string, value: unknown, lang: Lang) => post<PlanResult>(`/api/plans/${id}/answer`, { value, lang }),
   sms: (id: string) => post<{ challenge_id: string; phone: string; expires_in: number }>(`/api/plans/${id}/sms`),
@@ -180,6 +182,17 @@ export const api = {
   payeePhone: () => request<{ items: PayeeSms[] }>('/api/payee-phone'),
   notifications: (lang: Lang) => request<{ items: Note[] }>(`/api/notifications?lang=${lang}`),
   readNotifications: () => post('/api/notifications/read'),
+  // real places from the map services: the location goes only here, and only when the customer allowed it
+  places: (q: string, where: { lat?: number; lon?: number; near?: string | null }, lang: Lang, ref?: string | null) => {
+    const query = new URLSearchParams({ q, lang })
+    if (ref) query.set('ref', ref)
+    if (where.near) query.set('near', where.near)
+    else if (where.lat !== undefined && where.lon !== undefined) {
+      query.set('lat', where.lat.toFixed(5))
+      query.set('lon', where.lon.toFixed(5))
+    }
+    return request<PlacesResult>(`/api/places/search?${query}`)
+  },
 
   // the app's own screens: lookups read; anything that pays becomes a plan to confirm
   screenPlan: (action: ScreenAction, args: Record<string, unknown>, lang: Lang) => post<{ plan: Plan }>('/api/screens/plan', { action, args, lang }),

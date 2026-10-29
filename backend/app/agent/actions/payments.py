@@ -8,6 +8,7 @@ from pydantic import Field
 from sqlmodel import select
 
 from app import clock
+from app.agent.actions.places import find_place
 from app.agent.core import Action, Args, Ask, Ctx, Refuse, register
 from app.agent.resolve import find_payee, find_reserve, payee_label
 from app.bank import directory, ledger, transfers
@@ -690,6 +691,8 @@ class OrderArgs(Args):
     deliver_on: str | None = Field(default=None, max_length=25)
     recipient: str | None = Field(default=None, max_length=40)
     pay_from: str | None = Field(default=None, max_length=40)
+    # a real shop the customer chose on the card from a search it showed them (not for the planner to fill in)
+    shop: str | None = Field(default=None, max_length=120)
 
 
 def order_resolve(ctx: Ctx, args: OrderArgs) -> dict:
@@ -718,7 +721,13 @@ def order_resolve(ctx: Ctx, args: OrderArgs) -> dict:
         found = find_reserve(ctx.session, ctx.user.id, args.pay_from)
         if found.value:
             pay_from, label, label_en = found.value.id, found.value.name, f"the “{found.value.name}” reserve"
-    return {"merchant": args.merchant, "shop": shop["name"], "shop_en": shop["name_en"], "booking": bool(shop.get("booking")),
+    place = None
+    if args.shop:  # the price stays the catalogue's: a reference price, since the shop's own isn't known
+        seen = find_place(ctx, args.shop)
+        place = {"id": seen.place_id, "name": seen.data["name"], "address": seen.data.get("address", ""),
+                 "phone": seen.data.get("phone", ""), "map_url": seen.data.get("map_url", "")}
+    return {"merchant": args.merchant, "shop": place["name"] if place else shop["name"],
+            "shop_en": place["name"] if place else shop["name_en"], "place": place, "booking": bool(shop.get("booking")),
             "item": item["code"],
             "item_name": item["name"], "item_name_en": item["name_en"], "fen": item["fen"],
             "deliver_on": deliver.isoformat() if deliver else args.deliver_on, "recipient": recipient,
@@ -731,9 +740,10 @@ def order_run(ctx: Ctx, r: dict) -> dict:
     else:
         source = ledger.account(ctx.session, ctx.user.id, r["pay_from"])
     shop = MERCHANTS[r["merchant"]]
-    txn = ledger.debit(ctx.session, source, r["fen"], when=ctx.now, kind="order", counterparty=shop["name"],
+    txn = ledger.debit(ctx.session, source, r["fen"], when=ctx.now, kind="order", counterparty=r["shop"],
                        plan_id=ctx.plan.id if ctx.plan else None, memo=r["item_name"], category=shop.get("category", "gifts"))
     order = Order(user_id=ctx.user.id, merchant=r["merchant"], item=r["item"], item_name=r["item_name"],
+                  shop_name=r["shop"] if r.get("place") else None,
                   amount_fen=r["fen"], deliver_on=r["deliver_on"],
                   recipient=r["recipient"]["payee_id"] if r["recipient"] else None, status="paid",
                   pay_from=source.id, pay_at=clock.iso(ctx.now), plan_id=ctx.plan.id if ctx.plan else None,
@@ -749,7 +759,7 @@ def order_compensate(ctx: Ctx, r: dict, res: dict) -> dict:
         target = ledger.account(ctx.session, ctx.user.id, order.pay_from) if ctx.session.get(BankAccount, order.pay_from).status == "open" \
             else ledger.checking(ctx.session, ctx.user.id)
         ledger.credit(ctx.session, target, order.amount_fen, when=ctx.now, kind="refund",
-                      counterparty=MERCHANTS[order.merchant]["name"], memo=ctx.t("订单取消退款", "Order cancelled"),
+                      counterparty=order.shop_name or MERCHANTS[order.merchant]["name"], memo=ctx.t("订单取消退款", "Order cancelled"),
                       category=MERCHANTS[order.merchant].get("category", "gifts"))
         order.status = "cancelled"
         ctx.session.add(order)
@@ -762,15 +772,21 @@ def order_describe(ctx: Ctx, r: dict) -> str:
     if r["recipient"]:
         who = ctx.t(f"，送给{r['recipient']['name']}", f" for {r['recipient']['name_en']}")
     paid = r.get("pay_from_label_en", r["pay_from_label"])
+    price = yuan(r["fen"]) + (ctx.t("（参考价）", " reference price") if r.get("place") else "")
     if r.get("booking"):
         who = ctx.t(f"，为{r['recipient']['name']}庆生", f" for {r['recipient']['name_en']}") if r["recipient"] else ""
-        return ctx.t(f"在{r['shop']}预订 {r['item_name']} {yuan(r['fen'])}，{r['deliver_on']} 用餐{who}，从{r['pay_from_label']}支付",
-                     f"Book {r['item_name_en']} at {r['shop_en']} ({yuan(r['fen'])}) on {r['deliver_on']}{who}, paid from {paid}")
-    return ctx.t(f"在{r['shop']}订购 {r['item_name']} {yuan(r['fen'])}，{r['deliver_on']} 送达{who}，从{r['pay_from_label']}支付",
-                 f"Order {r['item_name_en']} from {r['shop_en']} ({yuan(r['fen'])}), delivered {r['deliver_on']}{who}, paid from {paid}")
+        return ctx.t(f"在{r['shop']}预订 {r['item_name']} {price}，{r['deliver_on']} 用餐{who}，从{r['pay_from_label']}支付",
+                     f"Book {r['item_name_en']} at {r['shop_en']} ({price}) on {r['deliver_on']}{who}, paid from {paid}")
+    return ctx.t(f"在{r['shop']}订购 {r['item_name']} {price}，{r['deliver_on']} 送达{who}，从{r['pay_from_label']}支付",
+                 f"Order {r['item_name_en']} from {r['shop_en']} ({price}), delivered {r['deliver_on']}{who}, paid from {paid}")
 
 
 def order_reply(ctx: Ctx, r: dict, res: dict) -> str:
+    demo = ctx.t("演示：订单不会发给店家。", " A demo: the shop isn't sent the order.") if r.get("place") else ""
+    return _order_reply(ctx, r, res) + demo
+
+
+def _order_reply(ctx: Ctx, r: dict, res: dict) -> str:
     if r.get("booking"):
         return ctx.t(f"已预订 {r['item_name']}（{yuan(res['fen'])}），{res['deliver_on']} 用餐。",
                      f"Booked {r['item_name_en']} ({yuan(res['fen'])}) for {res['deliver_on']}.")

@@ -45,3 +45,11 @@ class Settings(BaseSettings):
     behind_proxy: bool = False
     scheduler_interval_seconds: int = Field(default=15, ge=1, le=300)
     sandbox_enabled: bool = True
+
+    # Real places (app/places.py): Amap and Tencent Location Service each answer once their key is set (Tencent's
+    # signing key too, when the key has signatures turned on); OpenStreetMap needs no key.
+    amap_key: SecretStr = Field(default=SecretStr(""), repr=False)
+    qqmap_key: SecretStr = Field(default=SecretStr(""), repr=False)
+    qqmap_sk: SecretStr = Field(default=SecretStr(""), repr=False)
+    places_osm: bool = True
+    nominatim_url: str = "https://nominatim.openstreetmap.org"

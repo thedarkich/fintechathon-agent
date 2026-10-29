@@ -38,6 +38,7 @@ The thresholds match the brief exactly. **Today's agent payments** = transfers +
 | `payees`, `cards`, `scheduled`, `collections`, `reserves`, `notifications` | green | `G_QUERY` |
 | `wealth_holdings`, `wealth_products`, `wealth_compare`, `wealth_recommend` | green | `G_QUERY` |
 | `contact_lookup`, `read_receipt` | green | `G_QUERY` |
+| `places_search` (real places from Amap, Tencent Maps and OpenStreetMap), `reservations` | green | `G_QUERY` |
 | `subscriptions` (query) | yellow | `Y_SUBSCRIPTION` (the brief lists subscription queries as yellow) |
 | `subscription_cancel`, `subscription_remind` | yellow | `Y_SUBSCRIPTION` |
 | `transfer`, `schedule_transfer`, `merchant_order` with today's agent payments ≤ ¥1,000 | yellow | `Y_SMALL_PAYMENT` |
@@ -54,6 +55,7 @@ The thresholds match the brief exactly. **Today's agent payments** = transfers +
 | `transfer_cancel` (a delayed transfer before it arrives) | yellow | `Y_TRANSFER_CANCEL` |
 | `scheduled_cancel` (a scheduled or monthly transfer) | yellow | `Y_SCHEDULE_CANCEL` |
 | `plan_cancel` (a plan with steps still waiting; `undo` also reverses finished steps) | yellow | `Y_STOP_PLAN` |
+| `book_table` (one of the places just shown; a demonstration, the restaurant is not told) | yellow | `Y_BOOKING` |
 | `wealth_subscribe` | red | `R_INVESTMENT` |
 | `password_change`, `pin_change` | red | `R_CREDENTIAL` |
 

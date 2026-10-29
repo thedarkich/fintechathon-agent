@@ -10,6 +10,7 @@ import { category, categoryColor, stamp, yuan } from '../lib/format'
 import { CategoryIcon } from './Icon'
 import { Badge, LIST, LoadError, Pager } from './bits'
 import { ConfirmCard } from './PlanView'
+import { PlacesCard, ReservationCard, ReservationsCard } from './Places'
 import { SealMark } from './Seal'
 
 /** A ruled table in the ledger's style. */
@@ -238,6 +239,12 @@ export function Result({ card }: { card: Card }) {
           <button className="btn btn-cinnabar py-1.5" onClick={() => navigate('/controls?tab=security')}>{tr('Verify', '去验证')}</button>
         </div>
       )
+    case 'places':
+      return <PlacesCard what={card.what} near={card.near} party={card.party} date={card.date} time={card.time} searchRef={card.ref} />
+    case 'reservation':
+      return <ReservationCard card={card} />
+    case 'reservations':
+      return <ReservationsCard card={card} />
     case 'receipt':
       return (
         <div className="flex items-center gap-3 card px-3 py-2.5">

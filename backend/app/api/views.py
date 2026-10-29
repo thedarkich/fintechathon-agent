@@ -69,6 +69,10 @@ def details(ctx: Ctx, action: str, r: dict | None) -> list[dict]:
         if r.get("recipient"):
             rows.append(row("为谁庆生" if r.get("booking") else "收货人", "For", r["recipient"]["name"] if zh else r["recipient"]["name_en"]))
         rows.append(row("付款", "Paid from", r["pay_from_label"] if zh else r.get("pay_from_label_en", r["pay_from_label"])))
+        if r.get("place"):
+            if r["place"].get("address"):
+                rows.append(row("店铺地址", "Shop address", r["place"]["address"]))
+            rows.append(row("说明", "Note", "演示：订单不会发给店家，价格为参考价" if zh else "A demo: the shop isn't sent the order; the price is for reference"))
         return rows
     if action == "collect":
         names = ("、" if zh else ", ").join(p["name"] if zh else p["name_en"] for p in r["people"])
@@ -98,6 +102,13 @@ def details(ctx: Ctx, action: str, r: dict | None) -> list[dict]:
         if r.get("undo") and r.get("done"):
             rows.append(row("撤销", "Undone", f"已完成的 {r['done']} 步" if zh else f"{r['done']} finished step(s)"))
         return rows
+    if action == "book_table":
+        rows = [row("餐厅", "Restaurant", r["name"])]
+        if r.get("address"):
+            rows.append(row("地址", "Address", r["address"]))
+        rows += [row("用餐时间", "When", f"{r['date']} {r['time']}"),
+                 row("人数", "People", f"{r['party']} 位" if zh else str(r["party"]))]
+        return rows
     if action == "transfer_cancel":
         return [row("撤销给", "Transfer to", r["payee"] if zh else r["payee_en"]), row("金额", "Amount", yuan(r["fen"]))]
     return []
@@ -123,6 +134,12 @@ def plan_view(plan: Plan, ctx: Ctx) -> dict:
             "fen": (resolved or {}).get("fen"),
             "purpose": s.get("purpose"), "purpose_needed": bool(s.get("purpose_needed")),
             "purpose_options": purpose_options(ctx.lang) if s.get("purpose_needed") or s.get("purpose") else None,
+            # an order's kind of shop, and the real shop chosen for it, if any (the card offers real shops nearby)
+            "shop_kind": (resolved or {}).get("merchant") if s["action"] == "merchant_order" else None,
+            "shop_place": (resolved or {}).get("place") if s["action"] == "merchant_order" else None,
+            # a table booked from a screen: its code, which the chat's reply would otherwise be the only place to see
+            "booking": action.card(ctx, resolved, s["result"]) if s["action"] == "book_table" and s.get("status") == "done"
+            and s.get("result") else None,
         })
     return {"id": plan.id, "status": plan.status, "tier": plan.tier, "source": plan.source, "model": plan.model, "flags": plan.flags,
             "approval_hash": plan.approval_hash if plan.status == "awaiting_approval" else None,

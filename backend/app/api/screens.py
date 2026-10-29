@@ -1,4 +1,4 @@
-"""The app's own screens: transfer by phone number.
+"""The app's own screens: transfer by phone number, and booking a table at a place a search found.
 
 Lookups here only read. Anything that moves money goes through POST /api/screens/plan, which makes the
 same kind of plan as the assistant and returns it waiting for the customer's confirmation.
@@ -28,7 +28,7 @@ def engine(request: Request):
 
 
 class ScreenPlanIn(BaseModel):
-    action: Literal["transfer", "phone_transfer"]
+    action: Literal["transfer", "phone_transfer", "book_table"]
     args: dict[str, Any] = Field(max_length=8)
     lang: Lang = "zh"
 

@@ -5,6 +5,7 @@ from app.agent.actions import (  # noqa: F401
     cards,
     control,
     payments,
+    places,
     queries,
     security,
     subscriptions,

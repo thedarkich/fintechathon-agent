@@ -10,6 +10,7 @@ import { useOverview } from '../lib/bank'
 import { useChat } from '../lib/chat'
 import { stamp, yuan } from '../lib/format'
 import { Notice, TierTag } from './bits'
+import { ShopPicker } from './Places'
 import { Decision } from './Decision'
 import { Seal, type MarkKind, type SealKind } from './Seal'
 import { VerifyDialog } from './Verify'
@@ -240,6 +241,8 @@ export function ConfirmCard({ planId, showRequest = false }: { planId: string; s
             </div>
           </fieldset>
         ))}
+
+        {waiting && <ShopPicker plan={p} busy={busy} onPick={(stepId, place) => void act(() => api.edit(p.id, stepId, { shop: place.id }, lang))} />}
 
         {waiting && (
           <div className="confirm-actions mt-4 flex flex-wrap items-center gap-2">

@@ -276,6 +276,7 @@ class Order(SQLModel, table=True):
     amount_fen: int
     deliver_on: str
     recipient: str | None = None
+    shop_name: str | None = None  # a real shop the customer chose (app/places.py); None for the partner shop
     status: str = "scheduled"  # scheduled | waiting_approval | paid | cancelled | failed
     pay_from: str
     pay_at: str
@@ -283,6 +284,42 @@ class Order(SQLModel, table=True):
     step_id: str | None = None
     created_at: str
     paid_at: str | None = None
+
+
+class PlaceSeen(SQLModel, table=True):
+    """A real place a search showed the customer (app/places.py), in the order shown, so a booking can point at it
+    ('the first one') by what was on the screen. The details are the map services' data, never the model's."""
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    user_id: str = Field(index=True)
+    search_id: str = Field(index=True)
+    rank: int
+    place_id: str
+    data: dict = json_dict()
+    seen_at: str = Field(default_factory=now_iso)
+    # the assistant's step that asked for the search, and when: what 'the latest list' means, whenever its card loads
+    ref: str | None = Field(default=None, index=True)
+    asked_at: str | None = None
+
+
+class Reservation(SQLModel, table=True):
+    """A table booked at a real place. A demonstration: nothing is sent to the restaurant."""
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    user_id: str = Field(index=True)
+    code: str
+    place_id: str
+    name: str
+    address: str = ""
+    phone: str = ""
+    lat: float
+    lon: float
+    sources: list = json_list()
+    at: str  # YYYY-MM-DDTHH:MM, China time
+    party: int
+    status: str = "booked"  # booked | cancelled
+    plan_id: str | None = None
+    created_at: str
 
 
 class Upload(SQLModel, table=True):

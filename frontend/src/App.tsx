@@ -44,6 +44,7 @@ const Controls = page(() => import('./pages/Controls'))
 const Ledger = page(() => import('./pages/Ledger'))
 const Operator = page(() => import('./pages/Operator'))
 const Wechat = page(() => import('./pages/Wechat'))
+const Places = page(() => import('./pages/Places'))
 const Confirm = page(() => import('./pages/Confirm'))
 const Register = () => <AuthPage register />
 
@@ -112,6 +113,7 @@ export default function App() {
                   <Route path="/controls" element={<Controls />} />
                   <Route path="/ledger" element={<Ledger />} />
                   <Route path="/wechat" element={<Wechat />} />
+                  <Route path="/places" element={<Places />} />
                   <Route path="/confirm/:planId" element={<Confirm />} />
                 </Route>
                 <Route path="/operator" element={<Operator />} />

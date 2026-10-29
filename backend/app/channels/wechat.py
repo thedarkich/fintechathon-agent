@@ -6,6 +6,7 @@ the chat app's servers, so account and phone numbers are masked and long lists a
 """
 
 import re
+from urllib.parse import urlencode
 
 from app.models import Message
 
@@ -50,9 +51,15 @@ def replies(messages: list[Message], lang: str) -> list[dict]:
         text, cut = shorten(for_chat(mask(m.text)), lang) if m.text else ("", False)
         page = None
         confirm = None
+        places = None
         for card in m.cards or []:
             if card.get("type") == "approval":
                 confirm = card
+            elif card.get("type") == "places":
+                # the places are found by the app's own page, with the location the phone shares there
+                places = "/places?" + urlencode({k: v for k, v in (("q", card.get("what")), ("near", card.get("near")),
+                                                                   ("party", card.get("party")), ("date", card.get("date")),
+                                                                   ("time", card.get("time"))) if v})
             elif card.get("type") == "question" and card.get("options"):
                 labels = [o.get("label_zh" if lang == "zh" else "label_en") or str(o.get("value")) for o in card["options"]]
                 text += "\n" + t(lang, "回复数字选择：", "Reply with a number:") + "".join(
@@ -70,6 +77,9 @@ def replies(messages: list[Message], lang: str) -> list[dict]:
             continue
         if text:
             out.append({"kind": "text", "text": text})
+        if places:
+            out.append({"kind": "link", "text": t(lang, "在 App 里看附近的地方、订座 →", "See the places and book in the app →"),
+                        "url": f"/#{places}"})
         if page and (cut or m.cards):
             out.append({"kind": "link", "text": t(lang, "在 App 里查看全部 →", "See it all in the app →"), "url": f"/#{page}"})
     return out

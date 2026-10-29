@@ -51,7 +51,8 @@ def screens_conversation(session: Session, user: UserAccount, kind: str = "scree
 
 
 # what History calls a screen request that never got as far as its details
-SCREEN_LABELS = {"transfer": ("转账", "Transfer"), "phone_transfer": ("手机号转账", "Transfer by phone number")}
+SCREEN_LABELS = {"transfer": ("转账", "Transfer"), "phone_transfer": ("手机号转账", "Transfer by phone number"),
+                 "book_table": ("订座", "Book a table")}
 
 
 class ScreenError(Exception):

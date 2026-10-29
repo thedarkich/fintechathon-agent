@@ -7,7 +7,7 @@ import type { WechatReply } from '../api/types'
 import { useLang } from '../i18n'
 import { Badge, Notice, PageHead, Section, TierTag } from '../components/bits'
 import { Icon } from '../components/Icon'
-import { BrandMark } from '../components/Seal'
+import { FOXY, Foxy } from '../components/Foxy'
 import { useAuth } from '../lib/auth'
 
 type Line = { id: number; from: 'me' | 'bank' | 'note'; reply?: WechatReply; text?: string }
@@ -124,7 +124,7 @@ export default function Wechat() {
     )
     return (
       <div className="flex gap-2">
-        <span className="mt-0.5 shrink-0"><BrandMark size={26} /></span>
+        <span className="mt-0.5 shrink-0"><Foxy size={26} /></span>
         <div className="card w-fit max-w-[85%] !rounded-tile !rounded-tl-md px-3.5 py-2 text-body">{body}</div>
       </div>
     )
@@ -141,8 +141,8 @@ export default function Wechat() {
       <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)]">
         <section aria-label={tr('Simulated WeChat chat', '模拟的微信聊天')} className="mx-auto w-full max-w-[400px] overflow-hidden rounded-[28px] border border-[var(--rule)] bg-[var(--card)] shadow-[0_12px_40px_var(--shadow)]">
           <header className="flex items-center gap-2 border-b border-[var(--rule)] px-4 py-3">
-            <BrandMark size={24} />
-            <p className="flex-1 font-semibold">{tr('Central Union Bank assistant', '中联银行助手')}</p>
+            <Foxy size={24} />
+            <p className="flex-1 font-semibold">{tr(`${FOXY.en}, Central Union Bank`, `${FOXY.zh}（中联银行）`)}</p>
             <Badge tone="grey">{tr('Simulated', '模拟')}</Badge>
           </header>
           <div ref={log} className="h-[460px] space-y-3 overflow-y-auto bg-paper2 px-3 py-4" aria-live="polite">

@@ -15,6 +15,7 @@ from app.db import make_engine
 from app.llm import ModelGateway
 from app.model_budget import ModelCallBudget
 from app.models import UserAccount, UserSession
+from app.places import Places
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class Runtime:
                 budget=ModelCallBudget(self.engine, settings.llm_hourly_call_cap))
         self.gateway = gateway
         self.planner = Planner(gateway, settings.ai_model)
+        self.places = Places(settings)
         self.background = background
         self.tasks: list[asyncio.Task] = []
         self.lease = None

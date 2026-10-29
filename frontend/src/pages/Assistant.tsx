@@ -6,7 +6,7 @@ import { api, errorText } from '../api/client'
 import type { UploadResult } from '../api/types'
 import { useLang } from '../i18n'
 import { Icon, type IconName } from '../components/Icon'
-import { BrandMark } from '../components/Seal'
+import { FOXY, Foxy } from '../components/Foxy'
 import { Result } from '../components/Results'
 import { ChatHistory } from '../components/ChatHistory'
 import { ReplyText } from '../components/ReplyText'
@@ -25,10 +25,11 @@ const SUGGESTIONS: [IconName, string, string][] = [
   ['bell', 'What subscriptions do I have?', '我有哪些自动续费'],
   ['trend', 'Recommend a low-risk product', '推荐一个稳健的理财'],
   ['clock', "Plan my wife's birthday next month", '下个月老婆生日，帮我准备一下'],
+  ['search', 'Good hot pot nearby?', '附近有什么好吃的火锅'],
 ]
 
 /** Answers whose card holds the details: the chat shows only the reply's first line, its headline. */
-const DATA_CARDS = new Set(['balances', 'transactions', 'spending', 'report', 'anomalies', 'subscriptions', 'cards', 'holdings', 'products', 'compare', 'analysis'])
+const DATA_CARDS = new Set(['balances', 'transactions', 'spending', 'report', 'anomalies', 'subscriptions', 'cards', 'holdings', 'products', 'compare', 'analysis', 'reservations'])
 
 const WIDE = '(min-width: 1024px)'  // from here the chat list sits beside the chat; below, it is a drawer
 const SIDEBAR_KEY = 'chat-history'
@@ -242,7 +243,10 @@ export default function Assistant() {
         <div ref={log} className="flex-1 space-y-5 py-5" aria-live="polite">
           {messages.length === 0 && !pending && (
             <div className="pt-6">
-              <h1 className="cond keep text-[2rem] font-semibold leading-tight">{name ? tr(`Hi ${name}. What can I do for you?`, `${name}，你好。今天想办点什么？`) : tr('What can I do for you?', '今天想办点什么？')}</h1>
+              <div className="flex items-center gap-4">
+                <Foxy size={56} />
+                <h1 className="cond keep text-[2rem] font-semibold leading-tight">{name ? tr(`Hi ${name}, I'm ${FOXY.en}. What can I do for you?`, `${name}，你好，我是${FOXY.zh}。今天想办点什么？`) : tr(`I'm ${FOXY.en}. What can I do for you?`, `我是${FOXY.zh}，今天想办点什么？`)}</h1>
+              </div>
               {tips.length > 0 && (
                 <div className="mt-6 space-y-2">
                   {tips.map((n) => (
@@ -277,7 +281,7 @@ export default function Assistant() {
             if (m.role === 'system') return <p key={m.id} data-msg={m.id} className="msg-in mx-auto max-w-[90%] text-center text-xs text-ink2">{m.text}</p>
             return (
               <div key={m.id} data-msg={m.id} className="msg-in flex gap-2.5" title={stamp(m.at)}>
-                <span className="mt-0.5 shrink-0">{m.role === 'operator' ? <span className="agent-avatar !h-7 !w-7"><Icon name="users" size={14} /></span> : <BrandMark size={28} />}</span>
+                <span className="mt-0.5 shrink-0">{m.role === 'operator' ? <span className="agent-avatar !h-7 !w-7"><Icon name="users" size={14} /></span> : <Foxy size={28} />}</span>
                 <div className="min-w-0 flex-1 space-y-2.5">
                   {m.role === 'operator' && <p className="text-xs font-semibold text-ink2">{tr('Bank staff', '人工客服')}</p>}
                   {m.text && <div className="bot-bubble card w-fit max-w-full !rounded-tile !rounded-tl-md px-4 py-2.5"><ReplyText text={m.cards.some((c) => DATA_CARDS.has(c.type)) ? m.text.split('\n')[0].replace(/[:：]\s*$/, '') : m.text} /></div>}

@@ -1,4 +1,4 @@
-# Project status (24 October 2026)
+# Project status (28 October 2026)
 
 For whoever continues the work, a person or a Claude Code session. Keep this file current: when something here changes,
 change it here too.
@@ -24,8 +24,8 @@ The organisers list five items. Four are required (必交), one is optional (可
 | **技术文档**: architecture diagram, algorithm description, security design | 必交 | Done | [ARCHITECTURE.zh.md](ARCHITECTURE.zh.md) ([English](ARCHITECTURE.md)): §一 architecture with [img/architecture.svg](img/architecture.svg), §二 a request end to end, §三 eleven core algorithms; [SECURITY.zh.md](SECURITY.zh.md) for the security design |
 | **答辩 PPT**: the talk is **at most 10 minutes** | 必交 | Done except the team details | [../submission/slides](../submission/slides) (three decks of 17 slides; speaker notes total **9:40**) and the same decks on claude.ai |
 | **源代码**: README, repository, deployment guide and test cases | 必交 | Done | public repo https://github.com/thedarkich/fintechathon-agent; [../README.zh.md](../README.zh.md) / [../README.md](../README.md) (with 部署 / Deploy); [../deploy](../deploy); [../backend/tests](../backend/tests); [../evals](../evals) |
-| **安全自评**: permission tiers and the list of known risks | 必交 | Done | [SECURITY.zh.md](SECURITY.zh.md) §2.1 (the three tiers) and §四 (15 known risks) |
-| **演示视频**: **at most 5 minutes** | 可选 | Not recorded | script: [DEMO.md](DEMO.md) |
+| **安全自评**: permission tiers and the list of known risks | 必交 | Done | [SECURITY.zh.md](SECURITY.zh.md) §2.1 (the three tiers) and §四 (16 known risks) |
+| **演示视频**: **at most 5 minutes** | 可选 | Recorded: phone 2:59 and PC 3:32, narrated, made before 小狐 and real places | the MP4s are not in git; [../submission/video](../submission/video) makes them again; script: [DEMO.md](DEMO.md) |
 
 Hard limits that come from these criteria:
 
@@ -37,7 +37,8 @@ Hard limits that come from these criteria:
 
 ## Measured numbers (quote these and nothing else)
 
-- **187 automated tests** (`bash scripts/check.sh` runs them).
+- **201 automated tests** (`bash scripts/check.sh` runs them; the decks, both videos and their scripts in
+  `docs/PITCH.md` and `docs/DEMO.md` still say 187, from before the real-places work).
 - **Offline planner** (18 October 2026): 224/224 everyday requests, 69/69 attacks ([eval/report-offline.md](eval/report-offline.md)).
 - **Qwen planner** (`qwen/qwen3.8-max` through TokenRouter, thinking off), full run on 23 October 2026, before that day's
   prompt fixes: 201/224 requests, 69/69 attacks, no attack ran anything without approval, a median of 3.7 s per plan

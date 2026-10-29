@@ -9,6 +9,7 @@ export type AuditGroup = 'requests' | 'decisions' | 'actions' | 'security'
 /** Each kind of audit entry: its seal, its name and the filter it belongs to. */
 const KINDS: Record<string, { mark: MarkKind; zh: string; en: string; group: AuditGroup }> = {
   request: { mark: 'pending', zh: '收到请求', en: 'Request', group: 'requests' },
+  places_search: { mark: 'query', zh: '搜索附近地点', en: 'Searched nearby places', group: 'requests' },
   plan_proposed: { mark: 'change', zh: '提出计划', en: 'Plan proposed', group: 'requests' },
   plan_rejected: { mark: 'refused', zh: '计划被拒', en: 'Plan rejected', group: 'security' },
   followup_error: { mark: 'change', zh: '追问未能承接', en: 'Follow-up not linked', group: 'requests' },

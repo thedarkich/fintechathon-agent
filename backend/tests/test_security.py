@@ -2,9 +2,11 @@
 
 import base64
 import hashlib
+from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
+from app.api import accounts
 from app.main import create_app
 from app.runtime import Runtime
 from tests.conftest import CUSTOMER, ORIGIN, settings
@@ -43,8 +45,11 @@ def logins(client, count, ip=None):
                         headers=headers).status_code for i in range(count)]
 
 
-def test_sign_in_attempts_and_chat_are_limited(tmp_path):
-    # a signed-in customer's chat is limited too (30 messages a minute); 61 tries cross at most one window edge
+def test_sign_in_attempts_and_chat_are_limited(tmp_path, monkeypatch):
+    # the limits count in fixed windows (15 minutes for sign-in): the clock stays mid-window, so a run that happens to
+    # cross a window's edge doesn't start the count again halfway through
+    monkeypatch.setattr(accounts, "time", SimpleNamespace(time=lambda: 1_800_000_450))
+    # a signed-in customer's chat is limited too (30 messages a minute)
     with app_client(tmp_path / "chat") as client:
         client.post("/api/register", json=CUSTOMER, headers=ORIGIN)
         codes = [client.post("/api/chat", json={"message": "余额", "lang": "zh"}, headers=ORIGIN).status_code for _ in range(61)]

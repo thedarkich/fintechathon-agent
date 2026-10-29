@@ -34,7 +34,39 @@ export type Directory =
   | { kind: 'payee'; payee: { id: string; name: string; note: string | null; bank: string; account_tail: string } }
   | { kind: 'directory'; name: string; bank: string; same_bank: boolean }
 
-export type ScreenAction = 'transfer' | 'phone_transfer'
+export type ScreenAction = 'transfer' | 'phone_transfer' | 'book_table'
+
+export type PlaceSource = 'amap' | 'qq' | 'osm'
+
+/** A real place from the map services (the backend's app/places.py), nearest first. */
+export interface Place {
+  rank: number
+  id: string
+  name: string
+  name_local: string
+  address: string
+  category: string
+  phone: string
+  rating: number | null
+  cost_yuan: number | null
+  hours: string
+  sources: PlaceSource[]
+  distance_m: number | null
+  map_url: string
+  /** the bank's own addresses for the place's photos (Amap's, fetched through the bank) */
+  photos: string[]
+}
+
+export interface PlacesResult {
+  search_id: string
+  items: Place[]
+  sources: Record<PlaceSource, 'ok' | 'failed' | 'off'>
+  located: 'device' | 'named' | 'fallback'
+  label: string | null
+  near_missed: boolean
+  /** how far the search looked: 3 km, or 8 km when nearer found little */
+  radius_m: number
+}
 
 /** One past chat in the assistant's history list. */
 export interface ConversationItem {
@@ -67,6 +99,11 @@ export interface PlanStep {
   purpose?: string | null
   purpose_needed?: boolean
   purpose_options?: { value: string; label: string }[] | null
+  /** a partner-shop order's kind of shop, and the real shop the customer chose instead, if any */
+  shop_kind?: 'florist' | 'bakery' | 'gift' | 'restaurant' | null
+  shop_place?: { id: string; name: string; address: string; phone: string; map_url: string } | null
+  /** a table booked from a screen, once done: its code and the place */
+  booking?: Card | null
 }
 
 export interface Plan {

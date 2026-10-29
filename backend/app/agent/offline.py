@@ -40,6 +40,20 @@ SHOPS = (("florist", ("花", "flower")), ("bakery", ("蛋糕", "cake")),
          ("restaurant", ("餐厅", "订座", "订位", "订桌", "订个桌", "晚餐", "吃顿饭", "吃饭", "dinner", "restaurant", "table for")))
 
 
+# real places: kinds of place, most specific first ('火锅' before '餐厅'); the words that ask for somewhere nearby or for a
+# table; and picking one of the places just shown ('订第一家', 'book the first one')
+PLACE_KINDS = ("火锅", "烧烤", "川菜", "湘菜", "粤菜", "东北菜", "日料", "日本料理", "寿司", "韩餐", "韩国料理", "西餐", "牛排", "披萨",
+               "海鲜", "面馆", "小吃", "早茶", "自助餐", "咖啡", "奶茶", "茶馆", "花店", "蛋糕店", "面包店", "酒吧", "取款机", "ATM",
+               "银行网点", "餐厅", "饭店", "餐馆", "饭馆", "好吃的",
+               "hot pot", "hotpot", "bbq", "barbecue", "sichuan", "cantonese", "dim sum", "japanese", "sushi", "korean",
+               "steak", "pizza", "seafood", "noodles", "coffee", "cafe", "florist", "bakery", "bar", "atm", "restaurants",
+               "restaurant")
+PLACE_ASK = ("附近", "周边", "旁边", "周围", "nearby", "near me", "around here", "close by")
+TABLE_WORDS = ("订座", "订位", "订桌", "订个桌", "订个位", "订个座", "book a table", "reserve a table", "table for")
+PICK = re.compile(r"(?:订|预订|book|reserve)\s*(?:the\s+)?(第\s*[一二两三四五六七八九十\d]{1,2}\s*[家个]?|[一二两三四五六七八九十\d]{1,2}\s*号"
+                  r"|最后一家|(?:first|second|third|fourth|fifth|last)(?:\s+one)?|number\s+\d{1,2})", re.IGNORECASE)
+
+
 def cn_number(text: str) -> float | None:
     """'两千五' -> 2500, '三百' -> 300, '1万' -> 10000, '一千二百' -> 1200."""
     if not text:
@@ -285,6 +299,59 @@ def new_payee(text: str) -> PlanOut:
     return one("payee_add", args)
 
 
+def place_kind(text: str) -> str | None:
+    lowered = text.lower()
+    if kind := next((w for w in PLACE_KINDS if found(w.lower(), lowered)), None):
+        return kind
+    # a place named for the table ('在海底捞订座'), not where to look ('在家附近订个位')
+    if (m := re.search(r"(?:在|去)\s*([一-龥A-Za-z]{2,10}?)\s*(?:订|预订|吃)", text)) \
+            and not re.search(r"附近|周边|旁边|周围|^(?:家|我家|公司)$", m.group(1)):
+        return m.group(1)
+    return None
+
+
+def near_from(text: str) -> str | None:
+    """A place the customer names to search around ('武汉大学附近'); None for their own location ('我家附近', 'near me')."""
+    if m := re.search(r"([一-龥A-Za-z0-9]{2,15}?)(?:附近|周边|旁边|周围)", text):
+        place = re.sub(r"^(?:帮我|帮忙|麻烦|请|我想|我要|找找|找一下|找|看看|查查|推荐|在|去)+", "", m.group(1))
+        if place and place not in ("我", "我这", "这", "这里", "这儿", "家", "我家", "公司", "我们", "我们这"):
+            return place
+    if m := re.search(r"\bnear\s+(?!me\b|here\b|by\b)([A-Za-z][\w .'-]{2,30}?)(?:[,.?!]|$)", text):
+        return m.group(1).strip()
+    return None
+
+
+def party_from(text: str) -> int | None:
+    if m := re.search(r"(\d{1,2}|[一二两三四五六七八九十]{1,3})\s*(?:个人|口人|人|位)", text):
+        number = int(m.group(1)) if m.group(1).isdigit() else cn_number(m.group(1))
+        return int(number) if number and 1 <= number <= 20 else None
+    if m := re.search(r"\b(?:for|table for)\s+(\d{1,2})\b|\b(\d{1,2})\s+(?:people|persons|guests)\b", text.lower()):
+        number = int(m.group(1) or m.group(2))
+        return number if 1 <= number <= 20 else None
+    return None
+
+
+def table_slot(text: str, today: date) -> str | None:
+    """When a table is for: '明晚7点' is 19:00 tomorrow, '今晚' is today, a meal with no hour is noon or 7 pm."""
+    lowered = text.lower()
+    said, _ = when_from(text, today)
+    day = date.fromisoformat(said[:10]) if said else None
+    if day is None and has(text, "明晚", "明早", "明中午", "明儿"):
+        day = today + timedelta(days=1)
+    elif day is None and has(text, "今天", "今晚", "tonight", "today"):
+        day = today
+    if day is None:
+        return None
+    m = re.search(r"(\d{1,2})(?:[:：](\d{2})|\s*点(半)?|\s*(am|pm))", lowered)
+    if m:
+        hour, minute = int(m.group(1)), int(m.group(2) or (30 if m.group(3) else 0))
+        if hour < 12 and (m.group(4) == "pm" or hour <= 5 or has(text, "晚", "下午", "tonight", "evening", "dinner")):
+            hour += 12
+    else:
+        hour, minute = (12, 0) if has(text, "中午", "午饭", "午餐", "lunch", "noon") else (19, 0)
+    return f"{day.isoformat()}T{hour:02d}:{minute:02d}" if hour < 24 and minute < 60 else None
+
+
 def step(n: int, action: str, args: dict | None = None, **extra) -> StepOut:
     return StepOut(id=f"s{n}", action=action, args=args or {}, **extra)
 
@@ -458,6 +525,16 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
             steps.append(step(n, "merchant_order", {"merchant": merchant, "deliver_on": day, "recipient": who,
                                                     "pay_from": "$s2.reserve_id"}, after=["s1", "s2"], run_at=run_at))
         return PlanOut(steps=steps)
+
+    # a table at one of the places just shown ('订第一家，明晚7点4位'), and real places nearby ('附近有什么好吃的火锅')
+    if m := PICK.search(text):
+        return one("book_table", {"place": m.group(1).strip(), "at": table_slot(text, today), "party": party_from(text)})
+    named_table = re.search(r"(?:在|去)\s*[一-龥A-Za-z]{2,10}?\s*(?:订|预订)", text)  # '在海底捞订明天中午6位'
+    if has(text, *PLACE_ASK, *TABLE_WORDS) or named_table or (place_kind(text) and has(
+            text, "找", "推荐", "哪里有", "哪儿有", "哪有", "哪家", "find", "recommend", "where can i", "where is a", "where's a")):
+        what = place_kind(text) or ("餐厅" if re.search(r"[一-龥]", text) else "restaurant")
+        return one("places_search", {"what": what, "near": near_from(text), "party": party_from(text),
+                                     "when": table_slot(text, today)})
 
     # cards; '健身卡下次扣钱前提醒我' is a subscription, said with the word 卡
     if has(text, "卡", "card") and not (any(n in lowered for n in SUB_NAMES)
