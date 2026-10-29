@@ -44,6 +44,9 @@ function distance(m: number | null, zh: boolean) {
   return zh ? `${(m / 1000).toFixed(1)} 公里` : `${(m / 1000).toFixed(1)} km`
 }
 
+// where nobody books a table (the backend's NOT_DINING in app/agent/actions/places.py)
+const NOT_DINING = /花店|鲜花|花卉|蛋糕|面包|礼品|超市|取款|atm|银行|florist|flower|bakery|cake|gift|supermarket|bank/i
+
 /** Choosing a place for something else (a shop for an order) instead of booking a table there. */
 type Pick = { label: string; busy: boolean; chosen?: string | null; onPick: (place: Place) => void }
 
@@ -89,7 +92,8 @@ export function PlacesCard({ what, label, near, party, date, time, searchRef, pi
       )}
       {data && data.items.length > 0 && (
         <ol className="divide-y divide-rule">
-          {data.items.map((place) => <PlaceRow key={place.id} place={place} party={party} date={date} time={time} pick={pick} />)}
+          {data.items.map((place) => <PlaceRow key={place.id} place={place} party={party} date={date} time={time} pick={pick}
+            bookable={!NOT_DINING.test(what)} />)}
         </ol>
       )}
       {data && (
@@ -105,7 +109,7 @@ export function PlacesCard({ what, label, near, party, date, time, searchRef, pi
   )
 }
 
-function PlaceRow({ place, party, date, time, pick }: { place: Place; party?: number | null; date?: string | null; time?: string | null; pick?: Pick }) {
+function PlaceRow({ place, party, date, time, pick, bookable }: { place: Place; party?: number | null; date?: string | null; time?: string | null; pick?: Pick; bookable: boolean }) {
   const { tr, lang } = useLang()
   const zh = lang === 'zh'
   const [open, setOpen] = useState(false)
@@ -130,14 +134,14 @@ function PlaceRow({ place, party, date, time, pick }: { place: Place; party?: nu
           {place.hours && <p className="mt-0.5 text-cap text-ink2">{tr('Hours', '营业')} {place.hours}</p>}
           {place.photos.length > 0 && (
             <div className="mt-2 flex gap-2 overflow-x-auto">
-              {place.photos.map((src, i) => <img key={src} src={src} loading="lazy" alt={tr(`${place.name}, photo ${i + 1}`, `${place.name}照片 ${i + 1}`)}
-                className="h-20 w-28 shrink-0 rounded-box bg-paper2 object-cover" />)}
+              {place.photos.map((src, i) => <img key={src} src={src} loading="lazy" decoding="async" alt={tr(`${place.name}, photo ${i + 1}`, `${place.name}照片 ${i + 1}`)}
+                onError={(e) => { e.currentTarget.hidden = true }} className="h-20 w-28 shrink-0 rounded-box bg-paper2 object-cover" />)}
             </div>
           )}
           <div className="mt-2 flex flex-wrap gap-2">
             {pick
               ? <button type="button" disabled={pick.busy} aria-pressed={pick.chosen === place.id} onClick={() => pick.onPick(place)} className="btn btn-ink py-1.5 text-sm">{pick.chosen === place.id ? tr('Chosen', '已选') : pick.label}</button>
-              : <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="btn btn-ink py-1.5 text-sm">{tr('Book a table', '订座')}</button>}
+              : bookable && <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="btn btn-ink py-1.5 text-sm">{tr('Book a table', '订座')}</button>}
             <a href={place.map_url} target="_blank" rel="noopener noreferrer" className="btn btn-line gap-1 py-1.5 text-sm"><MapPin size={14} />{tr('Map', '地图')}</a>
             {tel && <a href={`tel:${tel}`} className="btn btn-line gap-1 py-1.5 text-sm"><Phone size={14} />{tr('Call', '电话')}</a>}
           </div>
@@ -281,7 +285,7 @@ export function ShopPicker({ plan, busy, onPick }: { plan: PlanData; busy: boole
             <li key={s.id} className="py-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="min-w-0 text-sm">
-                  <span className="text-ink2">{tr(kind.en, kind.zh)}：</span>
+                  <span className="text-ink2">{tr(`${kind.en}: `, `${kind.zh}：`)}</span>
                   <span className="font-semibold">{s.shop_place?.name ?? tr('the bank\'s partner shop', '银行合作商户')}</span>
                 </span>
                 <button type="button" aria-expanded={open === s.id} onClick={() => setOpen(open === s.id ? null : s.id)} className="btn btn-line py-1 text-sm">

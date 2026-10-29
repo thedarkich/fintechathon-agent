@@ -53,8 +53,21 @@ def search_resolve(ctx: Ctx, args: SearchArgs) -> dict:
     return {"what": args.what, "near": args.near, "party": args.party, "date": day, "time": slot[1] if slot else None}
 
 
+# where nobody books a table (the card in frontend/src/components/Places.tsx keeps the same list)
+NOT_DINING = ("花店", "鲜花", "花卉", "蛋糕", "面包", "礼品", "超市", "取款", "atm", "银行", "florist", "flower", "bakery",
+              "cake", "gift", "supermarket", "bank")
+
+
+def bookable(what: str) -> bool:
+    lowered = what.lower()
+    return not any(word in lowered for word in NOT_DINING)
+
+
 def search_reply(ctx: Ctx, r: dict, res: dict) -> str:
     where = ctx.t(f"{r['near']}附近", f" near {r['near']}") if r["near"] else ctx.t("附近", " nearby")
+    if not bookable(r["what"]):
+        return ctx.t(f"我来找找{where}的{r['what']}：都是地图上真实的地方。",
+                     f"Here are real places for “{r['what']}”{where}, from the maps.")
     return ctx.t(f"我来找找{where}的{r['what']}：都是地图上真实的地方，看中哪家就点“订座”。",
                  f"Here are real places for “{r['what']}”{where}, from the maps. Pick one and tap Book.")
 

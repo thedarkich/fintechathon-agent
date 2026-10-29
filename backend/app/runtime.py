@@ -59,6 +59,7 @@ class Runtime:
         await asyncio.gather(*self.tasks, return_exceptions=True)
         if self.lease:
             self.lease.close()
+        await self.places.close()
 
     def active_users(self, session: Session) -> list[UserAccount]:
         ids = set(session.exec(select(UserSession.user_id).where(UserSession.expires_at > int(time.time()))).all())

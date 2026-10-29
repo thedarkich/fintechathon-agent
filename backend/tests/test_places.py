@@ -9,10 +9,11 @@ from datetime import date, timedelta
 import httpx
 from sqlmodel import Session, select
 
+from app.agent import offline
 from app.channels import wechat
 from app.config import Settings
 from app.models import Message, Reservation, Txn
-from app.places import Places, gcj_to_wgs, metres, qq_signed, terms, wgs_to_gcj
+from app.places import Places, gcj_to_wgs, metres, qq_signed, terms, view, wgs_to_gcj
 
 HERE = (22.5431, 114.0579)  # Futian, Shenzhen
 HAIDILAO = (22.5440, 114.0585)
@@ -97,6 +98,8 @@ def test_one_place_from_three_sources_becomes_one_entry():
     assert first.sources == ["amap", "qq", "osm"]
     assert (first.rating, first.cost_yuan, first.phone, first.name_en) == (4.6, 126.0, "0755-12345678", "Haidilao Hot Pot")
     assert metres(*HAIDILAO, first.lat, first.lon) < 1  # back in GPS coordinates
+    # Amap's categories are Chinese only: the English screen gets the common ones in English
+    assert (view(first, 1, "zh")["category"], view(first, 1, "en")["category"]) == ("火锅店", "Hot pot")
     assert [p.distance_m for p in places] == sorted(p.distance_m for p in places)
 
 
@@ -117,6 +120,23 @@ def test_without_keys_only_openstreetmap_answers():
     places, status = search(Places(Settings(_env_file=None), transport=httpx.MockTransport(record)))
     assert status == {"amap": "off", "qq": "off", "osm": "ok"} and set(seen) == {"nominatim.openstreetmap.org"}
     assert [p.name for p in places] == ["海底捞火锅", "孔亮火锅"]
+
+
+def test_the_offline_planner_reads_places_said_many_ways():
+    # with no AI model the offline planner answers; the last request is about the account, not a café
+    today = date(2026, 10, 29)
+    for text, what, near in (("Any good hot pot near Huaqiangbei?", "hot pot", "Huaqiangbei"),
+                             ("华强北有什么好吃的火锅", "火锅", "华强北"), ("万象城有没有好吃的日料", "日料", "万象城"),
+                             ("where to eat near Futian", "restaurant", "Futian"), ("晚上去哪吃", "餐厅", None)):
+        step = offline.plan(text, today).steps[0]
+        assert (step.action, step.args["what"], step.args.get("near")) == ("places_search", what, near), text
+    assert offline.plan("coffee spending near the end of the month", today).steps[0].action != "places_search"
+
+
+def test_only_places_to_eat_offer_a_table(bank):
+    flowers = bank.chat("附近的花店")["messages"][-1]["text"]
+    hot_pot = bank.chat("附近有什么好吃的火锅")["messages"][-1]["text"]
+    assert "订座" not in flowers and "订座" in hot_pot
 
 
 def test_a_named_place_is_found_across_china_or_near_the_customer():
@@ -218,6 +238,8 @@ def test_find_and_book_a_table(bank):
         "place": found["items"][0]["id"], "at": f"{tomorrow}T19:00", "party": 4}}).json()["plan"]
     assert plan["status"] == "awaiting_approval" and plan["tier"] == "yellow"
     assert plan["steps"][0]["rule"] == "Y_BOOKING"
+    # the card says plainly that the restaurant isn't told
+    assert {"label": "说明", "value": "演示：订座记在银行里，不会发给餐厅"} in plan["steps"][0]["details"]
     done = bank.approve(plan).json()
     assert done["plan"]["status"] == "done"
     assert "不会发给餐厅" in done["messages"][0]["text"]
@@ -260,6 +282,24 @@ def test_photos_come_only_through_the_bank_and_only_from_the_maps(bank):
     assert photo.status_code == 200 and photo.headers["content-type"] == "image/jpeg" and photo.content.startswith(b"\xff\xd8")
     assert bank.client.get("/api/places/photo?id=amap%3AB0FFTEST01&n=1").status_code == 404
     assert bank.client.get("/api/places/photo?id=amap%3ANEVERSEEN&n=0").status_code == 404
+
+
+def test_photos_come_resized_and_are_kept_for_a_while():
+    fetched = []
+
+    def images(request):
+        fetched.append(str(request.url))
+        if "x-oss-process" in request.url.query.decode() and "broken" in request.url.path:
+            return httpx.Response(404)  # an image the resizer can't take: the original comes instead
+        return httpx.Response(200, content=b"\xff\xd8\xff\xe0 a photo", headers={"content-type": "image/jpeg"})
+    places = Places(Settings(_env_file=None), transport=httpx.MockTransport(images))
+    small = "https://store.is.autonavi.com/showpic/abc?type=pic"
+    assert asyncio.run(places.photo(small))[1] == "image/jpeg"
+    assert fetched == [small + "&x-oss-process=image/resize,w_320"]
+    asyncio.run(places.photo(small))
+    assert len(fetched) == 1  # the second time, from memory
+    broken = "https://aos-comment.amap.com/B0/comment/broken.jpg"
+    assert asyncio.run(places.photo(broken)) is not None and fetched[-1] == broken
 
 
 def test_the_birthday_plan_can_order_from_a_real_shop(bank):

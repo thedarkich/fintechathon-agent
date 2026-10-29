@@ -12,6 +12,7 @@ What comes back is data shown to the customer, never text for the model: a place
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import hashlib
 import logging
 import math
@@ -36,6 +37,8 @@ CACHE_SECONDS = 600
 SOURCES = ("amap", "qq", "osm")
 PHOTOS = 3  # per place
 PHOTO_BYTES = 3_000_000
+PHOTO_WIDTH = 320  # pixels: Amap's images come resized (its originals run to 2000 pixels and 600 KB)
+PHOTO_CACHE = 200  # photos kept in memory, for a card that loads again
 NAMED_RADIUS = 50_000  # metres: how far from the customer a named place ('万象城') is looked for
 # where a place's photos may come from: Amap's image servers, and Wikimedia for the odd OpenStreetMap place with a picture
 PHOTO_HOSTS = (".autonavi.com", ".amap.com")
@@ -222,6 +225,17 @@ OSM_TYPES = {"restaurant": ("餐厅", "Restaurant"), "cafe": ("咖啡馆", "Cafe
              "bar": ("酒吧", "Bar"), "pub": ("酒吧", "Pub"), "food_court": ("美食广场", "Food court"),
              "florist": ("花店", "Florist"), "bakery": ("面包店", "Bakery"), "confectionery": ("甜品店", "Sweets"),
              "hotel": ("酒店", "Hotel"), "supermarket": ("超市", "Supermarket"), "atm": ("ATM", "ATM"), "bank": ("银行", "Bank")}
+# Amap's and Tencent's categories come only in Chinese: the common ones, for the English screen (others stay as they are)
+CATEGORY_EN = {
+    "餐饮相关": "Restaurant", "中餐厅": "Chinese restaurant", "综合酒楼": "Chinese restaurant", "火锅店": "Hot pot",
+    "火锅": "Hot pot", "海鲜酒楼": "Seafood", "四川菜(川菜)": "Sichuan", "川菜": "Sichuan", "广东菜(粤菜)": "Cantonese",
+    "粤菜": "Cantonese", "湖南菜(湘菜)": "Hunan", "湘菜": "Hunan", "潮州菜": "Chaozhou", "东北菜": "Northeastern",
+    "茶餐厅": "Hong Kong café", "快餐厅": "Fast food", "外国餐厅": "International", "西餐厅": "Western",
+    "日本料理": "Japanese", "韩国料理": "Korean", "咖啡厅": "Café", "咖啡": "Café", "茶艺馆": "Teahouse",
+    "冷饮店": "Drinks", "甜品店": "Desserts", "糕饼店": "Bakery", "面包甜点": "Bakery", "烧烤": "Barbecue",
+    "酒吧": "Bar", "花卉": "Florist", "花卉市场": "Florist", "花店": "Florist", "礼品饰品店": "Gift shop",
+    "超级市场": "Supermarket", "超市": "Supermarket", "银行": "Bank", "自动提款机": "ATM",
+}
 
 
 def _osm_region(address: dict) -> str:
@@ -276,6 +290,22 @@ async def _again(call, *args):
         return await call(*args)
 
 
+async def _image(client: httpx.AsyncClient, url: str) -> tuple[bytes, str] | None:
+    try:
+        async with client.stream("GET", url) as response:
+            kind = response.headers.get("content-type", "").split(";")[0].strip().lower()
+            if response.status_code != 200 or kind not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
+                return None
+            body = b""
+            async for chunk in response.aiter_bytes():
+                body += chunk
+                if len(body) > PHOTO_BYTES:
+                    return None
+            return body, kind
+    except httpx.HTTPError:
+        return None
+
+
 def photo_allowed(url: str) -> bool:
     parts = urlsplit(url)
     host = (parts.hostname or "").lower()
@@ -327,6 +357,8 @@ class Places:
         self.transport = transport
         self.cache: dict[tuple, tuple[float, list[Place], dict]] = {}
         self.regions: dict[tuple, str] = {}
+        self.photos: dict[str, tuple[bytes, str]] = {}
+        self._shared: tuple[asyncio.AbstractEventLoop, httpx.AsyncClient] | None = None
         self._osm_lock: asyncio.Lock | None = None
         self._osm_last = 0.0
 
@@ -336,6 +368,20 @@ class Places:
     def client(self) -> httpx.AsyncClient:
         return httpx.AsyncClient(timeout=TIMEOUT, transport=self.transport, headers={"User-Agent": USER_AGENT},
                                  follow_redirects=False)
+
+    @contextlib.asynccontextmanager
+    async def connection(self):
+        """The one client the server keeps open to the map services: on a slow link a new encrypted connection takes
+        longer than the request itself (1.8 s of 2.4 s, measured to Amap on 29 October)."""
+        loop = asyncio.get_running_loop()
+        if self._shared is None or self._shared[0] is not loop or self._shared[1].is_closed:
+            self._shared = (loop, self.client())
+        yield self._shared[1]
+
+    async def close(self):
+        if self._shared and not self._shared[1].is_closed:
+            await self._shared[1].aclose()
+        self._shared = None
 
     async def _osm_turn(self):
         """Nominatim's usage policy allows one request a second from an application."""
@@ -361,7 +407,7 @@ class Places:
         china, world = terms(query)
         on = self.enabled()
         status = {name: "off" for name in SOURCES}
-        async with self.client() as client:
+        async with self.connection() as client:
             calls = {}
             if on["amap"]:
                 calls["amap"] = _again(amap, client, self.amap_key, china, lat, lon, radius)
@@ -399,7 +445,7 @@ class Places:
         if key not in self.regions:
             try:
                 await self._osm_turn()
-                async with self.client() as client:
+                async with self.connection() as client:
                     data = (await client.get(f"{self.osm_base}/reverse", params={
                         "lat": f"{lat:.5f}", "lon": f"{lon:.5f}", "format": "jsonv2", "zoom": 10, "addressdetails": 1})).json()
                 region = _osm_region(data.get("address") or {})
@@ -412,23 +458,23 @@ class Places:
 
     async def photo(self, url: str) -> tuple[bytes, str] | None:
         """A place's photo for the customer's page (the page itself loads nothing from outside): only from the allowed
-        hosts, only a raster image, at most PHOTO_BYTES."""
+        hosts, only a raster image, at most PHOTO_BYTES. Amap's come resized to PHOTO_WIDTH (the original if that fails),
+        and the latest few are kept."""
         if not photo_allowed(url):
             return None
-        async with self.client() as client:
-            try:
-                async with client.stream("GET", url) as response:
-                    kind = response.headers.get("content-type", "").split(";")[0].strip().lower()
-                    if response.status_code != 200 or kind not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
-                        return None
-                    body = b""
-                    async for chunk in response.aiter_bytes():
-                        body += chunk
-                        if len(body) > PHOTO_BYTES:
-                            return None
-                    return body, kind
-            except httpx.HTTPError:
-                return None
+        if (kept := self.photos.pop(url, None)) is not None:
+            self.photos[url] = kept
+            return kept
+        async with self.connection() as client:
+            got = None
+            if (urlsplit(url).hostname or "").endswith(PHOTO_HOSTS):
+                got = await _image(client, f"{url}{'&' if '?' in url else '?'}x-oss-process=image/resize,w_{PHOTO_WIDTH}")
+            got = got or await _image(client, url)
+        if got:
+            if len(self.photos) >= PHOTO_CACHE:
+                self.photos.pop(next(iter(self.photos)))
+            self.photos[url] = got
+        return got
 
     async def _amap_locate(self, client, text, lang, centre):
         # Amap's place search knows '武汉大学' across China (its address lookup puts it in Zhuhai first); a name it
@@ -466,7 +512,7 @@ class Places:
         asked only when the one before doesn't know it. The centre (the customer's location) settles a name with many
         places."""
         on = self.enabled()
-        async with self.client() as client:
+        async with self.connection() as client:
             for name, ask in (("amap", self._amap_locate), ("qq", self._qq_locate), ("osm", self._osm_locate)):
                 if not on[name]:
                     continue
@@ -483,7 +529,8 @@ def view(place: Place, rank: int, lang: str) -> dict:
     glat, glon = wgs_to_gcj(place.lat, place.lon)
     name = place.name_en if lang == "en" and place.name_en else place.name
     return {"rank": rank, "id": place.id, "name": name, "name_local": place.name, "address": place.address,
-            "category": place.category, "phone": place.phone, "rating": place.rating, "cost_yuan": place.cost_yuan,
+            "category": CATEGORY_EN.get(place.category, place.category) if lang == "en" else place.category,
+            "phone": place.phone, "rating": place.rating, "cost_yuan": place.cost_yuan,
             "hours": place.hours, "sources": place.sources, "distance_m": place.distance_m,
             "photos": ["/api/places/photo?" + urlencode({"id": place.id, "n": n}) for n in range(len(place.photos))],
             "map_url": "https://uri.amap.com/marker?" + urlencode({"position": f"{glon:.6f},{glat:.6f}", "name": place.name,

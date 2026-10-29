@@ -49,6 +49,11 @@ PLACE_KINDS = ("火锅", "烧烤", "川菜", "湘菜", "粤菜", "东北菜", "�
                "steak", "pizza", "seafood", "noodles", "coffee", "cafe", "florist", "bakery", "bar", "atm", "restaurants",
                "restaurant")
 PLACE_ASK = ("附近", "周边", "旁边", "周围", "nearby", "near me", "around here", "close by")
+# asking what's good, said with a kind of place ('华强北有什么好吃的火锅', 'any good coffee near Huaqiangbei')
+PLACE_WHAT = ("有什么好", "有啥好", "有没有好", "哪家好", "any good")
+EAT_OUT = ("where to eat", "somewhere to eat", "places to eat", "吃什么好", "去哪吃", "去哪儿吃")
+# money words: 'coffee spending near the end of the month' is about the account, not a café
+MONEY_WORDS = ("spend", "spent", "cost", "paid", "pay", "transaction", "花了", "花费", "消费", "支出", "账单", "付了")
 TABLE_WORDS = ("订座", "订位", "订桌", "订个桌", "订个位", "订个座", "book a table", "reserve a table", "table for")
 PICK = re.compile(r"(?:订|预订|book|reserve)\s*(?:the\s+)?(第\s*[一二两三四五六七八九十\d]{1,2}\s*[家个]?|[一二两三四五六七八九十\d]{1,2}\s*号"
                   r"|最后一家|(?:first|second|third|fourth|fifth|last)(?:\s+one)?|number\s+\d{1,2})", re.IGNORECASE)
@@ -318,6 +323,10 @@ def near_from(text: str) -> str | None:
             return place
     if m := re.search(r"\bnear\s+(?!me\b|here\b|by\b)([A-Za-z][\w .'-]{2,30}?)(?:[,.?!]|$)", text):
         return m.group(1).strip()
+    # '华强北有什么好吃的火锅': the place, then what it has
+    if (m := re.match(r"(?:在|去)?([一-龥A-Za-z0-9]{2,10}?)(?:有什么|有啥|有没有|哪家)", text)) \
+            and m.group(1) not in ("附近", "周边", "旁边", "周围", "这边", "这里", "这儿", "我们这", "我家", "公司", "我们"):
+        return m.group(1)
     return None
 
 
@@ -530,8 +539,9 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     if m := PICK.search(text):
         return one("book_table", {"place": m.group(1).strip(), "at": table_slot(text, today), "party": party_from(text)})
     named_table = re.search(r"(?:在|去)\s*[一-龥A-Za-z]{2,10}?\s*(?:订|预订)", text)  # '在海底捞订明天中午6位'
-    if has(text, *PLACE_ASK, *TABLE_WORDS) or named_table or (place_kind(text) and has(
-            text, "找", "推荐", "哪里有", "哪儿有", "哪有", "哪家", "find", "recommend", "where can i", "where is a", "where's a")):
+    if has(text, *PLACE_ASK, *TABLE_WORDS, *EAT_OUT) or named_table or (place_kind(text) and (has(
+            text, "找", "推荐", "哪里有", "哪儿有", "哪有", "哪家", "find", "recommend", "where can i", "where is a", "where's a",
+            *PLACE_WHAT) or (near_from(text) and not has(text, *MONEY_WORDS)))):
         what = place_kind(text) or ("餐厅" if re.search(r"[一-龥]", text) else "restaurant")
         return one("places_search", {"what": what, "near": near_from(text), "party": party_from(text),
                                      "when": table_slot(text, today)})

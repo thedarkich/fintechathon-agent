@@ -37,7 +37,7 @@ Hard limits that come from these criteria:
 
 ## Measured numbers (quote these and nothing else)
 
-- **203 automated tests** (`bash scripts/check.sh` runs them; the decks, both videos and their scripts in
+- **206 automated tests** (`bash scripts/check.sh` runs them; the decks, both videos and their scripts in
   `docs/PITCH.md` and `docs/DEMO.md` still say 187, from before the real-places work).
 - **Offline planner** (18 October 2026): 224/224 everyday requests, 69/69 attacks ([eval/report-offline.md](eval/report-offline.md)).
 - **Qwen planner** (`qwen/qwen3.8-max` through TokenRouter, thinking off), full run on 23 October 2026, before that day's
@@ -175,7 +175,12 @@ changes, `git grep` the old value and update every place.
   ratings, average spend, opening hours and shop photos, fetched through the bank. Checked live on 29 October with the
   team's personal Amap key: florists, cake shops, hot pot and coffee around Futian and around 武汉大学, and photos.
   Tencent has no key yet, so its code is tested only against stand-ins. Where 3 km finds fewer than three places the
-  search looks to 8 km; near Hong Kong or Macau it keeps places in the customer's own region.
+  search looks to 8 km; near Hong Kong or Macau it keeps places in the customer's own region. Photos come through the
+  bank as 320-pixel thumbnails (Amap's originals run to 600 KB), kept in memory for a while; the server keeps its
+  connections to the map services open (Amap's API closes each one, so on the development machine's slow link every
+  Amap call still took about 2.4 s; not measured from a server in China). On the English screen the common categories are in English; names and addresses stay Chinese. The
+  offline planner also reads "华强北有什么好吃的火锅", "hot pot near Huaqiangbei" and "where to eat"; florists, cake
+  shops and ATMs aren't offered a table.
 - **Table bookings** ("订第二家，明晚7点，2位", or 订座 on a place): yellow, confirmed by the customer, recorded with a code;
   the restaurant is not told, and every screen says so.
 - **The birthday plan with real shops.** On the confirm card, 选一家 swaps the partner florist or cake shop for a real
