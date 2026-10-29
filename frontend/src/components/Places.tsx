@@ -213,8 +213,8 @@ function BookTable({ place, party, date, time }: { place: Place; party?: number 
   )
 }
 
-/** Once a booking from the card is confirmed: its code and how to reach the place. */
-function Booked({ planId }: { planId: string }) {
+/** Once a booking is confirmed (from the card, or from WeChat in the app): its code and how to reach the place. */
+export function Booked({ planId }: { planId: string }) {
   const plan = usePlan(planId)
   const booking = plan.data?.steps[0]?.booking
   return booking ? <ReservationCard card={booking} /> : null
