@@ -32,7 +32,8 @@ def maps(request: httpx.Request) -> httpx.Response:
         glat, glon = wgs_to_gcj(22.5437, 114.0575)
         return httpx.Response(200, json={"status": "1", "pois": [
             {"id": "B0FLOWER01", "name": "大阪熊花店", "location": f"{glon:.6f},{glat:.6f}", "type": "购物服务;花鸟鱼虫市场;花卉",
-             "address": "福华三路88号", "business": {"tel": "0755-22223333"}}]})
+             "address": "福华三路88号", "business": {"tel": "0755-22223333",
+                                                    "opentime_week": "周一至周日 09:00-21:00 2026-01-01至2026-12-31 09:00-22:00"}}]})
     if host == "restapi.amap.com" and path == "/v5/place/around":
         glat, glon = wgs_to_gcj(*HAIDILAO)
         return httpx.Response(200, json={"status": "1", "info": "OK", "pois": [
@@ -61,6 +62,11 @@ def maps(request: httpx.Request) -> httpx.Response:
             {"osm_type": "node", "osm_id": 2, "lat": "22.5450", "lon": "114.0600", "category": "amenity", "type": "restaurant",
              "namedetails": {"name": "孔亮火锅"}, "extratags": {"phone": "+86 755 1111 2222"}, "address": {}}])
     return httpx.Response(404)
+
+
+def find(bank, **params):
+    """The card's search, as the browser sends it: in the body, never in the address."""
+    return bank.post("/api/places/search", params)
 
 
 def search(places, query="火锅", where=HERE):
@@ -229,7 +235,7 @@ def test_find_and_book_a_table(bank):
     assert body["plan"]["status"] == "done" and body["plan"]["tier"] == "green"
     card = next(c for c in body["messages"][-1]["cards"] if c["type"] == "places")
     assert card["what"] == "火锅"
-    found = bank.get("/api/places/search", q="火锅", lat=HERE[0], lon=HERE[1]).json()
+    found = find(bank, q="火锅", lat=HERE[0], lon=HERE[1]).json()
     assert found["located"] == "device" and len(found["items"]) == 3
     assert found["items"][0]["map_url"].startswith("https://uri.amap.com/marker?")
 
@@ -267,7 +273,7 @@ def test_bookings_are_listed_and_cancelled(bank):
     bank.runtime.places = Places(keys(), transport=httpx.MockTransport(maps))
     tomorrow = (bank_today(bank) + timedelta(days=1)).isoformat()
     assert bank.chat("取消订座")["plan"]["status"] == "failed"  # nothing booked yet
-    bank.get("/api/places/search", q="火锅", lat=HERE[0], lon=HERE[1])
+    find(bank, q="火锅", lat=HERE[0], lon=HERE[1])
     for text in ("订第一家，明晚7点，2位", "订第二家，后天中午，4位"):
         assert bank.approve(bank.chat(text)["plan"]).json()["plan"]["status"] == "done"
 
@@ -294,16 +300,16 @@ def test_the_latest_list_is_the_newest_card_however_often_an_older_one_loads(ban
     bank.runtime.places = Places(keys(), transport=httpx.MockTransport(maps))
     hot_pot = bank.chat("附近有什么好吃的火锅")["messages"][-1]["cards"][0]
     coffee = bank.chat("附近的咖啡")["messages"][-1]["cards"][0]
-    newest = bank.get("/api/places/search", q="咖啡", lat=HERE[0], lon=HERE[1], ref=coffee["ref"]).json()
+    newest = find(bank, q="咖啡", lat=HERE[0], lon=HERE[1], ref=coffee["ref"]).json()
     # a reload: the older card loads after the newer one
-    bank.get("/api/places/search", q="火锅", lat=HERE[0], lon=HERE[1], ref=hot_pot["ref"])
+    find(bank, q="火锅", lat=HERE[0], lon=HERE[1], ref=hot_pot["ref"])
     plan = bank.chat("订第一家，明晚7点，2位")["plan"]
     assert newest["items"][0]["name"] in plan["steps"][0]["text"]
 
 
 def test_photos_come_only_through_the_bank_and_only_from_the_maps(bank):
     bank.runtime.places = Places(keys(), transport=httpx.MockTransport(maps))
-    first = bank.get("/api/places/search", q="火锅", lat=HERE[0], lon=HERE[1]).json()["items"][0]
+    first = find(bank, q="火锅", lat=HERE[0], lon=HERE[1]).json()["items"][0]
     assert first["photos"] == ["/api/places/photo?id=amap%3AB0FFTEST01&n=0"]  # the tracker's address was dropped
     photo = bank.client.get(first["photos"][0])
     assert photo.status_code == 200 and photo.headers["content-type"] == "image/jpeg" and photo.content.startswith(b"\xff\xd8")
@@ -334,8 +340,9 @@ def test_the_birthday_plan_can_order_from_a_real_shop(bank):
     plan = bank.chat("下个月老婆生日，帮我预留1000元，提前两天订花和蛋糕")["plan"]
     florist = next(s for s in plan["steps"] if s.get("shop_kind") == "florist")
     assert florist["shop_place"] is None  # the bank's partner shop until the customer picks one
-    shop = next(p for p in bank.get("/api/places/search", q="花店", lat=HERE[0], lon=HERE[1]).json()["items"]
+    shop = next(p for p in find(bank, q="花店", lat=HERE[0], lon=HERE[1]).json()["items"]
                 if p["name"] == "大阪熊花店")
+    assert shop["hours"] == "周一至周日 09:00-21:00"  # Amap's week, without its dated part
     before = len(bank.get("/api/conversation", conversation_id=bank.conversation).json()["messages"])
     body = bank.post(f"/api/plans/{plan['id']}/edit", {"step_id": florist["id"], "args": {"shop": shop["id"]}}).json()
     edited = body["plan"]
@@ -357,19 +364,21 @@ def test_a_thin_search_looks_further_out(bank):
         return httpx.Response(200, json=[{"osm_type": "node", "osm_id": 9, "lat": "22.5880", "lon": "114.0579", "category": "shop",
                                           "type": "florist", "namedetails": {"name": "大阪熊花店"}, "extratags": {}, "address": {}}])
     bank.runtime.places = Places(Settings(_env_file=None), transport=httpx.MockTransport(one_florist_5km_away))
-    found = bank.get("/api/places/search", q="花店", lat=HERE[0], lon=HERE[1]).json()
+    found = find(bank, q="花店", lat=HERE[0], lon=HERE[1]).json()
     assert found["radius_m"] == 8000 and [p["name"] for p in found["items"]] == ["大阪熊花店"]
     # nothing even further out: the card says how far it looked
     bank.runtime.places = Places(Settings(_env_file=None), transport=httpx.MockTransport(lambda request: httpx.Response(200, json=[])))
-    none = bank.get("/api/places/search", q="花店", lat=HERE[0], lon=HERE[1]).json()
+    none = find(bank, q="花店", lat=HERE[0], lon=HERE[1]).json()
     assert (none["items"], none["radius_m"]) == ([], 8000)
 
 
 def test_where_a_search_looks(bank):
     bank.runtime.places = Places(keys(places_osm=True), transport=httpx.MockTransport(maps))
-    named = bank.get("/api/places/search", q="咖啡", near="武汉大学").json()
+    # the location travels in the body, never in the address an access log would record
+    assert bank.client.get("/api/places/search", params={"q": "咖啡", "lat": HERE[0], "lon": HERE[1]}).status_code in (404, 405)
+    named = find(bank, q="咖啡", near="武汉大学").json()
     assert (named["located"], named["label"]) == ("named", "武汉大学")
-    fallback = bank.get("/api/places/search", q="咖啡").json()
+    fallback = find(bank, q="咖啡").json()
     assert (fallback["located"], fallback["label"]) == ("fallback", "深圳福田中心区")
 
 

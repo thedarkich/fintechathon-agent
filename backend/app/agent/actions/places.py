@@ -1,7 +1,7 @@
 """Real places and table bookings.
 
 Finding places is a question (green). Its card asks the browser where the customer is and fetches the places itself
-(GET /api/places/search), so neither the location nor the places pass through the model: a restaurant's name can't
+(POST /api/places/search), so neither the location nor the places pass through the model: a restaurant's name can't
 instruct anything. Booking picks one of the places just shown, by its id, its number in the list or its name, and
 waits for the customer's confirmation. It is a demonstration: the restaurant is not told, and the reply says so.
 """

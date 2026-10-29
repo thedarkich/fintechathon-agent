@@ -183,6 +183,7 @@ changes, `git grep` the old value and update every place.
   shops and ATMs aren't offered a table. The site's Permissions-Policy had `geolocation=()`, which blocked the
   visitor's location outright, so every search fell back to Futian; it is `geolocation=(self)` now (the browser
   still asks the visitor). Checked in the browser pane only as far as the policy: the pane itself denies location.
+  The search is a POST with the location in its body (to about 10 m): as a GET, the access log had recorded it.
 - **Table bookings** ("订第二家，明晚7点，2位", or 订座 on a place): yellow, confirmed by the customer, recorded with a code;
   the restaurant is not told, and every screen says so. "我的订座" lists the upcoming ones; "取消明天的订座" (by day, code
   or place, or the bank asks which) cancels one, yellow like any change, and undoing the plan books it again.

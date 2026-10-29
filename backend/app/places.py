@@ -163,6 +163,11 @@ def _number(value) -> float | None:
     return number if number > 0 else None
 
 
+def _week(value) -> str:
+    """Amap's week ('周一至周五 11:30-14:00；17:30-22:30 2026-01-01至2026-12-31 11:30-14:30…'), up to its dated part."""
+    return re.split(r"\s*\d{4}-\d{2}-\d{2}", _text(value))[0].strip()
+
+
 def _last(value: str, separators: str) -> str:
     parts = [p for p in re.split(f"[{re.escape(separators)}]", _text(value)) if p]
     return parts[-1] if parts else ""
@@ -187,7 +192,7 @@ async def amap(client: httpx.AsyncClient, key: str, query: str, lat: float, lon:
                            address=_text(poi.get("address")), category=_last(poi.get("type"), ";|"),
                            phone=_text(business.get("tel") or poi.get("tel")), rating=_number(business.get("rating")),
                            cost_yuan=_number(business.get("cost")),
-                           hours=_text(business.get("opentime_today") or business.get("opentime_week")), sources=["amap"],
+                           hours=_text(business.get("opentime_today")) or _week(business.get("opentime_week")), sources=["amap"],
                            photos=[url for url in (_text(p.get("url")) for p in poi.get("photos") or [] if isinstance(p, dict))
                                    if photo_allowed(url)][:PHOTOS]))
     return found

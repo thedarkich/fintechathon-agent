@@ -1,13 +1,15 @@
 """Real places near the customer (app/places.py), for the card the assistant shows when asked to find somewhere.
 
 The browser sends its location only here, only when the customer allows it, and it goes on to the map services and
-nowhere else: it is not stored or audited. What a search showed is kept (PlaceSeen) so that a booking can point at
+nowhere else: it is not stored or audited, and it comes in the request's body, so no access log (the server's or a proxy's)
+records it. What a search showed is kept (PlaceSeen) so that a booking can point at
 it, and only the latest few searches are.
 """
 
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Request, Response
+from pydantic import BaseModel, Field
 from sqlalchemy import desc, func
 from sqlmodel import Session, col, delete, select
 
@@ -22,13 +24,18 @@ KEEP_SEARCHES = 5
 WIDER = 8000  # metres, when the usual radius finds little
 
 
-@router.get("/places/search")
-async def places_search(request: Request, q: str = Query(min_length=1, max_length=30),
-                        lat: float | None = Query(default=None, ge=-90, le=90),
-                        lon: float | None = Query(default=None, ge=-180, le=180),
-                        near: str | None = Query(default=None, max_length=40),
-                        ref: str | None = Query(default=None, max_length=40, pattern=r"^[0-9a-f-]{36}$"),
-                        lang: Literal["zh", "en"] = "zh", user_id: str = Depends(require_user)):
+class SearchIn(BaseModel):
+    q: str = Field(min_length=1, max_length=30)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lon: float | None = Field(default=None, ge=-180, le=180)
+    near: str | None = Field(default=None, max_length=40)
+    ref: str | None = Field(default=None, max_length=40, pattern=r"^[0-9a-f-]{36}$")
+    lang: Literal["zh", "en"] = "zh"
+
+
+@router.post("/places/search")
+async def places_search(request: Request, body: SearchIn, user_id: str = Depends(require_user)):
+    q, lat, lon, near, ref, lang = body.q, body.lat, body.lon, body.near, body.ref, body.lang
     # each search reaches up to three outside services, one of which allows a request a second
     throttle(request, [("places", user_id, 600, 40)])
     places = request.app.state.runtime.places

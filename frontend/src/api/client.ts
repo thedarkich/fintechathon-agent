@@ -183,15 +183,13 @@ export const api = {
   notifications: (lang: Lang) => request<{ items: Note[] }>(`/api/notifications?lang=${lang}`),
   readNotifications: () => post('/api/notifications/read'),
   // real places from the map services: the location goes only here, and only when the customer allowed it
+  // (in the body, not the address, so no access log records it; to about 10 m, which a search needs no finer than)
   places: (q: string, where: { lat?: number; lon?: number; near?: string | null }, lang: Lang, ref?: string | null) => {
-    const query = new URLSearchParams({ q, lang })
-    if (ref) query.set('ref', ref)
-    if (where.near) query.set('near', where.near)
-    else if (where.lat !== undefined && where.lon !== undefined) {
-      query.set('lat', where.lat.toFixed(5))
-      query.set('lon', where.lon.toFixed(5))
-    }
-    return request<PlacesResult>(`/api/places/search?${query}`)
+    const located = !where.near && where.lat !== undefined && where.lon !== undefined
+    return post<PlacesResult>('/api/places/search', {
+      q, lang, ref: ref || null, near: where.near || null,
+      lat: located ? Number(where.lat!.toFixed(4)) : null, lon: located ? Number(where.lon!.toFixed(4)) : null,
+    })
   },
 
   // the app's own screens: lookups read; anything that pays becomes a plan to confirm
