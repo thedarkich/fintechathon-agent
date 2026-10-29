@@ -82,7 +82,12 @@ def context(session: Session, user: UserAccount, plan: Plan | None, lang: str, *
                services=SimpleNamespace(**services) if services else None)
 
 
-def respond(session: Session, ctx: Ctx, plan: Plan) -> dict:
+def respond(session: Session, ctx: Ctx, plan: Plan, *, on_card: bool = False) -> dict:
+    """The plan, and the assistant's reply to it. A change made on the card itself (a shop chosen, a payment's purpose)
+    that leaves the plan waiting gets no new message: the card on screen already shows the plan as it now is."""
+    if on_card and plan.status == "awaiting_approval":
+        session.commit()
+        return {"plan": plan_view(plan, ctx), "messages": []}
     conversation = session.get(Conversation, plan.conversation_id)
     message = service.reply_for_plan(session, ctx, conversation, plan)
     session.commit()
@@ -285,7 +290,7 @@ async def edit(request: Request, plan_id: str, body: EditIn, user_id: str = Depe
             plan = executor.edit(ctx, plan, body.step_id, body.args)
         except PlanError as exc:
             raise plan_error(exc) from None
-        return respond(session, ctx, plan)
+        return respond(session, ctx, plan, on_card=True)
 
 
 @router.post("/plans/{plan_id}/purpose")
@@ -298,4 +303,4 @@ async def purpose(request: Request, plan_id: str, body: PurposeIn, user_id: str 
             plan = executor.set_purpose(ctx, plan, body.step_id, body.purpose)
         except PlanError as exc:
             raise plan_error(exc) from None
-        return respond(session, ctx, plan)
+        return respond(session, ctx, plan, on_card=True)

@@ -47,7 +47,10 @@ class Bank:
         """Say what a risky payment is for, as the customer does on the slip; returns the re-checked plan."""
         response = self.post(f"/api/plans/{plan['id']}/purpose", {"step_id": step, "purpose": value})
         assert response.status_code == 200, response.text
-        return response.json()["plan"]
+        body = response.json()
+        # the card shows the re-checked plan: no second copy of it in the chat while it waits
+        assert body["plan"]["status"] != "awaiting_approval" or body["messages"] == []
+        return body["plan"]
 
     def sms_code(self):
         with Session(self.runtime.engine) as session:

@@ -1,4 +1,4 @@
-# Project status (28 October 2026)
+# Project status (29 October 2026)
 
 For whoever continues the work, a person or a Claude Code session. Keep this file current: when something here changes,
 change it here too.
@@ -37,7 +37,7 @@ Hard limits that come from these criteria:
 
 ## Measured numbers (quote these and nothing else)
 
-- **201 automated tests** (`bash scripts/check.sh` runs them; the decks, both videos and their scripts in
+- **203 automated tests** (`bash scripts/check.sh` runs them; the decks, both videos and their scripts in
   `docs/PITCH.md` and `docs/DEMO.md` still say 187, from before the real-places work).
 - **Offline planner** (18 October 2026): 224/224 everyday requests, 69/69 attacks ([eval/report-offline.md](eval/report-offline.md)).
 - **Qwen planner** (`qwen/qwen3.8-max` through TokenRouter, thinking off), full run on 23 October 2026, before that day's
@@ -166,13 +166,30 @@ changes, `git grep` the old value and update every place.
   matched now. The 200-character brief is rewritten in plain words and names 通义千问 and WeChat ([BRIEF.md](BRIEF.md)).
   The team is **Callisto**: on the cover, team and closing slides and in the notes of all three decks.
 
+## Done (28–29 October 2026)
+
+- **小狐 / Foxy.** The assistant has a name in both languages and the fox avatar, in the app and the WeChat simulation.
+- **Real places.** "附近有什么好吃的火锅" shows real places from Amap, Tencent Location Service and OpenStreetMap, merged,
+  nearest first, around the visitor's location when the browser allows it (Futian, Shenzhen otherwise, or a place the
+  customer names). Amap needs a **Web服务** key (a Web端/JS API key is refused with `USERKEY_PLAT_NOMATCH`); with it come
+  ratings, average spend, opening hours and shop photos, fetched through the bank. Checked live on 29 October with the
+  team's personal Amap key: florists, cake shops, hot pot and coffee around Futian and around 武汉大学, and photos.
+  Tencent has no key yet, so its code is tested only against stand-ins. Where 3 km finds fewer than three places the
+  search looks to 8 km; near Hong Kong or Macau it keeps places in the customer's own region.
+- **Table bookings** ("订第二家，明晚7点，2位", or 订座 on a place): yellow, confirmed by the customer, recorded with a code;
+  the restaurant is not told, and every screen says so.
+- **The birthday plan with real shops.** On the confirm card, 选一家 swaps the partner florist or cake shop for a real
+  one nearby (reference price). Picking a shop or a payment's purpose changes the card in place: no second copy of the
+  plan in the chat.
+
 ## Still to do
 
 1. **WeChat Mini Program** (later, for the final if the entry gets there): a real Mini Program on the same channel
    endpoint, with WeChat's signature check in place of the simulated credential. Needs WeChat DevTools and an AppID
    (the team's); publishing a bank Mini Program likely needs company qualifications.
-2. **Demo video** (at most 5 minutes; listed with the deck in the official brief, so worth making): recorded by the team from [DEMO.md](DEMO.md), with Qwen on and at most
-   five messages a minute (the key's limit).
+2. **Demo video and decks, again** (the team's decision, 29 October: once the features are finished). The current
+   videos and decks predate 小狐 and real places and say 187 tests. Re-record from [DEMO.md](DEMO.md) with Qwen on (at
+   most five messages a minute, the key's limit) and the Amap key set, so the birthday scene shows real shops.
 3. **Submit** on the competition platform by 2 November (the team does this): the team name (Callisto), the project
    name and the 200-character brief ([BRIEF.md](BRIEF.md), the Chinese text), the 技术文档 and 安全自评 (as PDFs from
    `submission/build_docs.py`, or links), the PPT (PDF from `submission/build_slides.py`; a `.pptx` can be downloaded
@@ -219,6 +236,10 @@ Before submitting:
 - In English, transaction lists show counterparties as the bank recorded them (Chinese names such as 美团外卖, 刘洋),
   as a Chinese bank statement would; payee and product pages use their English names.
 - Transfers that were returned or cancelled still count towards the day's ¥1,000 total (the stricter reading).
+- The Amap key is a free personal developer key (in the local `.env` only, never in git). Amap's terms allow such a
+  key short-term, low-volume testing; a public deployment needs its own key in `deploy/runtime.env`, and a real
+  launch would need Amap's commercial licence. Without a key, OpenStreetMap alone answers: real bakeries and
+  restaurants, few florists and almost no photos.
 
 ## Rules
 

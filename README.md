@@ -71,7 +71,7 @@ uv run uvicorn app.main:app --port 8000
 
 Open http://localhost:8000. No AI key is needed: without one, the offline planner answers. For frontend work, also run `npm run dev` in `frontend/` (Vite proxies `/api` to port 8000).
 
-Finding restaurants and other places uses real map data. OpenStreetMap works with no key; set `AMAP_KEY` (Amap, with ratings and average spend) and `QQMAP_KEY` (Tencent Maps, the maps inside WeChat) in `.env` to add them, and the three are merged. Booking a table is a demonstration: the restaurant is not told.
+Finding restaurants and other places uses real map data. OpenStreetMap works with no key; set `AMAP_KEY` (Amap: a **Web服务** key, not a JS API one; adds ratings, average spend and shop photos) and `QQMAP_KEY` (Tencent Maps, the maps inside WeChat) in `.env` to add them, and the three are merged. Booking a table is a demonstration: the restaurant is not told.
 
 To use a model, set `LLM_ENABLED=true`, `AI_BASE_URL`, `AI_API_KEY` and `AI_MODEL` in `.env` (see [.env.example](.env.example)). Any OpenAI-compatible chat endpoint that supports JSON output works, including providers hosted in mainland China. With Qwen, set `LLM_THINKING=false`: it skips the model's thinking step, so a plan takes about 4 seconds (median 3.7) instead of 7 to 60.
 
@@ -81,7 +81,7 @@ To use a model, set `LLM_ENABLED=true`, `AI_BASE_URL`, `AI_API_KEY` and `AI_MODE
 cd backend && uv run pytest -q
 ```
 
-201 tests run every scenario through the HTTP API with the offline planner, plus the model planner with a fake model. They cover the tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, scheduling, transfers, human takeover, the demo account, the sandbox, receipts, the audit chain, transfers by phone number (on the Transfers screen and in chat), the safer-transfer checks (the name check before sending, the payment-purpose question the AI can't answer, and the arrival choice), follow-ups that lean on the request before (“再转100”, “改成300”, “餐饮呢”, “取消第一个”), and finding real places and booking a table, with Amap, Tencent Maps and OpenStreetMap stood in for.
+203 tests run every scenario through the HTTP API with the offline planner, plus the model planner with a fake model. They cover the tier boundaries (exactly ¥1,000 is yellow, ¥1,000.01 red), approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, scheduling, transfers, human takeover, the demo account, the sandbox, receipts, the audit chain, transfers by phone number (on the Transfers screen and in chat), the safer-transfer checks (the name check before sending, the payment-purpose question the AI can't answer, and the arrival choice), follow-ups that lean on the request before (“再转100”, “改成300”, “餐饮呢”, “取消第一个”), and finding real places and booking a table, with Amap, Tencent Maps and OpenStreetMap stood in for.
 
 ### Evaluation sets
 

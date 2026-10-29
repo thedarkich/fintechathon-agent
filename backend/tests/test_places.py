@@ -3,6 +3,7 @@ the network."""
 
 import asyncio
 import hashlib
+import logging
 from datetime import date, timedelta
 
 import httpx
@@ -118,6 +119,50 @@ def test_without_keys_only_openstreetmap_answers():
     assert [p.name for p in places] == ["海底捞火锅", "孔亮火锅"]
 
 
+def test_a_named_place_is_found_across_china_or_near_the_customer():
+    asked = []
+
+    def amap_only(request):
+        path, params = request.url.path, request.url.params
+        asked.append((path, params.get("location")))
+        if path == "/v5/place/text" and params["keywords"] == "武汉大学":
+            return httpx.Response(200, json={"status": "1", "pois": [{"name": "武汉大学", "location": "114.364514,30.536243"}]})
+        if path == "/v5/place/text":  # a chain's name: no one place in China
+            return httpx.Response(200, json={"status": "1", "count": "0", "pois": []})
+        if path == "/v5/place/around" and params["keywords"] == "万象城":
+            return httpx.Response(200, json={"status": "1", "pois": [{"name": "深圳万象城", "location": "114.111755,22.539083"}]})
+        return httpx.Response(404)
+    places = Places(Settings(_env_file=None, amap_key="a" * 32, places_osm=False), transport=httpx.MockTransport(amap_only))
+    lat, lon = asyncio.run(places.locate("武汉大学"))
+    assert 30.5 < lat < 30.6 and 114.3 < lon < 114.4 and asked == [("/v5/place/text", None)]
+    mixc = asyncio.run(places.locate("万象城", centre=HERE))
+    assert metres(*mixc, *gcj_to_wgs(22.539083, 114.111755)) < 1
+    glat, glon = wgs_to_gcj(*HERE)  # looked for around the customer, in Amap's coordinates
+    assert asked[-1] == ("/v5/place/around", f"{glon:.6f},{glat:.6f}")
+
+
+def test_a_failed_answer_is_asked_again_and_logged_without_the_key(caplog):
+    tries = []
+
+    def busy_once(request):
+        if request.url.host == "restapi.amap.com":
+            tries.append(request.url.path)
+            if len(tries) == 1:
+                return httpx.Response(200, json={"status": "0", "info": "BUSY", "infocode": "12345"})
+        return maps(request)
+    places, status = search(Places(keys(), transport=httpx.MockTransport(busy_once)))
+    assert status["amap"] == "ok" and len(tries) == 2 and places[0].sources[0] == "amap"
+
+    def down(request):
+        if request.url.host == "restapi.amap.com":
+            return httpx.Response(200, json={"status": "0", "info": "BUSY", "infocode": "12345"})
+        return maps(request)
+    with caplog.at_level(logging.WARNING, logger="app.places"):
+        places, status = search(Places(keys(), transport=httpx.MockTransport(down)))
+    assert status["amap"] == "failed" and places
+    assert "amap failed (12345)" in caplog.text and "a" * 32 not in caplog.text
+
+
 def test_a_search_stays_in_the_customer_s_region():
     # Futian is a river away from Hong Kong: a florist there can't take a mainland order, nor the other way round
     asked = []
@@ -224,7 +269,11 @@ def test_the_birthday_plan_can_order_from_a_real_shop(bank):
     assert florist["shop_place"] is None  # the bank's partner shop until the customer picks one
     shop = next(p for p in bank.get("/api/places/search", q="花店", lat=HERE[0], lon=HERE[1]).json()["items"]
                 if p["name"] == "大阪熊花店")
-    edited = bank.post(f"/api/plans/{plan['id']}/edit", {"step_id": florist["id"], "args": {"shop": shop["id"]}}).json()["plan"]
+    before = len(bank.get("/api/conversation", conversation_id=bank.conversation).json()["messages"])
+    body = bank.post(f"/api/plans/{plan['id']}/edit", {"step_id": florist["id"], "args": {"shop": shop["id"]}}).json()
+    edited = body["plan"]
+    # the card on screen changes; the chat doesn't get a second copy of it
+    assert body["messages"] == [] and len(bank.get("/api/conversation", conversation_id=bank.conversation).json()["messages"]) == before
     step = next(s for s in edited["steps"] if s["id"] == florist["id"])
     assert edited["status"] == "awaiting_approval" and edited["approval_hash"] != plan["approval_hash"]
     assert "大阪熊花店" in step["text"] and "参考价" in step["text"] and step["shop_place"]["address"] == "福华三路88号"

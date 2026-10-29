@@ -33,10 +33,11 @@ async def places_search(request: Request, q: str = Query(min_length=1, max_lengt
     throttle(request, [("places", user_id, 600, 40)])
     places = request.app.state.runtime.places
     centre, located, label = None, "fallback", None
-    if near and (named := await places.locate(near, lang)):
+    device = (lat, lon) if lat is not None and lon is not None else None
+    if near and (named := await places.locate(near, lang, centre=device or FALLBACK)):
         centre, located, label = named, "named", near
-    elif lat is not None and lon is not None:
-        centre, located = (lat, lon), "device"
+    elif device:
+        centre, located = device, "device"
     if centre is None:
         centre, label = FALLBACK, FALLBACK_LABEL[0] if lang == "zh" else FALLBACK_LABEL[1]
     found, sources = await places.search(q, centre[0], centre[1], lang=lang)

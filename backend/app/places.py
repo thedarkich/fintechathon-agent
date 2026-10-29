@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import logging
 import math
 import re
 import time
@@ -20,6 +21,8 @@ from dataclasses import asdict, dataclass, field
 from urllib.parse import urlencode, urlsplit
 
 import httpx
+
+log = logging.getLogger(__name__)
 
 # Futian, Shenzhen: where a search looks when the visitor doesn't share a location
 FALLBACK = (22.5431, 114.0579)
@@ -33,6 +36,7 @@ CACHE_SECONDS = 600
 SOURCES = ("amap", "qq", "osm")
 PHOTOS = 3  # per place
 PHOTO_BYTES = 3_000_000
+NAMED_RADIUS = 50_000  # metres: how far from the customer a named place ('万象城') is looked for
 # where a place's photos may come from: Amap's image servers, and Wikimedia for the odd OpenStreetMap place with a picture
 PHOTO_HOSTS = (".autonavi.com", ".amap.com")
 # Hong Kong and Macau, separate from the mainland and from each other: a shop in one can't take an order or a booking
@@ -262,6 +266,16 @@ async def osm(client: httpx.AsyncClient, base: str, query: str, lat: float, lon:
     return found
 
 
+async def _again(call, *args):
+    """A map service's answer, asked once more after a moment if the first try fails (a busy moment, a new key's
+    request limit)."""
+    try:
+        return await call(*args)
+    except (SourceError, httpx.HTTPError):
+        await asyncio.sleep(0.4)
+        return await call(*args)
+
+
 def photo_allowed(url: str) -> bool:
     parts = urlsplit(url)
     host = (parts.hostname or "").lower()
@@ -350,16 +364,18 @@ class Places:
         async with self.client() as client:
             calls = {}
             if on["amap"]:
-                calls["amap"] = amap(client, self.amap_key, china, lat, lon, radius)
+                calls["amap"] = _again(amap, client, self.amap_key, china, lat, lon, radius)
             if on["qq"]:
-                calls["qq"] = qq(client, self.qq_key, self.qq_secret, china, lat, lon, radius)
+                calls["qq"] = _again(qq, client, self.qq_key, self.qq_secret, china, lat, lon, radius)
             if on["osm"]:
                 calls["osm"] = self._osm(client, world, lat, lon, radius, lang)
             answers = await asyncio.gather(*calls.values(), return_exceptions=True)
         groups = []
         for name, answer in zip(calls, answers, strict=True):
-            # an error's text can carry the request (and its key), so only the outcome is kept
+            # an error's text can carry the request (and its key): only the service's own code is logged
             status[name] = "failed" if isinstance(answer, BaseException) else "ok"
+            if isinstance(answer, BaseException):
+                log.warning("places: %s failed (%s)", name, answer if isinstance(answer, SourceError) else type(answer).__name__)
             groups.append([] if isinstance(answer, BaseException) else answer)
         places = merge(groups)
         for place in places:
@@ -414,15 +430,21 @@ class Places:
             except httpx.HTTPError:
                 return None
 
-    async def _amap_locate(self, client, text, lang):
-        data = (await client.get("https://restapi.amap.com/v3/geocode/geo", params={"key": self.amap_key, "address": text})).json()
-        codes = data.get("geocodes") or []
-        if str(data.get("status")) == "1" and codes:
-            lon, lat = (float(v) for v in _text(codes[0].get("location")).split(","))
-            return gcj_to_wgs(lat, lon)
+    async def _amap_locate(self, client, text, lang, centre):
+        # Amap's place search knows '武汉大学' across China (its address lookup puts it in Zhuhai first); a name it
+        # can't place nationally ('万象城', a chain) is looked for near the customer
+        glat, glon = wgs_to_gcj(*centre)
+        for path, params in (("/v5/place/text", {}),
+                             ("/v5/place/around", {"location": f"{glon:.6f},{glat:.6f}", "radius": NAMED_RADIUS})):
+            data = (await client.get(f"https://restapi.amap.com{path}", params={
+                "key": self.amap_key, "keywords": text, "page_size": 1, **params})).json()
+            pois = data.get("pois") or []
+            if str(data.get("status")) == "1" and pois and "," in _text(pois[0].get("location")):
+                lon, lat = (float(v) for v in _text(pois[0]["location"]).split(","))
+                return gcj_to_wgs(lat, lon)
         return None
 
-    async def _qq_locate(self, client, text, lang):
+    async def _qq_locate(self, client, text, lang, centre):
         path = "/ws/geocoder/v1/"
         data = (await client.get(f"https://apis.map.qq.com{path}",
                                  params=qq_signed(path, {"key": self.qq_key, "address": text}, self.qq_secret))).json()
@@ -431,7 +453,7 @@ class Places:
             return gcj_to_wgs(float(location["lat"]), float(location["lng"]))
         return None
 
-    async def _osm_locate(self, client, text, lang):
+    async def _osm_locate(self, client, text, lang, centre):
         await self._osm_turn()
         data = (await client.get(f"{self.osm_base}/search", params={
             "q": text, "format": "jsonv2", "limit": 1, "countrycodes": "cn", "accept-language": "zh-CN,zh" if lang == "zh" else "en"})).json()
@@ -439,16 +461,17 @@ class Places:
             return float(data[0]["lat"]), float(data[0]["lon"])
         return None
 
-    async def locate(self, text: str, lang: str = "zh") -> tuple[float, float] | None:
+    async def locate(self, text: str, lang: str = "zh", centre: tuple[float, float] = FALLBACK) -> tuple[float, float] | None:
         """Where a place the customer names is ('武汉大学'), WGS-84: Amap, then Tencent, then OpenStreetMap, each one
-        asked only when the one before doesn't know it."""
+        asked only when the one before doesn't know it. The centre (the customer's location) settles a name with many
+        places."""
         on = self.enabled()
         async with self.client() as client:
             for name, ask in (("amap", self._amap_locate), ("qq", self._qq_locate), ("osm", self._osm_locate)):
                 if not on[name]:
                     continue
                 try:
-                    if found := await ask(client, text, lang):
+                    if found := await ask(client, text, lang, centre):
                         return found
                 except (httpx.HTTPError, ValueError, KeyError, TypeError):
                     continue
