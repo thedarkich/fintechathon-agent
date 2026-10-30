@@ -426,6 +426,8 @@ HELP = ("我可以帮您：查余额和账单、分析消费、找出异常交�
         "管理自动续费、查看和购买理财，以及把几件事串起来办（比如家人生日准备）。",
         "I can check balances and bills, analyse spending, spot unusual transactions, send or schedule transfers, "
         "split bills, manage cards and subscriptions, handle investments, and chain tasks together (like preparing for a birthday).")
+# for anything else ('写一首诗', '明天股票会涨吗', '订机票'): say so before what can be done
+OUT_OF_SCOPE = ("这件事我办不了，或者我没听懂。", "That's not something I can do here, or I didn't follow.")
 
 
 def plan(text: str, today: date, *, pending_field: str | None = None, suspicious: bool = False,
@@ -740,7 +742,7 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     colloquial = re.search(r"给\s*[一-龥]{1,4}?\s*打\s*[\d零一二两三四五六七八九十百千万]"  # '给王芳打300块'
                            # '还他600'; '还有一百万', '还剩五千' are not repayments
                            r"|还(?!有|剩|是|要|在|没|能)(?:给)?\s*(?:他|她|[一-龥]{2,3}?)\s*[\d零一二两三四五六七八九十百千万]", text)
-    if (colloquial or re.search(r"[交付缴].{0,6}房租|房租.{0,3}[交付缴]", text) or has(text, "转", "汇", "打钱", "打款", "付给", "还钱", "交租",
+    if (colloquial or re.search(r"[交付缴].{0,6}房租|房租.{0,3}[交付缴]", text) or has(text, "转", "汇", "打钱", "打点钱", "打些钱", "打款", "付给", "还钱", "交租",
                                                                      "transfer", "send", "pay ", "wire")) \
             and not has(text, "转人工"):
         # '给妈妈转200，再给爸爸转300': one step per clause that names both a person and an amount
@@ -820,4 +822,6 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
         return PlanOut()
     if re.fullmatch(r"(?:你好|您好|嗨|哈喽|在吗|hi|hello|hey)[呀啊，,！!。.\s]*", lowered):
         return ask("您好！" + HELP[0], "Hello! " + HELP[1])
-    return ask(HELP[0], HELP[1])
+    if re.search(r"(能|会|可以)(做|干|办|帮我?(做|干|办)?)(些)?什么|有(哪些|什么)功能|what can you (do|help)|\bhelp\b", lowered):
+        return ask(HELP[0], HELP[1])
+    return ask(OUT_OF_SCOPE[0] + HELP[0], OUT_OF_SCOPE[1] + " " + HELP[1])

@@ -6,7 +6,7 @@ Architecture, request flow and core algorithms of the banking agent. The design 
 
 ## 1. Architecture
 
-![System architecture: a request passes eight stages; only the planner is AI, everything else is fixed code; around them sit the simulated bank, isolated workers, the safety lock and a hash-chained audit log](img/architecture.svg)
+![System architecture: a request passes eight stages; only the planner is AI, everything else is fixed code; around them sit the simulated bank, isolated workers, the safety lock, channels and outside services (WeChat, maps, bookings, SMS) and a hash-chained audit log](img/architecture.svg)
 
 The same structure as text:
 
@@ -15,6 +15,7 @@ flowchart LR
   subgraph Channels
     WEB["Web app<br/>chat · voice · receipt upload"]
     OPS["Operator console<br/>human takeover"]
+    WX["WeChat assistant (simulated)<br/>ask and start; confirm in the app"]
   end
 
   subgraph API["FastAPI service"]
@@ -26,7 +27,10 @@ flowchart LR
     APR["Approval<br/>hash of exact details ·<br/>PIN + SMS or passkey"]
     EXE["Executor<br/>dependency order · schedule ·<br/>re-check · compensate"]
     REP["Replies<br/>written by code"]
+    PLC["Places<br/>merged · photos fetched by the bank ·<br/>location never stored"]
   end
+
+  MAP["Map services<br/>Amap · Tencent · OpenStreetMap"]
 
   subgraph Bank["Simulated bank (per customer)"]
     LED["Ledger<br/>accounts · transactions"]
@@ -55,6 +59,9 @@ flowchart LR
   EXE -.-> AUD
   TRF -.-> AUD
   OPS --> API
+  WX -->|message| SCR
+  WEB -->|find places, not via the model| PLC --> MAP
+  PLC -->|a booking points only at a place shown| RES
 ```
 
 | Component | Code | Responsibility |
@@ -71,7 +78,9 @@ flowchart LR
 | Receipt reader | `pipeline/*`, `receipts.py` | Parses uploads in an isolated worker; a vision model (when configured) or PDF rules return a fixed schema; hidden text and instruction-like content are flagged. |
 | Replies | `agent/replies.py`, each action's `reply` | Every sentence with a fact is written by code from results, in Chinese and English. |
 | Audit | `agent/audit.py` | Append-only, hash-chained log per customer; `GET /api/audit/verify` recomputes the chain. |
-| Frontend | `frontend/src` | React web app: landing page with a one-click demo account; Home; Assistant (chat, with one confirm card per request); Transfers; Spending; Invest; Cards; Subscriptions; History (what you asked for, and the hash-chained audit log); How it stays safe; operator console. |
+| Places and bookings | `app/places.py`, `api/places.py`, `agent/actions/places.py` | Asks Amap, Tencent Location Service and OpenStreetMap at once, merges the same place, sorts by distance; photos fetched by the bank; book, list and cancel tables; real shops for partner orders. See 3.13. |
+| WeChat channel | `channels/wechat.py`, `api/wechat.py` | The simulated WeChat assistant: linked with the PIN, called with its own credential; replies written for a chat; approval only in the app. See 3.12. |
+| Frontend | `frontend/src` | React web app: landing page with a one-click demo account; Home; Assistant, Foxy (chat, with one confirm card per request, and places cards); Transfers; Spending; Invest; Cards; Subscriptions; History (what you asked for, and the hash-chained audit log); How it stays safe; operator console. |
 
 Stack: Python 3.11, FastAPI, SQLModel on SQLite (WAL), React 18 + Vite + TypeScript + Tailwind. One Docker Compose deployment behind Caddy (automatic HTTPS). No CDNs: everything is served from our own host so phones in mainland China load it reliably.
 
@@ -163,6 +172,16 @@ The brief asks for channels such as apps and IM. The 微信助手（模拟） pa
 
 A real Mini Program or Official Account would call the same endpoint, with WeChat's signature check in place of the simulated credential.
 
+### 3.13 Real places and bookings
+
+Asked for “hot pot nearby”, the planner proposes only `places_search` (green). The places card fetches the places itself (`POST /api/places/search`), so neither the places nor the customer's location pass through the model: a restaurant's name can't become an instruction to it.
+
+- **Three sources, one list.** The bank asks Amap (a Web service key), Tencent Location Service and OpenStreetMap (Nominatim, at most a request a second) at once, merges places with the same name under 150 m apart and sorts them by distance; when 3 km finds fewer than three, it looks to 8 km. Amap and Tencent use GCJ-02 coordinates, browsers and OpenStreetMap WGS-84, so positions are converted both ways. Near Hong Kong or Macau only places in the customer's own region are kept.
+- **Location.** The browser sends it only once the customer allows it, to about 10 m, in the request's body; it goes only to the map services and is never stored, audited or written to an access log.
+- **Photos.** Only the addresses the map services return, only images, at most 3 MB, resized to 320 pixels and passed on by the bank: the page itself loads nothing from outside.
+- **Bookings.** “订第一家，明晚7点，2位” can only point at a place the customer was just shown (`book_table`, yellow); the bank records it with a booking code. “我的订座” lists bookings and “取消明天的订座” cancels one (yellow too). In the demo the restaurant is never told, and every card says so.
+- **Real shops in the birthday plan.** “选一家” on the confirm card swaps the florist or the cake shop for a real one nearby; the plan is checked and confirmed again; the price is for reference and the shop isn't sent the order.
+
 ## 4. Data model
 
 `UserAccount`, `BankAccount` (checking, savings, reserve), `Txn`, `Payee`, `Card`, `Subscription`, `ScheduledTransfer`, `Transfer`, `PayeeMessage`, `Collection`, `WealthProduct`, `Holding`, `RiskProfile`, `Order`, `Plan`, `Conversation`, `Message`, `Challenge`, `Passkey`, `SmsMessage`, `Notification`, `SafetyLock`, `AuditEntry`, `DemoClock`, `Upload`, `ChannelLink` (a linked chat account; only its credential's hash). Money is stored as integer fen; times are China Standard Time. Every new customer gets a seeded bank: about 22 months of realistic transactions, family and friend payees (including two with the same pinyin name and a seller added today whose account is in someone else's name), two cards, subscriptions with an overlap and a forgotten trial, seeded anomalies, holdings and a risk profile.
@@ -176,6 +195,7 @@ A real Mini Program or Official Account would call the same endpoint, with WeCha
 - `POST /api/screens/plan`: a payment from one of the app's screens, returned as a plan waiting for confirmation. `GET /api/directory`: who a phone number belongs to, for the transfer screen.
 - `GET /api/audit`, `GET /api/audit/verify`: the audit log and chain verification.
 - `GET|POST /api/wechat/link`, `POST /api/wechat/unlink`: link a chat account (with the PIN) or unlink it, in the app. `POST /api/channels/wechat/message`: the chat side, with the channel's own credential; it answers and plans but approves nothing.
+- `POST /api/places/search`: the places card's search for real places nearby (the location in the body, never through the model). `GET /api/places/photo`: a photo of a place this customer was shown, fetched by the bank.
 - `POST /api/demo/advance`, `/reset`, `/transfers/{id}`: demo tools (bank clock, fresh seed, transfer stage control).
 - Operator endpoints (the admin bearer token or an operator account): queue, conversation detail, reply, release, cancel, unlock. None approves anything.
 

@@ -5,12 +5,12 @@ import re
 from sqlmodel import Session, select
 
 from app import clock
-from app.agent import audit, executor, followup, locks, offline, replies, screening
+from app.agent import audit, executor, followup, guard, locks, offline, replies, screening
 from app.agent.actions import REGISTRY
 from app.agent.core import Ctx
 from app.agent.planner import Planner, PlanOut, StepOut, validate
 from app.llm import ModelUnavailable
-from app.models import Conversation, Message, Plan, Upload, UserAccount
+from app.models import Conversation, Message, Payee, Plan, Upload, UserAccount
 
 NUMERIC_FIELDS = {"amount_yuan", "total_yuan", "daily_limit_yuan", "horizon_months"}
 
@@ -236,6 +236,21 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
         session.commit()
         return conversation, out, follow.stop
 
+    # someone else's data, a secret read back, approval or more permissions in the chat: the bank answers itself,
+    # before any planner reads the message
+    if follow is None or follow.plan is None:
+        names = [n for p in session.exec(select(Payee).where(Payee.user_id == user.id))
+                 for n in (p.name, p.name_en, *(p.aliases or [])) if n]
+        if declined := guard.decline(clean, names):
+            code, answer = declined
+            if "FAKE_AUTHORITY" in flags:
+                answer = (guard.NO_AUTHORITY[0] + answer[0], guard.NO_AUTHORITY[1] + " " + answer[1])
+            audit.append(session, user.id, "declined", {"reason": code})
+            out.append(add_message(session, ctx, conversation, "assistant", ctx.t(*answer), summary=f"[declined] {code}"))
+            session.commit()
+            return conversation, out, None
+    warning = guard.scam_warning(flags)
+
     versions: dict = {}
     source = "offline"
     proposed: PlanOut | None = None
@@ -300,6 +315,10 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
         session.commit()
         return conversation, out, None
     if not proposed.steps:
+        if warning:  # a scam script with nothing to plan: the warning, not a question that helps it along ('转给谁？')
+            out.append(add_message(session, ctx, conversation, "assistant", ctx.t(*warning), summary="[scam warning]"))
+            session.commit()
+            return conversation, out, None
         question = proposed.ask or offline.ask(*offline.HELP).ask
         text = question.zh if ctx.lang == "zh" else question.en
         last = session.exec(select(Message).where(Message.conversation_id == conversation.id, Message.role == "assistant")
@@ -329,6 +348,8 @@ async def handle(session: Session, user: UserAccount, planner: Planner, text: st
         ctx.plan = replaces
         executor.cancel(ctx, replaces, rollback=False)
         ctx.plan = plan
+    if warning:  # above the card: what this scam looks like, in the bank's words
+        out.append(add_message(session, ctx, conversation, "assistant", ctx.t(*warning), summary="[scam warning]"))
     out.append(reply_for_plan(session, ctx, conversation, plan))
     session.commit()
     return conversation, out, plan

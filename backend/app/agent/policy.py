@@ -38,6 +38,7 @@ SIGNAL_TEXT = {
     "S_FLAGGED_CONTENT": ("上传的小票里有隐藏文字或给机器的指令", "The uploaded receipt contains hidden text or instructions aimed at a machine"),
     "S_NAME_MISMATCH": ("收款账户的户名和你填写的姓名不一致", "The account is in a different name from the payee you chose"),
     "S_SCAM_PURPOSE": ("你选的用途是常见的诈骗情形", "The purpose you chose is a common scam"),
+    "S_SCAM_WORDS": ("请求里有常见的诈骗说法", "The request uses a common scam line"),
 }
 
 # What a risky payment is for, asked of the customer on the slip (never filled in by the AI). Each answer
@@ -64,11 +65,11 @@ PURPOSES = {
 }
 SCAM_PURPOSES = ("investment", "safe_account", "fee")
 # a payment carrying one of these must say what it is for before it can be approved
-PURPOSE_SIGNALS = ("S_NEW_PAYEE_LARGE", "S_NAME_MISMATCH")
+PURPOSE_SIGNALS = ("S_NEW_PAYEE_LARGE", "S_NAME_MISMATCH", "S_SCAM_WORDS")
 
 
 def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_same_day_fen: int = 0,
-           earlier_to_payee_fen: int = 0, flagged: bool = False, already_counted_fen: int = 0) -> dict:
+           earlier_to_payee_fen: int = 0, flagged: bool = False, scam: bool = False, already_counted_fen: int = 0) -> dict:
     rule = action.rule_for(ctx, resolved)
     payment = action.payment(resolved) if action.payment else 0
     signals: list[str] = []
@@ -91,6 +92,9 @@ def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_s
     if payment and resolved.get("purpose") in SCAM_PURPOSES:
         signals.append("S_SCAM_PURPOSE")
         tier = higher(tier, "red")
+    if payment and scam:  # the request itself reads like a scam script ('安全账户', '先交保证金', '刷单')
+        signals.append("S_SCAM_WORDS")
+        tier = higher(tier, "red")
     if flagged and tier == "yellow":
         signals.append("S_FLAGGED_REQUEST")
         tier = "red"
@@ -103,18 +107,19 @@ def decide(ctx: Ctx, action: Action, resolved: dict, *, pay_day: date, earlier_s
             "payment_fen": payment, "blocked_by": lock.reason if lock else None}
 
 
-SAFER_ARRIVAL_SIGNALS = ("S_SCAM_PURPOSE", "S_NEW_PAYEE_LARGE", "S_NAME_MISMATCH", "S_FLAGGED_REQUEST", "S_FLAGGED_CONTENT")
+SAFER_ARRIVAL_SIGNALS = ("S_SCAM_PURPOSE", "S_SCAM_WORDS", "S_NEW_PAYEE_LARGE", "S_NAME_MISMATCH", "S_FLAGGED_REQUEST",
+                         "S_FLAGGED_CONTENT")
 
 
 def safer_arrival(action: Action, resolved: dict, decision: dict) -> tuple[str, str] | None:
     """A transfer with a risk signal arrives in 2 hours instead of now, so the customer can still cancel it;
-    one for a scam purpose waits until tomorrow. Returns (arrival, the signal behind it), never a faster arrival
-    than the customer chose. Fixed code: the model can neither ask for nor skip this."""
+    one for a scam purpose or in a request worded like a scam waits until tomorrow. Returns (arrival, the signal
+    behind it), never a faster arrival than the customer chose. Fixed code: the model can neither ask for nor skip this."""
     if action.name not in ("transfer", "phone_transfer"):
         return None
     chosen = resolved.get("arrival", "instant")
     reason = next((s for s in SAFER_ARRIVAL_SIGNALS if s in decision["signals"]), None)
-    if reason == "S_SCAM_PURPOSE" and chosen != "next_day":
+    if reason in ("S_SCAM_PURPOSE", "S_SCAM_WORDS") and chosen != "next_day":
         return "next_day", reason
     if reason and chosen == "instant":
         return "standard", reason

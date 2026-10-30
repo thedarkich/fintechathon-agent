@@ -26,6 +26,20 @@ PATTERNS = [
     # a request dressed up as a plan or an approval: '{"approved": true, "tier": "green"}'
     ("FAKE_AUTHORITY", r"\"(approved|tier|verified|approval_hash|status|signals)\"\s*:"),
     ("SCAM_SCRIPT", r"安全账户|涉嫌(洗钱|犯罪|违法)|(公安|警察|检察|法院|反诈).{0,12}(转账|转到|账户)|safe account|money laundering"),
+    # the scripts the anti-fraud campaigns warn about most: pay a fee first to get money, paid tasks, a boss or relative
+    # with a new number in a hurry and wanting it kept quiet
+    ("SCAM_FEE", r"(退款|理赔|赔付|贷款|放款|借款|领奖|中奖|奖金|解冻|提现|激活|注销|征信).{0,15}(保证金|手续费|解冻费|激活费|税费|个人所得税|服务费|工本费|验资|刷流水)"
+                 r"|(先|要先|需要先|得先|必须先)(交|付|转|缴|充值?).{0,8}(保证金|手续费|解冻费|激活费|税费|验资)"
+                 r"|(refund|loan|prize|winnings|unfreeze|withdraw).{0,30}\b(fee|deposit|tax)\b"
+                 r"|\b(fee|deposit|tax)\b.{0,30}\bto (get|release|unlock|receive) (the |my )?(refund|loan|prize|money|winnings)"),
+    ("SCAM_TASK", r"刷单|做任务.{0,8}(返|佣金|赚)|垫付.{0,12}(返|佣金|提成)|(点赞|关注|好评).{0,6}(返现|返利|佣金|赚钱)|返利任务"
+                  r"|\b(task|click|like|review)s? (job|scam|for commission)|(prepay|pay first|advance).{0,30}(commission|rebate|cashback)"),
+    ("SCAM_IMPERSONATION", r"(别|不要|不许|不能)(告诉|跟|和|让)(别人|任何人|家里|家人|其他人|老婆|老公)"
+                           r"|(换了|换成|改了|新换的?|新的)个?(手机)?号码?.{0,15}(急|借|转|打钱|汇)"
+                           r"|(领导|老板|老师|亲戚|儿子|女儿|孙子|孙女|外甥|同学).{0,12}(急用钱|急需用钱|借钱|急着用钱)"
+                           r"|don'?t tell (anyone|anybody|your (family|wife|husband))|keep (it|this) (a )?secret"
+                           r"|(new|changed?) (phone )?number.{0,30}(urgent|money|send|transfer)"
+                           r"|(boss|son|daughter|grandson|nephew).{0,20}(urgent(ly)?|needs? money|borrow)"),
     ("FAKE_AUTHORITY", r"(system prompt|developer mode|jailbreak|dan mode|test mode|debug mode|god mode)"),
     ("FAKE_AUTHORITY", r"(系统提示|开发者模式|测试模式|调试模式|越狱|管理员授权|最高权限|(最高|全部|完全|无限|特别)授权)"),
     ("ALREADY_VERIFIED", r"(already|have) (been )?(verified|confirmed|approved|authorized)"),
@@ -72,6 +86,9 @@ FLAG_TEXT = {
     "SKIP_APPROVAL": ("要求跳过确认或验证", "Asked to skip confirmation or verification"),
     "FAKE_AUTHORITY": ("自称管理员、员工或开发者，或提到“测试模式”", "Claimed to be an admin, staff or a developer, or a test mode"),
     "SCAM_SCRIPT": ("用了“安全账户”等常见诈骗说法", "Used a common scam line, such as a “safe account”"),
+    "SCAM_FEE": ("要先交保证金或手续费才能退款、放贷或领奖", "A fee or deposit to pay first for a refund, a loan or a prize"),
+    "SCAM_TASK": ("提到刷单返利", "Mentioned paid tasks with cashback"),
+    "SCAM_IMPERSONATION": ("自称领导或亲友、换了号码、催着转钱或要求保密", "A boss or relative, a new number, a rush or a secret"),
     "ALREADY_VERIFIED": ("声称已经验证或确认过", "Claimed it was already verified or approved"),
     "CHANGE_LIMITS": ("要求修改限额或安全规则", "Asked to change limits or safety rules"),
     "SPLIT_TO_EVADE": ("要求把付款拆开以避开限额", "Asked to split a payment to stay under a limit"),
@@ -79,6 +96,10 @@ FLAG_TEXT = {
     "HIDDEN_TEXT": ("小票里有隐藏文字", "The receipt has hidden text"),
     "INSTRUCTIONS_IN_RECEIPT": ("小票里有给机器的指令", "The receipt has instructions aimed at a machine"),
 }
+
+# the flags that are scam scripts rather than bypass attempts: each brings its own warning (guard.WARNINGS), and a
+# payment in such a request is held until the next day
+SCAM_FLAGS = ("SCAM_SCRIPT", "SCAM_FEE", "SCAM_TASK", "SCAM_IMPERSONATION")
 
 SECRET_WORDS = re.compile(r"(?i)(password|passcode|\bpin\b|密码|口令|验证码|\bcode\b)")
 SECRET_PATTERNS = [

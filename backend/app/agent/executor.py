@@ -18,7 +18,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm.attributes import flag_modified
 
 from app import clock
-from app.agent import audit, policy
+from app.agent import audit, policy, screening
 from app.agent.actions import REGISTRY
 from app.agent.core import TIERS, Ask, Ctx, Refuse
 from app.bank.ledger import BankError
@@ -149,7 +149,8 @@ def prepare(ctx: Ctx, plan: Plan) -> Plan:
         payee = resolved.get("payee_id") or resolved.get("phone")  # a number from the phone directory has no row yet
         decision = policy.decide(ctx, action, resolved, pay_day=pay_day,
                                  earlier_same_day_fen=earlier_by_day.get(pay_day, 0),
-                                 earlier_to_payee_fen=earlier_by_payee.get(payee, 0), flagged=bool(plan.flags))
+                                 earlier_to_payee_fen=earlier_by_payee.get(payee, 0), flagged=bool(plan.flags),
+                                 scam=bool(set(plan.flags or []) & set(screening.SCAM_FLAGS)))
         if action.payment:
             earlier_by_day[pay_day] = earlier_by_day.get(pay_day, 0) + decision["payment_fen"]
             earlier_by_payee[payee] = earlier_by_payee.get(payee, 0) + decision["payment_fen"]
@@ -258,7 +259,8 @@ def execute(ctx: Ctx, plan: Plan) -> Plan:
         # a scheduled step runs as of its scheduled time, even if the demo clock jumped past it
         step_ctx = replace(ctx, now=clock.parse(step["run_at_resolved"])) if step.get("run_at_resolved") else ctx
         pay_day = date.fromisoformat(resolved["pay_day"]) if resolved.get("pay_day") else step_ctx.today
-        decision = policy.decide(step_ctx, action, resolved, pay_day=pay_day, flagged=bool(plan.flags))
+        decision = policy.decide(step_ctx, action, resolved, pay_day=pay_day, flagged=bool(plan.flags),
+                                 scam=bool(set(plan.flags or []) & set(screening.SCAM_FLAGS)))
         if decision["blocked_by"]:
             fail_step(ctx, plan, step, "LOCKED", "安全锁已开启，该步骤未执行。", "A safety lock is on, so this step did not run.")
             failure = step

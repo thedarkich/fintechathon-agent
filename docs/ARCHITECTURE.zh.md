@@ -6,7 +6,7 @@
 
 ## 一、系统架构
 
-![系统架构：请求经过八个环节，只有规划器是 AI，其余都是固定代码；周围是模拟银行、隔离进程、安全锁和哈希链审计日志](img/architecture.svg)
+![系统架构：请求经过八个环节，只有规划器是 AI，其余都是固定代码；周围是模拟银行、隔离进程、安全锁、渠道与外部服务（微信、地图、订座、短信）和哈希链审计日志](img/architecture.svg)
 
 同一结构的文字版：
 
@@ -15,6 +15,7 @@ flowchart LR
   subgraph 渠道
     WEB["网页应用<br/>对话 · 语音 · 上传小票"]
     OPS["人工客服控制台<br/>人工接管"]
+    WX["微信助手（模拟）<br/>可查询、可发起，确认回 App"]
   end
 
   subgraph API["FastAPI 服务"]
@@ -26,7 +27,10 @@ flowchart LR
     APR["确认<br/>确切内容的哈希 ·<br/>交易密码加短信或通行密钥"]
     EXE["执行器<br/>依赖顺序 · 预约 ·<br/>复核 · 补偿"]
     REP["回复<br/>由代码写出"]
+    PLC["地点服务<br/>合并去重 · 照片代取 ·<br/>位置不保存"]
   end
+
+  MAP["地图服务<br/>高德 · 腾讯位置服务 · OpenStreetMap"]
 
   subgraph Bank["模拟银行（每位客户独立）"]
     LED["账本<br/>账户 · 交易"]
@@ -55,6 +59,9 @@ flowchart LR
   EXE -.-> AUD
   TRF -.-> AUD
   OPS --> API
+  WX -->|消息| SCR
+  WEB -->|找地点（不经模型）| PLC --> MAP
+  PLC -->|订座只能指向搜到的地点| RES
 ```
 
 | 组件 | 代码 | 职责 |
@@ -71,7 +78,9 @@ flowchart LR
 | 小票读取 | `pipeline/*`、`receipts.py` | 在隔离进程中解析上传文件；视觉模型（如已配置）或 PDF 规则返回固定格式；标记隐藏文字和类似指令的内容。 |
 | 回复 | `agent/replies.py` 及各操作的 `reply` | 每句包含事实的话都由代码根据结果写出，中英文双语。 |
 | 审计 | `agent/audit.py` | 每位客户一条只追加、以哈希串联的日志；`GET /api/audit/verify` 重新计算整条链。 |
-| 前端 | `frontend/src` | React 网页应用：首页（一键开通演示账户）；首页；助手（对话，每个请求一张确认卡）；转账；账单；理财；卡片；自动续费；记录（你办过的事和哈希链审计日志）；安全原理；人工客服控制台。 |
+| 地点与订座 | `app/places.py`、`api/places.py`、`agent/actions/places.py` | 同时问高德、腾讯位置服务和 OpenStreetMap，合并同一地点，按距离排序；照片由银行代取；订座、查询和取消订座，换成真实店铺下单。见 3.13。 |
+| 微信渠道 | `channels/wechat.py`、`api/wechat.py` | 模拟的微信助手：用交易密码绑定，凭独立凭证调用；回复按聊天的方式写，确认一律回 App。见 3.12。 |
+| 前端 | `frontend/src` | React 网页应用：首页（一键开通演示账户）；首页；助手“小狐”（对话，每个请求一张确认卡，地点卡片）；转账；账单；理财；卡片；自动续费；记录（你办过的事和哈希链审计日志）；安全原理；人工客服控制台。 |
 
 技术栈：Python 3.11、FastAPI、SQLModel + SQLite（WAL）、React 18 + Vite + TypeScript + Tailwind。用 Docker Compose 部署在 Caddy 之后（自动 HTTPS）。不使用任何 CDN：所有资源都由自己的服务器提供，确保中国大陆的手机能稳定加载。
 
@@ -163,6 +172,16 @@ flowchart LR
 
 真正的小程序或公众号会调用同一个接口，用微信的签名校验代替模拟凭证。
 
+### 3.13 真实地点与订座
+
+客户问“附近有什么好吃的火锅”，规划器只给出 `places_search`（直接办）。地点卡片自己向银行请求 `POST /api/places/search`，所以地点名称、地址和客户的位置都不经过模型：店名不可能变成给模型的指令。
+
+- **三个来源，一张列表。** 银行同时问高德（Web服务 Key）、腾讯位置服务和 OpenStreetMap（Nominatim，每秒最多一次），把名字相同、相距 150 米以内的地点合并，按距离排序；3 公里内少于 3 家时扩大到 8 公里。高德、腾讯用 GCJ-02 坐标，浏览器和 OpenStreetMap 用 WGS-84，两边互相换算。在香港、澳门附近只保留和客户同一地区的地点。
+- **位置。** 浏览器在客户允许后发送位置，精确到约 10 米，放在请求正文里；它只发给地图服务，不保存、不写进审计，访问日志里也没有。
+- **照片。** 只取地图服务给出的照片地址，只取图片，最大 3 MB，缩成 320 像素，由银行转给页面；页面本身不从外部加载任何资源。
+- **订座。** “订第一家，明晚7点，2位”只能指向客户刚刚搜到的地点（`book_table`，需确认），记在银行里并给出订座号；“我的订座”列出订座，“取消明天的订座”取消一条（同样需确认）。演示中不会通知餐厅，每张卡片都写明。
+- **生日计划里的真实店铺。** 确认卡上的“选一家”把花店或蛋糕店换成附近真实的店，计划重新定级、重新确认；价格为参考价，订单不会发给店家。
+
 ## 四、数据模型
 
 `UserAccount`、`BankAccount`（活期、储蓄、预留）、`Txn`、`Payee`、`Card`、`Subscription`、`ScheduledTransfer`、`Transfer`、`PayeeMessage`、`Collection`、`WealthProduct`、`Holding`、`RiskProfile`、`Order`、`Plan`、`Conversation`、`Message`、`Challenge`、`Passkey`、`SmsMessage`、`Notification`、`SafetyLock`、`AuditEntry`、`DemoClock`、`Upload`、`ChannelLink`（绑定的聊天账户，只存凭证的哈希）。金额以整数“分”存储，时间为北京时间。每位新客户都会得到一个预置的银行：约 22 个月的真实感交易、家人和朋友收款人（包括两位拼音同名的人，以及一位今天新加、账户却登记在别人名下的卖家）、两张卡、包含重复和遗忘试用的订阅、预置的异常交易、理财持仓和风险测评结果。
@@ -176,6 +195,7 @@ flowchart LR
 - `POST /api/screens/plan`：应用页面发起的付款，返回一个等待确认的计划。`GET /api/directory`：转账页面查询手机号对应的账户。
 - `GET /api/audit`、`GET /api/audit/verify`：审计日志与链校验。
 - `GET|POST /api/wechat/link`、`POST /api/wechat/unlink`：在 App 里用交易密码绑定或解除绑定聊天账户。`POST /api/channels/wechat/message`：聊天一侧，使用渠道专用凭证；它能回答和发起计划，但不能确认任何操作。
+- `POST /api/places/search`：地点卡片查找附近真实地点（位置在请求正文里，不经过模型）。`GET /api/places/photo`：只能取这位客户搜到过的地点的照片，由银行代取。
 - `POST /api/demo/advance`、`/reset`、`/transfers/{id}`：演示工具（银行时钟、重新生成数据、转账进度控制）。
 - 人工客服接口（管理员令牌或工作人员账户）：队列、对话详情、回复、交还、取消、解锁。没有任何接口可以代为确认。
 

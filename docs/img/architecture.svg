@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 940" width="1600" height="940" font-family="'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC','Helvetica Neue',Arial,sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1090" width="1600" height="1090" font-family="'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Source Han Sans SC','Helvetica Neue',Arial,sans-serif">
   <title>中联银行 · 系统架构 / Central Union Bank · System architecture</title>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
@@ -19,7 +19,7 @@
     </style>
   </defs>
 
-  <rect width="1600" height="940" fill="#ffffff"/>
+  <rect width="1600" height="1090" fill="#ffffff"/>
 
   <!-- title -->
   <text x="48" y="58" font-size="30" font-weight="800" fill="#101820">中联银行 · 系统架构 <tspan font-size="20" font-weight="600" fill="#68716f">System architecture</tspan></text>
@@ -36,10 +36,10 @@
   <!-- customer -->
   <rect class="box" x="48" y="170" width="230" height="300" rx="14"/>
   <text class="t" x="66" y="202">客户 <tspan class="te">Customer</tspan></text>
-  <text class="z" x="66" y="234">网页应用，中文 / English</text>
+  <text class="z" x="66" y="234">网页应用里的助手“小狐”</text>
   <text class="z" x="66" y="256">打字 · 语音 · 拍小票</text>
-  <text class="z" x="66" y="278">一键开通演示账户</text>
-  <text class="e" x="66" y="304">web app · text, voice, receipts</text>
+  <text class="z" x="66" y="278">中文 / English · 一键开通演示账户</text>
+  <text class="e" x="66" y="304">Foxy · text, voice, receipts</text>
   <text class="e" x="66" y="322">one-click demo account</text>
   <rect x="66" y="350" width="194" height="98" rx="10" fill="#eff9f5" stroke="#cdd9d4"/>
   <text x="80" y="374" font-size="13" font-weight="700" fill="#101820">确认卡 <tspan class="e">confirm card</tspan></text>
@@ -219,22 +219,45 @@
   <text class="e" x="66" y="680">take over, reply, cancel, unlock;</text>
   <text class="e" x="66" y="698">never approves for the customer</text>
 
+  <!-- channels and outside services -->
+  <text x="48" y="772" font-size="13" font-weight="700" fill="#68716f">渠道与外部服务 · Channels and outside services</text>
+  <rect class="box" x="48" y="784" width="361" height="118" rx="12"/>
+  <text class="t" x="66" y="812">微信助手（模拟） <tspan class="te">WeChat</tspan></text>
+  <text class="z" x="66" y="838">在 App 里用交易密码绑定，凭独立令牌访问</text>
+  <text class="z" x="66" y="858">微信里可查询、可发起；确认一律回 App</text>
+  <text class="e" x="66" y="884">linked with the PIN; confirm only in the app</text>
+  <rect class="box" x="429" y="784" width="361" height="118" rx="12"/>
+  <text class="t" x="447" y="812">地图服务 <tspan class="te">Map services</tspan></text>
+  <text class="z" x="447" y="838">高德 · 腾讯位置服务 · OpenStreetMap，合并去重</text>
+  <text class="z" x="447" y="858">照片由银行代取；位置不保存、不审计</text>
+  <text class="e" x="447" y="884">real places, never shown to the model</text>
+  <rect class="box" x="810" y="784" width="361" height="118" rx="12"/>
+  <text class="t" x="828" y="812">订座与真实店铺 <tspan class="te">Bookings</tspan></text>
+  <text class="z" x="828" y="838">订座、换成附近真实店铺下单：需确认</text>
+  <text class="z" x="828" y="858">演示：记在银行，不发给餐厅和店家</text>
+  <text class="e" x="828" y="884">yellow tier; a demo, nothing is sent</text>
+  <rect class="box" x="1191" y="784" width="361" height="118" rx="12"/>
+  <text class="t" x="1209" y="812">短信与部署 <tspan class="te">SMS and hosting</tspan></text>
+  <text class="z" x="1209" y="838">模拟短信：验证码和到账通知在演示手机里</text>
+  <text class="z" x="1209" y="858">一个 FastAPI 进程 + SQLite；Caddy 提供 HTTPS</text>
+  <text class="e" x="1209" y="884">no outside scripts or fonts load on any page</text>
+
   <!-- audit -->
-  <path class="audit" d="M163,720 L163,766" marker-end="url(#arrow-grey)"/>
-  <path class="audit" d="M770,720 L770,766" marker-end="url(#arrow-grey)"/>
-  <path class="audit" d="M1416,720 L1416,766" marker-end="url(#arrow-grey)"/>
-  <path class="audit" d="M1240,500 L1260,500 L1260,766" marker-end="url(#arrow-grey)"/>
-  <rect x="48" y="770" width="1504" height="86" rx="14" fill="#101820"/>
-  <text x="70" y="802" font-size="18" font-weight="800" fill="#ffffff">哈希链审计日志 <tspan font-size="13" font-weight="600" fill="#a2b4ab">Hash-chained audit log · every stage, verifiable by recomputing the chain</tspan></text>
-  <text x="70" y="828" font-size="13.5" fill="#eff5f1">请求 · 筛查 · 提出与被拒的计划 · 匹配 · 每次规则判定 · 确认与验证 · 每一步执行与撤销 · 转账每个阶段 · 上锁与解锁 · 人工操作</text>
-  <text x="70" y="846" font-size="12" fill="#a2b4ab">hash = sha256(previous hash + entry) · PINs, codes and passwords are never written</text>
+  <path class="audit" d="M163,720 L163,740 L419,740 L419,922" marker-end="url(#arrow-grey)"/>
+  <path class="audit" d="M800,720 L800,922" marker-end="url(#arrow-grey)"/>
+  <path class="audit" d="M1416,720 L1416,740 L1181,740 L1181,922" marker-end="url(#arrow-grey)"/>
+  <path class="audit" d="M1240,500 L1260,500 L1260,740" fill="none"/>
+  <rect x="48" y="926" width="1504" height="86" rx="14" fill="#101820"/>
+  <text x="70" y="958" font-size="18" font-weight="800" fill="#ffffff">哈希链审计日志 <tspan font-size="13" font-weight="600" fill="#a2b4ab">Hash-chained audit log · every stage, verifiable by recomputing the chain</tspan></text>
+  <text x="70" y="984" font-size="13.5" fill="#eff5f1">请求 · 筛查 · 提出与被拒的计划 · 匹配 · 每次规则判定 · 确认与验证 · 每一步执行与撤销 · 转账每个阶段 · 上锁与解锁 · 人工操作</text>
+  <text x="70" y="1002" font-size="12" fill="#a2b4ab">hash = sha256(previous hash + entry) · PINs, codes and passwords are never written</text>
 
   <!-- legend -->
   <g font-size="12.5" fill="#68716f">
-    <path class="flow" d="M48,898 L88,898" marker-end="url(#arrow)"/><text x="98" y="903">请求流向 request flow</text>
-    <rect x="262" y="888" width="34" height="20" rx="5" fill="#eff9f5" stroke="#357366" stroke-width="1.6" stroke-dasharray="5 4"/><text x="306" y="903">AI（只提议） AI, proposes only</text>
-    <rect x="512" y="888" width="34" height="20" rx="5" fill="#ffffff" stroke="#cdd9d4" stroke-width="1.5"/><text x="556" y="903">固定代码 fixed code</text>
-    <path class="audit" d="M716,898 L756,898" marker-end="url(#arrow-grey)"/><text x="766" y="903">写入审计 written to the audit log</text>
-    <text x="1552" y="903" text-anchor="end">FinTechathon 2026 · 银行 AI 智能体赛道 · Banking AI Agent</text>
+    <path class="flow" d="M48,1054 L88,1054" marker-end="url(#arrow)"/><text x="98" y="1059">请求流向 request flow</text>
+    <rect x="262" y="1044" width="34" height="20" rx="5" fill="#eff9f5" stroke="#357366" stroke-width="1.6" stroke-dasharray="5 4"/><text x="306" y="1059">AI（只提议） AI, proposes only</text>
+    <rect x="512" y="1044" width="34" height="20" rx="5" fill="#ffffff" stroke="#cdd9d4" stroke-width="1.5"/><text x="556" y="1059">固定代码 fixed code</text>
+    <path class="audit" d="M716,1054 L756,1054" marker-end="url(#arrow-grey)"/><text x="766" y="1059">写入审计 written to the audit log</text>
+    <text x="1552" y="1059" text-anchor="end">FinTechathon 2026 · 银行 AI 智能体赛道 · Banking AI Agent</text>
   </g>
 </svg>
