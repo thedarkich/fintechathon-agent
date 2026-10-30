@@ -52,6 +52,9 @@ PLACE_ASK = ("附近", "周边", "旁边", "周围", "nearby", "near me", "aroun
 # asking what's good, said with a kind of place ('华强北有什么好吃的火锅', 'any good coffee near Huaqiangbei')
 PLACE_WHAT = ("有什么好", "有啥好", "有没有好", "哪家好", "any good")
 EAT_OUT = ("where to eat", "somewhere to eat", "places to eat", "吃什么好", "去哪吃", "去哪儿吃")
+# asking whether a place's reviews are real ('推荐理由', '哪家靠谱', 'these reviews look fake')
+CREDIBILITY = ("刷单", "水军", "靠谱", "可信", "口碑", "评价", "点评", "理由", "为什么推荐", "为啥推荐", "真的假的",
+               "trustworthy", "credible", "fake review", "real review", "why this one")
 # money words: 'coffee spending near the end of the month' is about the account, not a café
 MONEY_WORDS = ("spend", "spent", "cost", "paid", "pay", "transaction", "花了", "花费", "消费", "支出", "账单", "付了")
 TABLE_WORDS = ("订座", "订位", "订桌", "订个桌", "订个位", "订个座", "book a table", "reserve a table", "table for")
@@ -548,6 +551,10 @@ def _plan(text: str, today: date, pending_field: str | None) -> PlanOut:
     # a table at one of the places just shown ('订第一家，明晚7点4位'), and real places nearby ('附近有什么好吃的火锅')
     if m := PICK.search(text):
         return one("book_table", {"place": m.group(1).strip(), "at": table_slot(text, today), "party": party_from(text)})
+    # credibility first: '推荐理由' says 推荐, but it asks about reviews, not about wealth products
+    if has(text, *CREDIBILITY) and not has(text, *TABLE_WORDS) and not has(text, "理财", "基金", "保险", "投资"):
+        return one("place_reviews_check")
+
     named_table = re.search(r"(?:在|去)\s*[一-龥A-Za-z]{2,10}?\s*(?:订|预订)", text)  # '在海底捞订明天中午6位'
     if has(text, *PLACE_ASK, *TABLE_WORDS, *EAT_OUT) or named_table or (place_kind(text) and (has(
             text, "找", "推荐", "哪里有", "哪儿有", "哪有", "哪家", "find", "recommend", "where can i", "where is a", "where's a",

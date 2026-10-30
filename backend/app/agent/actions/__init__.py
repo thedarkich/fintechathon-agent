@@ -7,6 +7,7 @@ from app.agent.actions import (  # noqa: F401
     payments,
     places,
     queries,
+    recommend,
     security,
     subscriptions,
     wealth,

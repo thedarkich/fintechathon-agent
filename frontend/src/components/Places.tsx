@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { LocateFixed, MapPin, Phone, Star } from 'lucide-react'
 import { api, errorText } from '../api/client'
-import type { Card, Place, PlaceSource, Plan as PlanData } from '../api/types'
+import type { Card, Place, PlaceSource, Plan as PlanData, PlaceTrust, TrustSample } from '../api/types'
 import { useLang } from '../i18n'
 import { usePlan } from './PlanView'
 import { ScreenConfirm, useScreenPlan } from './ScreenPlan'
@@ -61,6 +61,13 @@ export function PlacesCard({ what, label, near, party, date, time, searchRef, pi
     enabled: ready, staleTime: 600_000, retry: false,
   })
   const data = found.data
+  // the list is on screen: ask the rules about it, without waiting for the customer to ask
+  const trust = useQuery({
+    queryKey: ['places-trust', data?.search_id ?? null],
+    queryFn: () => api.placesTrust(data!.search_id as string),
+    enabled: !!data?.search_id && (data?.items.length ?? 0) > 0, staleTime: 600_000, retry: false,
+  })
+  const verdicts = Object.fromEntries((trust.data?.items ?? []).map((v) => [v.id, v]))
   const around = data?.located === 'device' ? tr('you', '你') : data?.label ?? ''
   const used = data ? (Object.entries(data.sources) as [PlaceSource, string][]).filter(([, s]) => s === 'ok').map(([k]) => k) : []
 
@@ -93,7 +100,7 @@ export function PlacesCard({ what, label, near, party, date, time, searchRef, pi
       {data && data.items.length > 0 && (
         <ol className="divide-y divide-rule">
           {data.items.map((place) => <PlaceRow key={place.id} place={place} party={party} date={date} time={time} pick={pick}
-            bookable={!NOT_DINING.test(what)} />)}
+            trust={verdicts[place.id]} bookable={!NOT_DINING.test(what)} />)}
         </ol>
       )}
       {data && (
@@ -103,13 +110,14 @@ export function PlacesCard({ what, label, near, party, date, time, searchRef, pi
             : tr('No map service answered just now.', '地图服务暂时没有回应。')}
           {used.includes('osm') && ' © OpenStreetMap contributors.'}
           {' '}{tr('Your location is used only for this search and goes only to these map services; it is not saved.', '位置只用于这次搜索，只发给这些地图服务，不会保存。')}
+          {Object.keys(verdicts).length > 0 && tr(' Review credibility is checked against demo reviews, not the map itself.', ' 口碑核对基于演示评价数据，不是地图自带的评价。')}
         </p>
       )}
     </div>
   )
 }
 
-function PlaceRow({ place, party, date, time, pick, bookable }: { place: Place; party?: number | null; date?: string | null; time?: string | null; pick?: Pick; bookable: boolean }) {
+function PlaceRow({ place, party, date, time, pick, trust, bookable }: { place: Place; party?: number | null; date?: string | null; time?: string | null; pick?: Pick; trust?: PlaceTrust; bookable: boolean }) {
   const { tr, lang } = useLang()
   const zh = lang === 'zh'
   const [open, setOpen] = useState(false)
@@ -132,6 +140,11 @@ function PlaceRow({ place, party, date, time, pick, bookable }: { place: Place; 
           </p>}
           {place.address && <p className="mt-0.5 text-cap text-ink2">{place.address}</p>}
           {place.hours && <p className="mt-0.5 text-cap text-ink2">{tr('Hours', '营业')} {place.hours}</p>}
+          {trust && trust.status === 'ok' && <TrustNote trust={trust} />}
+          {trust && trust.status !== 'ok' && (
+            <p className="mt-1.5 text-cap text-ink2">{tr('No reviews to check, so this one is not vouched for.',
+              '没有可核对的评价，这家不替它背书。')}</p>
+          )}
           {place.photos.length > 0 && (
             <div className="mt-2 flex gap-2 overflow-x-auto">
               {place.photos.map((src, i) => <img key={src} src={src} loading="lazy" decoding="async" alt={tr(`${place.name}, photo ${i + 1}`, `${place.name}照片 ${i + 1}`)}
@@ -301,6 +314,67 @@ export function ShopPicker({ plan, busy, onPick }: { plan: PlanData; busy: boole
             </li>
           )
         })}
+      </ul>
+    </div>
+  )
+}
+
+/** What the surviving reviews say, the warning when something was caught, and the evidence behind both. */
+function TrustNote({ trust }: { trust: PlaceTrust }) {
+  const { tr } = useLang()
+  const [open, setOpen] = useState(false)
+  const caught = trust.recommend === false
+  const has = (trust.samples?.real?.length ?? 0) + (trust.samples?.fake?.length ?? 0) > 0
+  return (
+    <div className="mt-1.5">
+      {caught && (
+        <p className="rounded-box bg-[var(--cinnabar-wash)] px-2.5 py-1.5 text-cap leading-snug text-cinnabar">
+          {tr(`⚠ Left out of the recommendation: ${trust.reason_en}`, `⚠ 没有算进推荐：${trust.reason_zh}`)}
+        </p>
+      )}
+      <p className="px-0.5 pt-1.5 text-cap leading-snug text-ink2">
+        {tr(`Review check: ${trust.summary_en} · trust ${trust.trust_score}/100`,
+            `口碑核对：${trust.summary_zh} 可信度 ${trust.trust_score}/100`)}
+        {has && (
+          <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)}
+            className="ml-1 underline decoration-dotted underline-offset-2">
+            {open ? tr('hide', '收起') : tr('show the reviews', '展开')}
+          </button>
+        )}
+      </p>
+      {open && has && (
+        <div className="mt-1.5 space-y-2 rounded-box bg-[var(--field)] px-2.5 py-2">
+          <TrustList title={tr('Reviews that held up', '经得起核对的评价')} rows={trust.samples.real} bad={false} />
+          <TrustList title={tr('Reviews taken out', '被拦下的评价')} rows={trust.samples.fake} bad />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TrustList({ title, rows, bad }: { title: string; rows?: TrustSample[]; bad: boolean }) {
+  const { tr } = useLang()
+  if (!rows?.length) return null
+  return (
+    <div>
+      <p className={`text-cap font-semibold ${bad ? 'text-cinnabar' : 'text-[var(--jade)]'}`}>{title}</p>
+      <ul className="mt-1 space-y-1.5">
+        {rows.map((r, i) => (
+          <li key={i} className="text-cap leading-snug text-ink2">
+            <span className="text-ink">{'★'.repeat(Math.max(0, r.stars ?? 0))}</span>
+            {' '}{r.excerpt}
+            <span className="mt-0.5 block text-[11px] text-ink2">
+              {r.user} · {tr(`${r.days_ago} days ago`, `${r.days_ago}天前`)}
+              {r.visited ? tr(' · visited in store', ' · 到店') : tr(' · no visit record', ' · 无到店记录')}
+              {r.photos ? tr(` · ${r.photos} photos`, ` · ${r.photos} 张图`) : ''}
+            </span>
+            {r.why && (
+              <span className={`mt-0.5 block text-[11px] ${bad ? 'text-cinnabar' : 'text-[var(--jade)]'}`}>
+                {tr(`Why: ${r.why}`, `判定依据：${r.why}`)}
+              </span>
+            )}
+          </li>
+        ))}
       </ul>
     </div>
   )

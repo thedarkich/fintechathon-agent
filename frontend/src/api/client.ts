@@ -9,6 +9,7 @@ import type {
   OperatorDetail,
   Overview,
   Payee,
+  PlaceTrust,
   Plan,
   PlanResult,
   PlanRow,
@@ -191,6 +192,10 @@ export const api = {
       lat: located ? Number(where.lat!.toFixed(4)) : null, lon: located ? Number(where.lon!.toFixed(4)) : null,
     })
   },
+
+  // what the rules say about the reviews of the places this search showed (simulated text, real rules)
+  placesTrust: (search: string) =>
+    request<{ items: PlaceTrust[] }>(`/api/places/trust?search=${encodeURIComponent(search)}`),
 
   // the app's own screens: lookups read; anything that pays becomes a plan to confirm
   screenPlan: (action: ScreenAction, args: Record<string, unknown>, lang: Lang) => post<{ plan: Plan }>('/api/screens/plan', { action, args, lang }),
