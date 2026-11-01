@@ -13,7 +13,8 @@ export function SignedInGate({ children }: { children: ReactNode }) {
   const { tr } = useLang()
   if (user) return <>{children}</>
   if (loading) return <div className="session-state" role="status">{tr('Checking your session…', '正在检查登录状态…')}</div>
-  return <Navigate to={'/login?next=' + encodeURIComponent(location.pathname)} replace />
+  // keep the query too: the places card and the chat's links carry it
+  return <Navigate to={'/login?next=' + encodeURIComponent(location.pathname + location.search)} replace />
 }
 
 /** A section whose data didn't arrive: say so and offer to try again, instead of a skeleton that never ends. */

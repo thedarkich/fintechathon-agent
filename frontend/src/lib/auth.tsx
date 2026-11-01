@@ -114,5 +114,7 @@ export const landingFor = (user: User | null, path: string) => (!user && getAdmi
 
 export function workspaceDestination(value: string | null) {
   if (!value) return '/home'
-  return /^\/(home|send|assistant|accounts|transfers|bills|wealth|controls|subscriptions|ledger|operator)(?:\?[^#]*)?$/.test(value) ? value : '/home'
+  // the app's own pages, plus the chat's links to a confirm card, the places card and the WeChat page, so a
+  // request started in the chat still opens the right screen after signing in
+  return /^\/(home|send|assistant|accounts|transfers|bills|wealth|controls|subscriptions|ledger|operator|wechat|places|confirm\/[A-Za-z0-9_-]{1,64})(?:\?[^#]*)?$/.test(value) ? value : '/home'
 }
