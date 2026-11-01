@@ -57,6 +57,23 @@ export interface Place {
   photos: string[]
 }
 
+/** The rules' verdict on one place's reviews (app/trust.py, via GET /api/places/trust). */
+export interface PlaceTrust {
+  id: string; rank: number; name: string
+  status: 'ok' | 'no_data' | 'unusable_data'
+  trust_score: number | null; recommend: boolean | null
+  flagged_share: number | null; low_rating?: boolean; rating?: number | null
+  reason_zh: string | null; reason_en: string | null
+  summary_zh: string | null; summary_en: string | null
+  samples: { real: TrustSample[]; fake: TrustSample[] }
+}
+
+/** One review shown as evidence: kept, or intercepted with the reason the rules gave. */
+export interface TrustSample {
+  excerpt: string; stars: number | null; user: string | null; days_ago: number | null
+  visited: boolean; photos: number; why: string | null
+}
+
 export interface PlacesResult {
   search_id: string
   items: Place[]
