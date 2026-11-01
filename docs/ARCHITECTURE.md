@@ -78,7 +78,7 @@ flowchart LR
 | Receipt reader | `pipeline/*`, `receipts.py` | Parses uploads in an isolated worker; a vision model (when configured) or PDF rules return a fixed schema; hidden text and instruction-like content are flagged. |
 | Replies | `agent/replies.py`, each action's `reply` | Every sentence with a fact is written by code from results, in Chinese and English. |
 | Audit | `agent/audit.py` | Append-only, hash-chained log per customer; `GET /api/audit/verify` recomputes the chain. |
-| Places and bookings | `app/places.py`, `api/places.py`, `agent/actions/places.py` | Asks Amap, Tencent Location Service and OpenStreetMap at once, merges the same place, sorts by distance; photos fetched by the bank; book, list and cancel tables; real shops for partner orders. See 3.13. |
+| Places and bookings | `app/places.py`, `api/places.py`, `agent/actions/places.py` | Asks Amap, Tencent Location Service and OpenStreetMap at once, merges the same place, sorts by distance; photos fetched by the bank; book, list and cancel tables; real shops for partner orders. See 3.13; review credibility, 3.14. |
 | WeChat channel | `channels/wechat.py`, `api/wechat.py` | The simulated WeChat assistant: linked with the PIN, called with its own credential; replies written for a chat; approval only in the app. See 3.12. |
 | Frontend | `frontend/src` | React web app: landing page with a one-click demo account; Home; Assistant, Foxy (chat, with one confirm card per request, and places cards); Transfers; Spending; Invest; Cards; Subscriptions; History (what you asked for, and the hash-chained audit log); How it stays safe; operator console. |
 
@@ -182,6 +182,10 @@ Asked for “hot pot nearby”, the planner proposes only `places_search` (green
 - **Bookings.** “订第一家，明晚7点，2位” can only point at a place the customer was just shown (`book_table`, yellow); the bank records it with a booking code. “我的订座” lists bookings and “取消明天的订座” cancels one (yellow too). In the demo the restaurant is never told, and every card says so.
 - **Real shops in the birthday plan.** “选一家” on the confirm card swaps the florist or the cake shop for a real one nearby; the plan is checked and confirmed again; the price is for reference and the shop isn't sent the order.
 
+### 3.14 Which places to trust (review credibility)
+
+A map hands out a star rating, and a rating is the one number a review ring can buy. Asked “哪家靠谱” / “推荐理由”, the assistant checks the reviews of the places the last search just showed (`place_reviews_check`, green, `agent/actions/recommend.py`). Fixed rules decide, never the model: reviews published in one burst, near-cloned wording, emotion with no verifiable detail, and instruction-like text are intercepted; a flag inside the data buys no exemption (fail-closed provenance); an interception share above a floor vetoes the place on its own; and the map's own rating is a lower bound. The review text is simulated deterministically from each place's id — Amap returns no review text — and the reply says so plainly. Every verdict, with the code and thresholds, is appended to the audit log (`app/trust.py`, `GET /api/places/trust`). A low-rated place is never recommended even when its reviews are clean.
+
 ## 4. Data model
 
 `UserAccount`, `BankAccount` (checking, savings, reserve), `Txn`, `Payee`, `Card`, `Subscription`, `ScheduledTransfer`, `Transfer`, `PayeeMessage`, `Collection`, `WealthProduct`, `Holding`, `RiskProfile`, `Order`, `Plan`, `Conversation`, `Message`, `Challenge`, `Passkey`, `SmsMessage`, `Notification`, `SafetyLock`, `AuditEntry`, `DemoClock`, `Upload`, `ChannelLink` (a linked chat account; only its credential's hash). Money is stored as integer fen; times are China Standard Time. Every new customer gets a seeded bank: about 22 months of realistic transactions, family and friend payees (including two with the same pinyin name and a seller added today whose account is in someone else's name), two cards, subscriptions with an overlap and a forgotten trial, seeded anomalies, holdings and a risk profile.
@@ -201,7 +205,7 @@ Asked for “hot pot nearby”, the planner proposes only `places_search` (green
 
 ## 6. Testing and evaluation
 
-- `backend/tests`: 207 tests through the HTTP API, covering follow-ups, tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
+- `backend/tests`: 218 tests through the HTTP API, covering follow-ups, tier boundaries, approval hashes, verification, the safety lock, rollback, stopping plans and scheduled transfers, human takeover, the demo account, transfers, the sandbox, receipts and the model planner with a fake model.
 - `evals/`: 224 everyday requests and 69 attacks, run on a fresh customer each; the reports are in [eval/report-offline.md](eval/report-offline.md) (offline planner) and [eval/report-model.md](eval/report-model.md) (Qwen). See the README for the command.
 
 ## 7. Deployment

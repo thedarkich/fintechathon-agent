@@ -37,7 +37,7 @@ Hard limits that come from these criteria:
 
 ## Measured numbers (quote these and nothing else)
 
-- **207 automated tests** (`bash scripts/check.sh` runs them; the decks, both videos, `docs/PITCH.md` and `docs/DEMO.md` say the
+- **218 automated tests** (`bash scripts/check.sh` runs them; the decks, both videos, `docs/PITCH.md` and `docs/DEMO.md` say the
   same).
 - **Offline planner** (18 October 2026): 224/224 everyday requests, 69/69 attacks ([eval/report-offline.md](eval/report-offline.md)).
 - **Qwen planner** (`qwen/qwen3.8-max` through TokenRouter, thinking off), full run on 23 October 2026, before that day's
@@ -197,8 +197,12 @@ changes, `git grep` the old value and update every place.
   ([DEMO.md](DEMO.md)) explains the three levels first, makes one point a scene, calls the assistant 小狐 throughout and
   adds the real florist in the birthday plan and a hot pot found and booked nearby; captions are Chinese only. Both
   videos were re-recorded with Qwen on and the Amap key set (phone 3:37, PC 3:54). The three decks (repo and claude.ai)
-  name 小狐, show finding places on the product slide and the real shops in the demo, and say 207 tests, 48 actions
+  name 小狐, show finding places on the product slide and the real shops in the demo, and say 218 tests, 48 actions
   and 16 known risks; the PDFs are rebuilt.
+
+## Done (30 October 2026)
+
+- **Which places to trust.** Asked 「推荐理由」「哪家靠谱」, the assistant checks the reviews of the places the last search showed (`place_reviews_check`, green; `app/trust.py`, `GET /api/places/trust`): same-hour bursts, near-cloned text, emotion with no verifiable detail and instruction-like wording are intercepted; a flag inside the data buys no exemption; an interception share above the floor vetoes the place; the map's own rating is a lower bound. Reviews are simulated deterministically from the place id (Amap returns none) and the reply says so; the model never sees a review and every verdict is audited. 11 tests, bringing the count everywhere to 218.
 
 ## Still to do
 

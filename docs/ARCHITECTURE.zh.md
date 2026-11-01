@@ -182,6 +182,10 @@ flowchart LR
 - **订座。** “订第一家，明晚7点，2位”只能指向客户刚刚搜到的地点（`book_table`，需确认），记在银行里并给出订座号；“我的订座”列出订座，“取消明天的订座”取消一条（同样需确认）。演示中不会通知餐厅，每张卡片都写明。
 - **生日计划里的真实店铺。** 确认卡上的“选一家”把花店或蛋糕店换成附近真实的店，计划重新定级、重新确认；价格为参考价，订单不会发给店家。
 
+### 3.14 该信哪一家（口碑核对）
+
+地图只给一个星级，而星级正是刷评团伙会买的那一个数字。用户问「哪家靠谱」「推荐理由」时，助手去核对刚才搜索显示的那几家的评价（`place_reviews_check`，直接办，`agent/actions/recommend.py`）。由固定规则判定，模型从不看评价：同一时段集中发布、几乎照抄的措辞、只有情绪没有细节、以及像给机器指令的文字都会被拦下；数据里自带的「可信」标记无效（不信任外部标记）；被拦比例超过门槛时整家直接否决；地图自己的评分是下限。评价文本按店铺 id 确定性生成（高德不返回评价文本），回复里也明说这是模拟的。每次判定连同代码与阈值都写入审计日志（`app/trust.py`，`GET /api/places/trust`）。评分过低的店，即使评价干净也不会被推荐。
+
 ## 四、数据模型
 
 `UserAccount`、`BankAccount`（活期、储蓄、预留）、`Txn`、`Payee`、`Card`、`Subscription`、`ScheduledTransfer`、`Transfer`、`PayeeMessage`、`Collection`、`WealthProduct`、`Holding`、`RiskProfile`、`Order`、`Plan`、`Conversation`、`Message`、`Challenge`、`Passkey`、`SmsMessage`、`Notification`、`SafetyLock`、`AuditEntry`、`DemoClock`、`Upload`、`ChannelLink`（绑定的聊天账户，只存凭证的哈希）。金额以整数“分”存储，时间为北京时间。每位新客户都会得到一个预置的银行：约 22 个月的真实感交易、家人和朋友收款人（包括两位拼音同名的人，以及一位今天新加、账户却登记在别人名下的卖家）、两张卡、包含重复和遗忘试用的订阅、预置的异常交易、理财持仓和风险测评结果。
@@ -201,7 +205,7 @@ flowchart LR
 
 ## 六、测试与评测
 
-- `backend/tests`：207 个通过 HTTP 接口运行的测试，覆盖承接上文的追问、等级边界、确认哈希、验证、安全锁、回滚、停止计划和预约转账、人工接管、演示账户、转账、沙箱、小票，以及用模拟模型测试的模型规划器。
+- `backend/tests`：218 个通过 HTTP 接口运行的测试，覆盖承接上文的追问、等级边界、确认哈希、验证、安全锁、回滚、停止计划和预约转账、人工接管、演示账户、转账、沙箱、小票，以及用模拟模型测试的模型规划器。
 - `evals/`：224 个日常请求和 69 个攻击，每个都在新开的客户上运行；报告见 [eval/report-offline.md](eval/report-offline.md)（离线规划器）和 [eval/report-model.md](eval/report-model.md)（通义千问），运行命令见 README。
 
 ## 七、部署
