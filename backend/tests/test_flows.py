@@ -155,7 +155,12 @@ def test_cancelled_subscription_does_not_charge(bank):
     plan = plan_of(bank.chat("取消爱奇艺会员"))
     cancelled_at = bank.get("/api/demo/clock").json()["now"]
     assert bank.approve(plan).status_code == 200
-    bank.post("/api/demo/advance", {"days": 35})
+    # advance to just past the NEXT renewal of the still-active subscription, so the test holds on any
+    # calendar day: a blind 35 days crosses two monthly charges when today is near the start of a month
+    subs = bank.get("/api/bank/subscriptions").json()["items"]
+    next_charge = date.fromisoformat(next(s for s in subs if "腾讯视频" in s["merchant"])["next_charge_on"][:10])
+    clock_day = date.fromisoformat(cancelled_at[:10])
+    bank.post("/api/demo/advance", {"days": max((next_charge - clock_day).days + 1, 1)})
     with Session(bank.runtime.engine) as session:
         def charged_after(name):
             return [t for t in session.exec(select(Txn).where(Txn.counterparty.contains(name))) if t.at > cancelled_at]
