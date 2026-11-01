@@ -14,8 +14,8 @@ from pydantic import Field
 from sqlmodel import select
 
 from app import trust
-from app.agent.core import Action, Args, Ctx, Refuse, register
 from app.agent.actions.places import find_place
+from app.agent.core import Action, Args, Ctx, Refuse, register
 from app.models import PlaceSeen
 
 

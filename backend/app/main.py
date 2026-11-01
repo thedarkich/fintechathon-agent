@@ -15,9 +15,9 @@ from app.api.bank import router as bank
 from app.api.demo import router as demo
 from app.api.operator import router as operator
 from app.api.places import router as places
-from app.api.trust import router as places_trust
 from app.api.screens import router as screens
 from app.api.security import RequestBoundary, problem
+from app.api.trust import router as places_trust
 from app.api.uploads import router as uploads
 from app.api.wechat import app_side as wechat_app
 from app.api.wechat import channel_side as wechat_channel

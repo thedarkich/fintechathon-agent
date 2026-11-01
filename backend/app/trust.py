@@ -290,7 +290,7 @@ class ReviewTrust:
         for r, text in pairs:
             if len(text) >= self.MIN_TEXT:
                 groups[text].append(r)
-        for text, items in groups.items():
+        for _text, items in groups.items():
             if len(items) >= 2:
                 ids = [x["review_id"] for x in items]
                 for r in items:
@@ -360,18 +360,30 @@ class ReviewTrust:
             rid = r["review_id"]
             reasons, tags, score = [], [], 0
             if rid in bursts:
-                reasons.append(bursts[rid]); tags.append("TIME_BURST"); score += 40; counts["burst"] += 1
+                reasons.append(bursts[rid])
+                tags.append("TIME_BURST")
+                score += 40
+                counts["burst"] += 1
             if rid in dups:
-                reasons.append(dups[rid]); tags.append("DUPLICATE"); score += 40; counts["duplicate"] += 1
+                reasons.append(dups[rid])
+                tags.append("DUPLICATE")
+                score += 40
+                counts["duplicate"] += 1
             emo = self._emotion(r)
             if emo:
-                reasons.append(emo); tags.append("EXTREME_EMOTION"); score += 20; counts["emotion"] += 1
+                reasons.append(emo)
+                tags.append("EXTREME_EMOTION")
+                score += 20
+                counts["emotion"] += 1
             if self._injected(r.get("content")):
-                reasons.append("评价里出现了像是给系统的指令，按不可信输入处理"); tags.append("INJECTION_LIKE")
-                score += 20; counts["injection"] += 1
+                reasons.append("评价里出现了像是给系统的指令，按不可信输入处理")
+                tags.append("INJECTION_LIKE")
+                score += 20
+                counts["injection"] += 1
             if rid in group:
                 reasons.append("属于成批出现的模式：" + "、".join(group[rid]))
-                tags.append("AGGREGATE_PATTERN"); score += self.AGGREGATE_BONUS
+                tags.append("AGGREGATE_PATTERN")
+                score += self.AGGREGATE_BONUS
             if score >= self.FLAG_SCORE:
                 text = str(r.get("content") or "")
                 flagged.append({"review_id": rid, "excerpt": text[:60] + ("…" if len(text) > 60 else ""),
@@ -379,7 +391,7 @@ class ReviewTrust:
         flagged.sort(key=lambda x: -x["score"])
 
         penalty = 0
-        for (ids_key, (each, cap)) in zip(("burst", "duplicate", "emotion", "injection"), self.CAPS):
+        for (ids_key, (each, cap)) in zip(("burst", "duplicate", "emotion", "injection"), self.CAPS, strict=True):
             penalty += min(cap, counts[ids_key] * each)
         floor = sum(cap for _, cap in self.CAPS)
         trust = max(100 - floor, 100 - penalty)
